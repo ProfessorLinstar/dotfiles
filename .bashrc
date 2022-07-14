@@ -137,21 +137,19 @@ ex ()
 }
 
 ################################################################################
-# User changes
+# Variables and Aliases
 ################################################################################
 
-export PATH=/home/linstar/Documents/Sublime/Code/Scripts${PATH:+:${PATH}}
-export PATH
+[[ -d "$HOME/bin" ]] && PATH="$HOME/bin${PATH:+:$PATH}"
+[[ -d "$HOME/.local/bin" ]] && PATH="$HOME/.local/bin${PATH:+:$PATH}"
 
-# Don't change color of directories/files with o+w permissions
-export LS_COLORS=$LS_COLORS:ow=0:ex=0
+export LS_COLORS=$LS_COLORS:ow=0:ex=0 # Don't change color of directories/files with o+w permissions
+export PROMPT_DIRTRIM=3 # Only show last three directories in filepath
 
-# Only show last three directories in filepath
-export PROMPT_DIRTRIM=3
-
-# Aliases
 alias py=python3.10
 alias vi=lvim
+alias vim=\\nvim
 alias nvim=lvim
 alias vis="source vis"
 alias tt="gio trash"
+alias la="ls -la"
