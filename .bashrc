@@ -140,8 +140,8 @@ ex ()
 # Variables and Aliases
 ################################################################################
 
-[[ -d "$HOME/bin" ]] && PATH="$HOME/bin${PATH:+:$PATH}"
-[[ -d "$HOME/.local/bin" ]] && PATH="$HOME/.local/bin${PATH:+:$PATH}"
+PATH="$HOME/bin${PATH:+:$PATH}"
+PATH="$HOME/.local/bin${PATH:+:$PATH}"
 
 export LS_COLORS=$LS_COLORS:ow=0:ex=0 # Don't change color of directories/files with o+w permissions
 export PROMPT_DIRTRIM=3 # Only show last three directories in filepath

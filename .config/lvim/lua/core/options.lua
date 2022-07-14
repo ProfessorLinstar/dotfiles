@@ -28,7 +28,7 @@ lvim.builtin.treesitter.highlight.enabled = true
 -- LSP Setup
 local pid = vim.fn.getpid()
 local omnisharp_bin = "/home/linstar/.local/share/nvim/lsp_servers/omnisharp/omnisharp/OmniSharp"
-require('lspconfig').omnisharp.setup { cmd = {omnisharp_bin, "--languageserver", "--hostPID", tostring(pid)} }
+require("lspconfig").omnisharp.setup { cmd = {omnisharp_bin, "--languageserver", "--hostPID", tostring(pid)} }
 
 --------------------------------------------------------------------------------
 -- Plugins
@@ -48,6 +48,7 @@ lvim.plugins = {
     event = "BufRead",
   },
 }
+require "lsp_signature".setup { toggle_key = "<C-s>", select_signature_key = "<M-s>" }
 
 vim.g.vimtex_view_general_viewer = 'okular'
 vim.g.vimtex_view_general_options = '--unique file:@pdf#src:@line@tex'
