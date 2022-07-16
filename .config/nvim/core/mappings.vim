@@ -8,6 +8,7 @@ nnoremap <Leader>dF <cmd>later 1f<CR>
 nnoremap <Leader>ap <cmd>let @+=getcwd() \| echo @+<CR>
 nnoremap <Leader>aP <cmd>let @+=expand('%:p') \| echo @+<CR>
 nnoremap <Leader>ae <cmd>OpenInExplorer<CR>
+nnoremap <Leader>af <cmd>if v:count \| let &shiftwidth=v:count \| let &tabstop=v:count \| endif<CR>
 
 nnoremap <Leader>bl <cmd>:buffers<CR>
 
@@ -37,10 +38,7 @@ nnoremap [n ?\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 vnoremap // y/\V<C-R>=substitute(escape(@",'/\'),'\n','\\n','ge')<CR><CR>
 nnoremap gt `[v`]
 
-inoremap <M-o> <S-CR>x<BS>
-nnoremap O Ox<BS>
-nnoremap o ox<BS>
-
+inoremap <M-o> <CR>
 nnoremap - @:
 nnoremap _ @@
 vnoremap _ g_

@@ -44,7 +44,6 @@ lvim.plugins = {
   { "lervag/vimtex" },           -- Provides LaTeX bindings and compilation features
   {
     "ray-x/lsp_signature.nvim",  -- LSP signature help
-    config = function() require "lsp_signature".on_attach() end,
     event = "BufRead",
   },
 }
