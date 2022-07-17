@@ -30,6 +30,7 @@ typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=4
 
 PATH="$HOME/bin${PATH:+:$PATH}"
 PATH="$HOME/.local/bin${PATH:+:$PATH}"
+PYTHONPATH="~/.local/lib/python3.10/site-packages${PYTHONPATH:+:$PYTHONPATH}"
 
 export LS_COLORS=$LS_COLORS:ow=0:ex=0 # Don't change color of directories/files with o+w permissions
 

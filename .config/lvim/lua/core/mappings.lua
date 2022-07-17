@@ -1,14 +1,28 @@
--- Builtin modifications
+--------------------------------------------------------------------------------
+-- Lunarvim mappings
+--------------------------------------------------------------------------------
+
+vim.api.nvim_set_keymap("n", "<Leader>j", "<cmd>BufferLinePick<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<Leader>;",'<cmd>if luaeval("vim.bo.ft") != "alpha" \\| tab split \\| endif \\| execute "Alpha" \\| cd %:p:h<CR>' , { noremap = true, silent = true })
+vim.api.nvim_set_keymap("", "H", "H", { noremap = true })
+vim.api.nvim_set_keymap("", "L", "L", { noremap = true })
+
+-- Prevent nvimtree from stealing tab key
+table.insert(lvim.builtin.nvimtree.setup.view.mappings.list, { key = "<Tab>", action = "" })
+
+
+--------------------------------------------------------------------------------
+-- which-key modifications
+--------------------------------------------------------------------------------
+
+-- Builtin overriding
 local merge = {
   l = { nil, "List Buffers (:buffers)" },
   h = nil
 }
 for k, v in pairs(merge) do lvim.builtin.which_key.mappings["b"][k] = v end
 
--- Prevent nvimtree from stealing tab key
-table.insert(lvim.builtin.nvimtree.setup.view.mappings.list, { key = "<Tab>", action = "" })
-
--- Label menus
+-- Menu labels
 lvim.builtin.which_key.mappings["d"] = { name = "Protected Menu" }
 lvim.builtin.which_key.mappings["a"] = { name = "Shortcuts" }
 
@@ -26,10 +40,8 @@ lvim.builtin.which_key.mappings["y"] = {
   v = { nil, "Tab Split (:tab split)" },
   x = { nil, "Delete Tab (:tabclose)" },
   ["'"] = { "<Plug>Sneak_S", "Sneak backwards (:<Plug>Sneak_S)" },
-  [";"] = { nil, "Alpha" },
 }
 
-
 -- Hide basic mappings from which-key menu
-local ignore = { "j", "r", "w", "t", "c", "C", "q", "v", "x", ";", "'", "/", "z", "Z", "h" }
+local ignore = { "r", "w", "t", "c", "C", "q", "v", "x", "'", "/", "z", "Z", "h" }
 for _, letter in pairs(ignore) do lvim.builtin.which_key.mappings[letter] = { nil, "which_key_ignore" } end

@@ -13,7 +13,6 @@ lvim.colorscheme = "onedarker"
 lvim.builtin.lualine.sections.lualine_z = { "location" } -- show line/column number in ruler
 lvim.builtin.cmp.preselect = false -- don't select suggestion automatically
 
--- After changing plugin config exit and reopen LunarVim, Run :PackerInstall :PackerCompile
 lvim.builtin.alpha.active = true
 lvim.builtin.notify.active = true
 lvim.builtin.terminal.active = true
@@ -34,6 +33,7 @@ require("lspconfig").omnisharp.setup { cmd = {omnisharp_bin, "--languageserver",
 -- Plugins
 --------------------------------------------------------------------------------
 
+-- After changing plugin config exit and reopen LunarVim, Run :PackerInstall :PackerCompile
 lvim.plugins = {
   { "folke/tokyonight.nvim" },   -- Default LunarVim theme
   { "tpope/vim-obsession" },     -- Improve vim sessions functionality for tmux
