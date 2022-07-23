@@ -8,13 +8,14 @@ set hlsearch
 set incsearch
 set ignorecase
 
-set backspace=indent,eol,start
-set complete-=i
-
-set wrap
 set number
 set relativenumber
 set cmdheight=2
+
+set wrap
+set backspace=indent,eol,start
+set complete-=i
+set formatoptions=tcqjrol
 
 set smarttab
 set autoindent

@@ -1,15 +1,14 @@
 --------------------------------------------------------------------------------
--- Lunarvim mappings
+-- Lunarvim mappings (should go after 'leader' definition)
 --------------------------------------------------------------------------------
 
 vim.api.nvim_set_keymap("n", "<Leader>j", "<cmd>BufferLinePick<CR>", { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<Leader>;",'<cmd>if luaeval("vim.bo.ft") != "alpha" \\| tab split \\| endif \\| execute "Alpha" \\| cd %:p:h<CR>' , { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<Leader>;", '<cmd>if luaeval("vim.bo.ft") != "alpha" | tab split | endif | execute "Alpha" | cd %:p:h<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap("", "H", "H", { noremap = true })
 vim.api.nvim_set_keymap("", "L", "L", { noremap = true })
 
 -- Prevent nvimtree from stealing tab key
 table.insert(lvim.builtin.nvimtree.setup.view.mappings.list, { key = "<Tab>", action = "" })
-
 
 --------------------------------------------------------------------------------
 -- which-key modifications
@@ -43,5 +42,5 @@ lvim.builtin.which_key.mappings["y"] = {
 }
 
 -- Hide basic mappings from which-key menu
-local ignore = { "r", "w", "t", "c", "C", "q", "v", "x", "'", "/", "z", "Z", "h" }
+local ignore = { "r", "w", "t", "c", "C", "q", "v", "x", "'", "/", "z", "Z", "h", ";", "j" }
 for _, letter in pairs(ignore) do lvim.builtin.which_key.mappings[letter] = { nil, "which_key_ignore" } end
