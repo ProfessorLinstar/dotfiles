@@ -23,6 +23,11 @@ lvim.builtin.treesitter.ignore_install = { "haskell" }
 lvim.builtin.treesitter.highlight.enabled = true
 lvim.builtin.treesitter.indent = { enable = true, disable = { "python", "go", "tex" } } -- prevent treesitter from breaking indenting
 
+local formatters = require "lvim.lsp.null-ls.formatters"
+formatters.setup {
+  { name = "yapf", args = { "--style={based_on_style: google, column_limit: 150}" } }
+}
+
 --------------------------------------------------------------------------------
 -- External Plugins
 --------------------------------------------------------------------------------
