@@ -9,6 +9,7 @@ local vim_sources = {
   "~/dotfiles/.config/nvim/core/options.vim",      -- Basic vim options
   "~/dotfiles/.config/nvim/core/mappings.vim",     -- Basic vim mappings
   "~/dotfiles/.config/nvim/core/plugmaps.vim",     -- Plugin mappings
+  "~/dotfiles/.config/nvim/core/filetypes.vim",   -- Filetype-specific scripts
 }
 for _, file in pairs(vim_sources) do vim.cmd("source " .. file) end
 

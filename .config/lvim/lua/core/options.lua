@@ -1,14 +1,10 @@
 --------------------------------------------------------------------------------
--- General settings
+-- Lunarvim settings
 --------------------------------------------------------------------------------
 
 lvim.log.level = "warn"
 lvim.format_on_save = false
 lvim.colorscheme = "onedark"
-
---------------------------------------------------------------------------------
--- Builtin Settings
---------------------------------------------------------------------------------
 
 lvim.builtin.lualine.sections.lualine_z = { "location" } -- show line/column number in ruler
 lvim.builtin.cmp.preselect = false -- don't select suggestion automatically
@@ -18,10 +14,12 @@ lvim.builtin.notify.active = true
 lvim.builtin.terminal.active = true
 lvim.builtin.nvimtree.setup.view.side = "left"
 
-lvim.builtin.treesitter.ensure_installed = { "bash", "json", "python", "latex", "lua" }
-lvim.builtin.treesitter.ignore_install = { "haskell" }
+lvim.builtin.treesitter.ensure_installed = { "bash", "json", "python", "lua" }
+lvim.builtin.treesitter.ignore_install = { "haskell", "latex" }
 lvim.builtin.treesitter.highlight.enabled = true
 lvim.builtin.treesitter.indent = { enable = true, disable = { "python", "go", "tex" } } -- prevent treesitter from breaking indenting
+
+lvim.lsp.automatic_servers_installation = false
 
 local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
@@ -47,7 +45,7 @@ lvim.plugins = {
 }
 
 require "lsp_signature".setup { toggle_key = "<C-s>", select_signature_key = "<M-s>" }
-require "onedark".setup { style = "warmer", code_style = { keywords = "bold", functions = "italic,bold" } }
+require "onedark".setup { style = "warmer", toggle_style_key = "<C-M-S-F12>", code_style = { keywords = "bold", functions = "italic,bold" } }
 
 vim.g.vimtex_view_general_viewer = 'okular'
 vim.g.vimtex_view_general_options = '--unique file:@pdf#src:@line@tex'

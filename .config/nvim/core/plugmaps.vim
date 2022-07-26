@@ -1,4 +1,4 @@
-" moll/vim-bbye: intelligent buffer deletion
+" moll/vim-bbye: intelligent buffer deletion (overrides <Leader>dd)
 nnoremap <Leader>dd <cmd>Bdelete<CR>
 
 " justinmk/vim-sneak: Prevent vim-sneak from stealing s key

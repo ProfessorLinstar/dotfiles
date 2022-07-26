@@ -15,9 +15,9 @@ nnoremap <Leader>bl <cmd>:buffers<CR>
 
 nnoremap <Leader>r <cmd>noh<CR>
 nnoremap <Leader>w <cmd>w<CR>
-nnoremap <Leader>t <cmd>if @+ =~# "^\\d\\+$" \| to @+ \| echo "Jumped to line " . @+ \| else \| echohl WarningMsg \| echo "Clipboard is not a number" \| echohl None \| endif<CR>
-nnoremap <Leader>c <cmd>cd %:p:h \| pwd<CR>
-nnoremap <Leader>C <cmd>execute "cd" fnameescape("/" . join(split(v:this_session, "/")[:-2], "/")) \| pwd<CR>
+nnoremap <Leader>t <cmd>JumpToClipboard<CR>
+nnoremap <Leader>c <cmd>CdToFile<CR>
+nnoremap <Leader>C <cmd>CdToSession<CR>
 nnoremap <Leader>q <cmd>qa<CR>
 nnoremap <Leader>v <cmd>tab split<CR>
 nnoremap <Leader>x <cmd>tabclose<CR>
@@ -36,15 +36,17 @@ nnoremap <expr> k v:count ? ("m'" . v:count) . 'k' : 'gk'
 nnoremap ]n /\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 nnoremap [n ?\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 
-vnoremap // y/\V<C-R>=substitute(escape(@",'/\'),'\n','\\n','ge')<CR><CR>
+vnoremap // y/\V<C-R>=escape(@",'/\')->substitute('\n','\\n','g')<CR><CR>
 nnoremap gt `[v`]
 
 inoremap <M-o> <CR>
+nnoremap <C-f> :<C-f>
 nnoremap - @:
 nnoremap _ @@
 vnoremap _ g_
+onoremap _ g_
 
-noremap <M-q> <cmd>if exists("g:syntax_on") \| syntax off \| else \| syntax enable \| endif<CR>
+noremap <M-q> <cmd>ToggleSyntax<CR>
 noremap <M-p> "0p
 noremap <M-P> "0P
 
