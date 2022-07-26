@@ -10,6 +10,7 @@ nnoremap <Leader>aP <cmd>let @+=expand('%:p') \| echo @+<CR>
 nnoremap <Leader>ae <cmd>OpenDirectory<CR>
 nnoremap <Leader>ad <cmd>OpenFile<CR>
 nnoremap <Leader>af <cmd>if v:count \| let &shiftwidth=v:count \| let &tabstop=v:count \| endif<CR>
+nnoremap <Leader>aw <cmd>TrimTrailingWhitespace<CR>
 
 nnoremap <Leader>bl <cmd>:buffers<CR>
 
