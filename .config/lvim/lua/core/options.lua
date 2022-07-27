@@ -2,6 +2,7 @@
 -- Lunarvim settings
 --------------------------------------------------------------------------------
 
+vim.opt.showmode = true
 lvim.log.level = "warn"
 lvim.format_on_save = false
 lvim.colorscheme = "onedark"
@@ -23,7 +24,12 @@ lvim.lsp.automatic_servers_installation = false
 
 local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
-  { name = "yapf", args = { "--style={based_on_style: google, column_limit: 150}" } }
+  { name = "yapf", args = {"--style={based_on_style: google, column_limit: 120}"} }
+}
+
+local linters = require "lvim.lsp.null-ls.linters"
+linters.setup {
+  { name = "pylint", args = {"--disable=C0321,W0603"} },
 }
 
 --------------------------------------------------------------------------------

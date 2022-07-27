@@ -10,7 +10,7 @@ This repository contains configuration files for my linux workspace. The followi
 │   ├── dconf                        ---
 │   │   └── manjaro.dconf            --- Result of 'dconf dump /' in Manjaro
 │   ├── lvim                         ---
-│   │   ├── config.lua               ---
+│   │   ├── config.lua               --- Lunarvim main configuration file
 │   │   ├── lua                      ---
 │   │   │   └── core                 ---
 │   │   │       ├── mappings.lua     --- Lunarvim-specific mappings
@@ -50,6 +50,6 @@ This repository contains configuration files for my linux workspace. The followi
 │               └── keymaps          ---
 │                   └── us-caps.map  --- Keymap for linux console remapping caps to escape
 ├── .tmux.conf                       --- tmux configuration file
-├── .vimrc                           --- Vim configuration file (deprecated)
+├── .vimrc                           --- Vim main configuration file (deprecated)
 └── .zshrc                           --- zshell configuration file
 ```
