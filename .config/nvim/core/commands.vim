@@ -1,7 +1,7 @@
 " Core mappings
 command! JumpToClipboard if @+ =~# "^\\d\\+$" | to @+ | echo "Jumped to line " . @+ | else | echohl WarningMsg | echo "Clipboard is NaN." | echohl None | endif
 command! CdToFile cd %:p:h | pwd
-command! CdToSession execute "cd" fnameescape("/" . join(split(v:this_session, "/")[:-2], "/")) | pwd
+command! CdToSession execute "cd" fnameescape("/" . split(v:this_session, "/")[:-2]->join("/") ) | pwd
 command! ToggleSyntax if exists("g:syntax_on") | syntax off | else | syntax enable | endif
 command! TrimTrailingWhitespace execute "normal! m'" | let s:search=@/ | %s/\s\+$//ge | let @/=s:search | noh | normal! `'
 

@@ -11,6 +11,7 @@ nnoremap <Leader>ae <cmd>OpenDirectory<CR>
 nnoremap <Leader>ad <cmd>OpenFile<CR>
 nnoremap <Leader>af <cmd>if v:count \| let &shiftwidth=v:count \| let &tabstop=v:count \| endif<CR>
 nnoremap <Leader>aw <cmd>TrimTrailingWhitespace<CR>
+nnoremap <Leader>at <cmd>terminal<CR>
 
 nnoremap <Leader>bl <cmd>:buffers<CR>
 
@@ -55,3 +56,6 @@ cnoremap <M-f> <C-right>
 cnoremap <M-b> <C-left>
 cnoremap <C-a> <C-b>
 cnoremap <C-d> <Del>
+
+tnoremap <ESC> <C-\><C-n>
+tnoremap <expr> <C-R> '<C-\><C-N>"'.nr2char(getchar()).'pi'

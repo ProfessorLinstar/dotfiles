@@ -5,11 +5,11 @@
 
 local vim_sources = {
   "~/dotfiles/.config/nvim/core/commands.vim",     -- Basic vim commands
-  "~/dotfiles/.config/nvim/core/autocommands.vim", -- Basic vim autocommands
   "~/dotfiles/.config/nvim/core/options.vim",      -- Basic vim options
   "~/dotfiles/.config/nvim/core/mappings.vim",     -- Basic vim mappings
   "~/dotfiles/.config/nvim/core/plugmaps.vim",     -- Plugin mappings
-  "~/dotfiles/.config/nvim/core/filetypes.vim",    -- Filetype-specific scripts
+  "~/dotfiles/.config/nvim/core/autocommands.vim", -- Basic vim autocommands
+  "~/dotfiles/.config/nvim/core/filetypes.vim",    -- Filetype-specific autocommands
 }
 for _, file in pairs(vim_sources) do vim.cmd("source " .. file) end
 
