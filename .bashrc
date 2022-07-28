@@ -2,6 +2,8 @@
 # ~/.bashrc
 #
 
+! (shopt -q login_shell) && . "$HOME/.bash_profile"
+
 [[ $- != *i* ]] && return
 
 colors() {
@@ -140,7 +142,6 @@ ex ()
 # Variables and Aliases
 ################################################################################
 
-export LS_COLORS=$LS_COLORS:ow=0:ex=0 # Don't change color of directories/files with o+w permissions
 export PROMPT_DIRTRIM=3 # Only show last three directories in filepath
 
 alias py=python3.10

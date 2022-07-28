@@ -15,6 +15,7 @@ nnoremap <Leader>at <cmd>terminal<CR>
 
 nnoremap <Leader>bl <cmd>:buffers<CR>
 
+nnoremap <Leader>e <cmd>Lexplore<CR>
 nnoremap <Leader>r <cmd>noh<CR>
 nnoremap <Leader>w <cmd>w<CR>
 nnoremap <Leader>t <cmd>JumpToClipboard<CR>
