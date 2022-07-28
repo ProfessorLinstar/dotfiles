@@ -24,7 +24,8 @@ lvim.lsp.automatic_servers_installation = false
 
 local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
-  { name = "yapf", args = {"--style={based_on_style: google, column_limit: 120}"} }
+  { name = "yapf", args = {"--style={based_on_style: google, column_limit: 120}"} },
+  { name = "prettier" }
 }
 
 local linters = require "lvim.lsp.null-ls.linters"

@@ -22,17 +22,9 @@ typeset -g POWERLEVEL9K_SHORTEN_DELIMITER=...
 typeset -g POWERLEVEL9K_DIR_BACKGROUND=4
 typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=4
 
-
-
 ################################################################################
 # Variables and Aliases
 ################################################################################
-
-PATH="$HOME/bin${PATH:+:$PATH}"
-PATH="$HOME/.local/bin${PATH:+:$PATH}"
-PYTHONPATH="~/.local/lib/python3.10/site-packages${PYTHONPATH:+:$PYTHONPATH}"
-
-export LS_COLORS=$LS_COLORS:ow=0:ex=0 # Don't change color of directories/files with o+w permissions
 
 alias py=python3.10
 alias vi=lvim
