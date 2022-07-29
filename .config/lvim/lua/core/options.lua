@@ -25,7 +25,7 @@ lvim.lsp.automatic_servers_installation = false
 local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
   { name = "yapf", args = {"--style={based_on_style: google, column_limit: 120}"} },
-  { name = "prettier" }
+  { name = "prettier", filetypes = { "vue" } }
 }
 
 local linters = require "lvim.lsp.null-ls.linters"
@@ -45,16 +45,32 @@ lvim.plugins = {
   { "justinmk/vim-sneak" },         -- Faster navigation keybindings
   { "moll/vim-bbye" },              -- More intelligent buffer deletion
   { "tpope/vim-fugitive" },         -- Git-integration for vim
-  { "lervag/vimtex" },              -- Provides LaTeX bindings and compilation features
   { "ray-x/lsp_signature.nvim" },   -- LSP signature help
-  { "olimorris/onedarkpro.nvim" },  -- LSP signature help
-  { "navarasu/onedark.nvim" },      -- LSP signature help
+  { "navarasu/onedark.nvim" },      -- More colorful onedark theme
+
+  -- filetype specific plugins
+  {
+    "lervag/vimtex",                -- Provides LaTeX bindings and compilation features
+    ft = { "tex", "sty" }
+  },
+  {
+    "iamcco/markdown-preview.nvim", -- Markdown preview
+    run = "cd app && npm install",
+    ft = "markdown"
+  },
+
 }
 
+-- Extra setup
 require "lsp_signature".setup { toggle_key = "<C-s>", select_signature_key = "<M-s>" }
 require "onedark".setup { style = "warmer", toggle_style_key = "<C-M-S-F12>", code_style = { keywords = "bold", functions = "italic,bold" } }
 
+-- vimtex
 vim.g.vimtex_view_general_viewer = 'okular'
 vim.g.vimtex_view_general_options = '--unique file:@pdf#src:@line@tex'
 vim.g.vimtex_indent_on_ampersands = 0
 -- Okular inverse search command: sh -c "echo -n \"%l\" | xclip -selection clipboard"
+
+-- markdown-preview.nvim
+vim.g.mkdp_theme = 'dark'
+vim.g.mkdp_auto_close = 0

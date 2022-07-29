@@ -16,3 +16,7 @@ vmap <Leader>/ gc
 nnoremap <Leader>gt <cmd>Gdiffsplit!<CR>
 nnoremap <Leader>g2 <cmd>diffget //2<CR>
 nnoremap <Leader>g3 <cmd>diffget //3<CR>
+
+" Markdown preview
+nnoremap <Leader>am <cmd>MarkdownPreview<CR>
+nnoremap <Leader>aM <cmd>MarkdownPreviewStop<CR>
