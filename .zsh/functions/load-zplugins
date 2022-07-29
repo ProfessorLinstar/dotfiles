@@ -1,0 +1,16 @@
+# Install and source plugins listed in $ZPLUGINS. Note that plugins should not
+# be sourced within a pipe, since doing so will lock a file descriptor (?), and 
+# may cause issues with powerline's gitstatus. Syntax of each element in
+# ZPLUGINS is as follows: "repository --options", separated by newlines. e.g.
+# ZPLUGINS="romkatv/powerlevel10k --depth=1
+#           zsh-users/zsh-syntax-highlighting"
+while read plugin; do
+  repository="$(echo $plugin | cut -d ' ' -f1)"
+
+  local plugdir=$ZPLUGDIR/$(basename $repository)
+  local plugname=$plugdir/$(basename $repository)
+
+  [[ -d $plugdir ]] || git clone https://github.com/${^^*} $plugdir
+  [[ -f $plugname.zsh ]]       && source $plugname.zsh
+  [[ -f $plugname.zsh-theme ]] && source $plugname.zsh-theme
+done <<< $ZPLUGINS

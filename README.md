@@ -87,4 +87,4 @@ And for bash:
 
 And finally, in general, shell-specific profile files source the global .profile file:
 
- - .<shell-profile\> &rarr; .profile
+ - .{shell-profile} &rarr; .profile

@@ -62,6 +62,7 @@ export LESS=-R
 # Variables and Aliases
 ################################################################################
 
+# variables
 HISTFILE=~/.zhistory
 HISTSIZE=10000
 SAVEHIST=10000
@@ -87,10 +88,15 @@ alias tt="gio trash"
 # Powerline et plugins
 ################################################################################
 
-source ~/.zsh/plugins/powerlevel10k/powerlevel10k.zsh-theme
-source ~/.zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source ~/.zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
-source ~/.zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
+ZCUSTOM=~/.zsh
+ZPLUGDIR=$ZCUSTOM/plugins
+fpath=( $ZCUSTOM/functions "${fpath[@]}" )
+ZPLUGINS="romkatv/powerlevel10k --depth=1
+          zsh-users/zsh-syntax-highlighting
+          zsh-users/zsh-autosuggestions
+          zsh-users/zsh-history-substring-search"
+
+autoload -Uz load-zplugins; load-zplugins
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

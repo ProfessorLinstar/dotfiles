@@ -8,19 +8,22 @@
 # Location: /usr/local/bin/vis
 ################################################################################
 
-cwd=$(pwd)
-no_session=true
+function _vis {
+  local cwd=$(pwd)
+  local no_session=true
 
-for i in {1..10}; do
-  if [[ -n $(find . -maxdepth 1 -name "Session.vim") ]]; then
-    no_session=false
-    vi -S
-    break
+  for i in {1..10}; do
+    if [[ -n $(find . -maxdepth 1 -name "Session.vim") ]]; then
+      no_session=false
+      vi -S
+      break
+    fi
+    cd ..
+  done
+
+  if $no_session; then
+    cd $cwd
+    echo "No Session.vim file found in CWD prefix."
   fi
-  cd ..
-done
-
-if $no_session; then
-  cd $cwd
-  echo "No Session.vim file found in CWD prefix."
-fi
+}
+_vis
