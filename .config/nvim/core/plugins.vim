@@ -26,5 +26,5 @@ let g:airline#extensions#tabline#ignore_bufadd_pat = 'defx|gundo|nerd_tree|start
 let g:airline_powerline_fonts = 1
 
 " markdown-preview.nvim
-vim.g.mkdp_theme = 'dark'
-vim.g.mkdp_auto_close = 0
+let g:mkdp_theme = 'dark'
+let g:mkdp_auto_close = 0
