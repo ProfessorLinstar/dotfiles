@@ -2,6 +2,7 @@
 # ~/.zshrc
 #
 
+
 [[ ! -o login ]] && . "$HOME/.zprofile"
 typeset -U PATH
 
@@ -12,9 +13,73 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+# Package list: zsh-theme-powerlevel10k
+#               zsh-autosuggestions
+#               zsh-syntax-highlighting
+#               zsh-history-substring-search
+#               zsh-completions
+
+source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
+
+autoload -Uz compinit colors
+compinit -d                                                     # Initialize zsh completion
+colors                                                          # Activate color-coding for completion
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+################################################################################
+# Variables and Aliases
+################################################################################
+
+# variables
+HISTFILE=~/.zhistory
+HISTSIZE=10000
+SAVEHIST=10000
+WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters part of the word
+
+# Color man pages
+export LESS_TERMCAP_mb=$'\E[01;32m'
+export LESS_TERMCAP_md=$'\E[01;32m'
+export LESS_TERMCAP_me=$'\E[0m'
+export LESS_TERMCAP_se=$'\E[0m'
+export LESS_TERMCAP_so=$'\E[01;47;34m'
+export LESS_TERMCAP_ue=$'\E[0m'
+export LESS_TERMCAP_us=$'\E[01;36m'
+export LESS=-R
+
+# defaults
+alias ls="ls --color=auto"
+alias la="ls -la"
+alias cp="cp -i"                                                # Confirm before overwriting something
+alias df='df -h'                                                # Human-readable sizes
+alias free='free -m'                                            # Show sizes in MB
+
+# shortcuts
+alias py=python3.10
+alias vi=lvim
+alias vim=\\nvim
+alias nvim=lvim
+alias vis="source vis"
+alias gitu='git add -u && git commit && git push'
+alias tt="gio trash"
+
 ################################################################################
 # zsh Options And Key Bindings
 ################################################################################
+
+## Keybindings
+bindkey -e                                                      # EMACS emulation default keymap
+bindkey '^[[C' forward-char                                     # Right key
+bindkey '^[[D' backward-char                                    # Left key
+bindkey '^[[A' history-substring-search-up                      # Up key
+bindkey '^[[B' history-substring-search-down                    # Down key
+
+bindkey '^[[3~' delete-char                                     # Delete key
+bindkey '^[[Z' undo                                             # Shift+tab undo last action
 
 ## Options section
 setopt correct                                                  # Auto correct mistakes
@@ -37,71 +102,3 @@ zstyle ':completion:*' rehash true                              # automatically 
 zstyle ':completion:*' accept-exact '*(N)'
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path ~/.zsh/cache
-
-## Keybindings
-bindkey -e                                                      # EMACS emulation keymap
-bindkey '^[[C'  forward-char                                    # Right key
-bindkey '^[[D'  backward-char                                   # Left key
-bindkey '^[[A' history-substring-search-up                      # Up key
-bindkey '^[[B' history-substring-search-down                    # Down key
-
-bindkey '^[[3~' delete-char                                     # Delete key
-bindkey '^[[Z' undo                                             # Shift+tab undo last action
-
-# Color man pages
-export LESS_TERMCAP_mb=$'\E[01;32m'
-export LESS_TERMCAP_md=$'\E[01;32m'
-export LESS_TERMCAP_me=$'\E[0m'
-export LESS_TERMCAP_se=$'\E[0m'
-export LESS_TERMCAP_so=$'\E[01;47;34m'
-export LESS_TERMCAP_ue=$'\E[0m'
-export LESS_TERMCAP_us=$'\E[01;36m'
-export LESS=-R
-
-################################################################################
-# Variables and Aliases
-################################################################################
-
-# variables
-HISTFILE=~/.zhistory
-HISTSIZE=10000
-SAVEHIST=10000
-WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters part of the word
-
-# defaults
-alias ls="ls --color=auto"
-alias la="ls -la"
-alias cp="cp -i"                                                # Confirm before overwriting something
-alias df='df -h'                                                # Human-readable sizes
-alias free='free -m'                                            # Show sizes in MB
-
-# shortcuts
-alias py=python3.10
-alias vi=lvim
-alias vim=\\nvim
-alias nvim=lvim
-alias vis="source vis"
-alias gitu='git add -u && git commit && git push'
-alias tt="gio trash"
-
-################################################################################
-# Powerline et plugins
-################################################################################
-
-ZCUSTOM=~/.zsh
-ZPLUGDIR=$ZCUSTOM/plugins
-fpath=( $ZCUSTOM/functions "${fpath[@]}" )
-
-autoload -Uz load-zplugins compinit colors
-
-load-zplugins                                                   # Install/source $ZSHPLUGINS (.zsh/functions/load-zplugins)
-source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
-source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
-source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
-
-compinit -d                                                     # Initialize zsh completion
-colors                                                          # Activate color-coding for completion
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
