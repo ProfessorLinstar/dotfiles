@@ -91,12 +91,17 @@ alias tt="gio trash"
 ZCUSTOM=~/.zsh
 ZPLUGDIR=$ZCUSTOM/plugins
 fpath=( $ZCUSTOM/functions "${fpath[@]}" )
-ZPLUGINS="romkatv/powerlevel10k --depth=1
-          zsh-users/zsh-syntax-highlighting
-          zsh-users/zsh-autosuggestions
-          zsh-users/zsh-history-substring-search"
 
-autoload -Uz load-zplugins; load-zplugins
+autoload -Uz load-zplugins compinit colors
+
+load-zplugins                                                   # Install/source $ZSHPLUGINS (.zsh/functions/load-zplugins)
+source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
+source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
+
+compinit -d                                                     # Initialize zsh completion
+colors                                                          # Activate color-coding for completion
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

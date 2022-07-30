@@ -12,6 +12,7 @@ nnoremap <Leader>aE <cmd>OpenFile<CR>
 nnoremap <Leader>af <cmd>if v:count \| let &shiftwidth=v:count \| let &tabstop=v:count \| endif<CR>
 nnoremap <Leader>aw <cmd>TrimTrailingWhitespace<CR>
 nnoremap <Leader>at <cmd>terminal<CR>
+nnoremap <expr> <Leader>ar ':let @' . nr2char(getchar()) . "=\'<C-r>" . nr2char(getchar()) . "\'<C-f>hi"
 
 nnoremap <Leader>bl <cmd>:buffers<CR>
 

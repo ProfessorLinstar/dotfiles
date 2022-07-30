@@ -4,13 +4,14 @@
 # ZPLUGINS is as follows: "repository --options", separated by newlines. e.g.
 # ZPLUGINS="romkatv/powerlevel10k --depth=1
 #           zsh-users/zsh-syntax-highlighting"
+
 while read plugin; do
   repository="$(echo $plugin | cut -d ' ' -f1)"
 
   local plugdir=$ZPLUGDIR/$(basename $repository)
   local plugname=$plugdir/$(basename $repository)
 
-  [[ -d $plugdir ]] || git clone https://github.com/${^^*} $plugdir
+  [[ -d $plugdir ]] || git clone https://github.com/${^^=plugin} $plugdir
   [[ -f $plugname.zsh ]]       && source $plugname.zsh
   [[ -f $plugname.zsh-theme ]] && source $plugname.zsh-theme
 done <<< $ZPLUGINS

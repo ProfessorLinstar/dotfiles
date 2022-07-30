@@ -38,6 +38,8 @@ This repository contains configuration files for my linux workspace. The followi
 ├── README.md                        --- dotfiles overview
 ├── root                             ---
 │   ├── etc                          ---
+│   │   ├── bluetooth                ---
+│   │   │   └── main.conf            --- 'autostart=true' to enable automatic bluetooth on boot
 │   │   ├── logid.cfg                --- Logid configuration file for Logitech peripherals
 │   │   ├── modprobe.d               ---
 │   │   │   └── hid_apple.conf       --- NuPhy Air75 fix for function keys

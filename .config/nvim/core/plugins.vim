@@ -15,10 +15,16 @@ Plug 'vim-airline/vim-airline-themes' " Airline themes
 Plug 'tpope/vim-obsession'            " Improve vim sessions functionality
 Plug 'moll/vim-bbye'                  " More intelligent buffer deletion
 Plug 'tpope/vim-fugitive'             " Git-integration for vim
+Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install' } " Git-integration for vim
 
 call plug#end()
 
+" vim-airline & vim-airline-themes
 let g:airline#extensions#tabline#show_buffers = 1
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#ignore_bufadd_pat = 'defx|gundo|nerd_tree|startify|tagbar|undotree|vimfiler'
 let g:airline_powerline_fonts = 1
+
+" markdown-preview.nvim
+vim.g.mkdp_theme = 'dark'
+vim.g.mkdp_auto_close = 0
