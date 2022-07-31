@@ -9,11 +9,7 @@
 
 function confirmrm {
   read -p "rm "$1"? [Y/n] " -r
-  if [[ $REPLY =~ ^[Yy]$ ]]; then
-    return 0
-  else
-    return 1
-  fi
+  [[ $REPLY =~ ^[Yy]$ ]] && return 0 || return 1
 }
 
 PACMAN_PACKAGES=(
