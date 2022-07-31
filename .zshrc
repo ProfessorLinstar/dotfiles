@@ -73,11 +73,8 @@ alias tt="gio trash"
 
 ## Keybindings
 bindkey -e                                                      # EMACS emulation default keymap
-bindkey '^[[C' forward-char                                     # Right key
-bindkey '^[[D' backward-char                                    # Left key
 bindkey '^[[A' history-substring-search-up                      # Up key
 bindkey '^[[B' history-substring-search-down                    # Down key
-
 bindkey '^[[3~' delete-char                                     # Delete key
 bindkey '^[[Z' undo                                             # Shift+tab undo last action
 
