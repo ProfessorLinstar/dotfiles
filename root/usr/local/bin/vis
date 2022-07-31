@@ -1,4 +1,5 @@
 #!/bin/sh
+ 
 ################################################################################
 # Program: vis
 # Description: Calls vi -S on first Session.vim file in prefix of current
