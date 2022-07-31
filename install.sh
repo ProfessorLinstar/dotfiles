@@ -25,7 +25,6 @@ PACMAN_PACKAGES=(
   "make"
   "python"
   "npm"
-  "node"
   "cargo"
 )
 
