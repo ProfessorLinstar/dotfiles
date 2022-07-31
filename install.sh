@@ -28,6 +28,10 @@ PACMAN_PACKAGES=(
   "cargo"
 )
 
+YAY_PACKAGES=(
+  "nerd-fonts-ubuntu-mono"
+)
+
 EXCLUDE_PATHS=(
   "./.git"
   "./dump"
@@ -35,7 +39,7 @@ EXCLUDE_PATHS=(
   "./README.md"
 )
 
-echo "Installing packages..."
+echo "Installing pacman packages..."
 for package in ${PACMAN_PACKAGES[@]}; do
   sudo pacman --needed -Sq $package < /dev/tty
 done
@@ -76,5 +80,11 @@ if ! command -v yay &>/dev/null; then
   echo "Installing yay..."
   sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
 fi
+
+echo "Installing yay packages..."
+for package in ${YAY_PACKAGES[@]}; do
+  yay --needed -Sq $package < /dev/tty
+done
+
 
 echo "Installation and linking complete."
