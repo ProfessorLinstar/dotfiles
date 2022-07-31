@@ -2,7 +2,6 @@
 # ~/.zshrc
 #
 
-
 [[ ! -o login ]] && . "$HOME/.zprofile"
 typeset -U PATH
 
