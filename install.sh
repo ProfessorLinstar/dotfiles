@@ -49,6 +49,7 @@ GNOME_PACMAN=(
   "gparted"
   "dconf-editor"
   "papirus-icon-theme"
+  "nautilus"
 )
 
 TERMINAL_YAY=(
