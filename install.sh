@@ -50,6 +50,12 @@ GNOME_PACMAN=(
   "dconf-editor"
   "papirus-icon-theme"
   "nautilus"
+  "gnome-screenshot"
+  "okular"
+  "gnome-system-monitor"
+  "fragments"
+  "gthumb"
+  "kid3"
 )
 
 TERMINAL_YAY=(
