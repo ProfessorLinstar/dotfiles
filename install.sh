@@ -48,6 +48,7 @@ GNOME_PACMAN=(
   "gnome-control-center"
   "gparted"
   "dconf-editor"
+  "nautilus"
 )
 
 YAY_PACKAGES=(
