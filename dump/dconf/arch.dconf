@@ -1,0 +1,118 @@
+[org/gnome/Lollypop]
+equalizer-custom=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+flatpak-access-migration=true
+import-playlists=true
+music-uris=['file:///home/linstar/Music/Music%20Files', 'file:///home/linstar/Music/Playlists']
+network-access-acl=1048574
+notification-flag=3
+volume-rate=0.5576934814453125
+window-maximized=true
+window-position=[1920, 0]
+window-size=[851, 600]
+
+[org/gnome/desktop/input-sources]
+sources=[('xkb', 'us')]
+xkb-options=['caps:escape']
+
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+enable-animations=false
+font-antialiasing='grayscale'
+font-hinting='slight'
+show-battery-percentage=true
+
+[org/gnome/desktop/notifications]
+application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem']
+
+[org/gnome/desktop/peripherals/keyboard]
+delay=uint32 197
+numlock-state=true
+repeat-interval=uint32 21
+
+[org/gnome/desktop/peripherals/touchpad]
+natural-scroll=false
+two-finger-scrolling-enabled=true
+
+[org/gnome/desktop/privacy]
+disable-microphone=false
+
+[org/gnome/desktop/session]
+idle-delay=uint32 900
+
+[org/gnome/desktop/wm/keybindings]
+maximize=['<Super>k']
+minimize=['<Super>d']
+move-to-monitor-down=@as []
+move-to-monitor-left=['<Control><Super>h']
+move-to-monitor-right=['<Control><Super>l']
+move-to-monitor-up=@as []
+move-to-workspace-left=['<Control><Super>k']
+move-to-workspace-right=['<Control><Super>j']
+show-desktop=['<Shift><Super>d']
+switch-applications=@as []
+switch-applications-backward=@as []
+switch-group=['<Super>grave']
+switch-group-backward=['<Shift><Super>grave']
+switch-to-workspace-left=['<Shift><Super>k']
+switch-to-workspace-right=['<Shift><Super>j']
+switch-windows=['<Alt>Tab']
+switch-windows-backward=['<Shift><Alt>Tab']
+unmaximize=['<Super>j']
+
+[org/gnome/nautilus/icon-view]
+captions=['detailed_type', 'none', 'none']
+default-zoom-level='small'
+
+[org/gnome/nautilus/list-view]
+default-visible-columns=['name', 'size', 'date_modified', 'starred', 'detailed_type']
+default-zoom-level='small'
+use-tree-view=true
+
+[org/gnome/nautilus/preferences]
+default-folder-viewer='list-view'
+search-filter-time-type='last_modified'
+search-view='list-view'
+
+[org/gnome/nautilus/window-state]
+initial-size=(1087, 606)
+maximized=false
+sidebar-width=230
+start-with-sidebar=true
+
+[org/gnome/settings-daemon/plugins/color]
+night-light-enabled=false
+
+[org/gnome/settings-daemon/plugins/media-keys]
+custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/']
+home=['<Super>e']
+screensaver=@as []
+www=['<Control><Alt>g']
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0]
+binding='<Control><Alt>t'
+command='gnome-terminal'
+name='Terminal'
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1]
+binding='<Control><Alt>s'
+command='gnome-screenshot -i'
+name='Screenshot'
+
+[org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2]
+binding='<Control><Alt>d'
+command='discord'
+name='Discord'
+
+[org/gnome/settings-daemon/plugins/power]
+idle-dim=true
+power-button-action='suspend'
+sleep-inactive-ac-timeout=1800
+sleep-inactive-battery-timeout=900
+
+[org/gnome/shell]
+app-picker-layout=[{'Alacritty.desktop': <{'position': <0>}>, 'uxterm.desktop': <{'position': <1>}>, 'insync.desktop': <{'position': <2>}>, 'xterm.desktop': <{'position': <3>}>, '9453dca3-262a-424e-a21f-637c7f955313': <{'position': <4>}>, 'Utilities': <{'position': <5>}>, 'a3dbb5b9-aa79-4927-97ef-78c2a0d2184b': <{'position': <6>}>, '96902fdc-fdc9-4c18-a70c-d8f84630a278': <{'position': <7>}>, '380e8fae-4c08-4d47-85d1-f2e6b98c4b98': <{'position': <8>}>, 'c3704a3a-67c4-41b4-b0ab-78707718f80c': <{'position': <9>}>, '443a4031-87b6-4526-bcce-993c57bee7cd': <{'position': <10>}>}]
+favorite-apps=['google-chrome.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Terminal.desktop', 'discord.desktop', 'org.manjaro.pamac.manager.desktop']
+welcome-dialog-last-shown-version='41.5'
+
+[org/gnome/shell/app-switcher]
+current-workspace-only=true
