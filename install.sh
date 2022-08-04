@@ -48,10 +48,16 @@ GNOME_PACMAN=(
   "gnome-control-center"
   "gparted"
   "dconf-editor"
+  "papirus-icon-theme"
 )
 
-YAY_PACKAGES=(
+TERMINAL_YAY=(
   "nerd-fonts-ubuntu-mono"
+)
+
+GNOME_YAY=(
+  "adw-gtk-theme"
+  "xcursor-breeze"
 )
 
 EXCLUDE_PATHS=(
@@ -61,12 +67,24 @@ EXCLUDE_PATHS=(
   "./README.md"
 )
 
+# Packages
 echo "Installing pacman packages for terminal..."
 sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty
-
 echo "Installing pacman packages for gnome..."
 sudo pacman --needed -Sq ${GNOME_PACMAN[@]} < /dev/tty
 
+if ! command -v yay &>/dev/null; then
+  echo "Installing yay..."
+  sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
+fi
+
+echo "Installing yay packages for terminal..."
+yay --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty
+echo "Installing yay packages for gnome..."
+yay --needed -Sq ${GNOME_YAY[@]} < /dev/tty
+
+
+# Lunarvim
 if [[ $(npm config get prefix) != "$HOME/.local" ]]; then
   echo "Resolving npm EACCES permissions..."
   npm config set prefix "$HOME/.local"
@@ -78,6 +96,8 @@ if ! command -v lvim &>/dev/null; then
   LV_BRANCH=rolling bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/rolling/utils/installer/install.sh)
 fi
 
+
+# dotfile links
 echo "Linking dotfiles..."
 while read dotfile; do
 
@@ -95,20 +115,11 @@ while read dotfile; do
 
 done <<< $(find . -type f -print | grep -Ev $(tr " " "|" <<< ${EXCLUDE_PATHS[@]}) )
 
+
+# tmux plugins
 if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
   echo "Installing tpm..."
   git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 fi
-
-if ! command -v yay &>/dev/null; then
-  echo "Installing yay..."
-  sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
-fi
-
-echo "Installing yay packages..."
-for package in ${YAY_PACKAGES[@]}; do
-  yay --needed -Sq $package < /dev/tty
-done
-
 
 echo "Installation and linking complete."
