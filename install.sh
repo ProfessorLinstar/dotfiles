@@ -40,6 +40,7 @@ TERMINAL_PACMAN=(
   "cmus"
   "locate"
   "networkmanager"
+  "xclip"
 )
 
 GNOME_PACMAN=(
