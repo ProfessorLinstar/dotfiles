@@ -38,6 +38,7 @@ TERMINAL_PACMAN=(
   "noto-fonts-extra"
   "cmus"
   "locate"
+  "NetworkManager"
 )
 
 GNOME_PACMAN=(
@@ -50,6 +51,8 @@ GNOME_PACMAN=(
   "dconf-editor"
   "papirus-icon-theme"
   "nautilus"
+  "bluez"
+  "bluez-utils"
 )
 
 TERMINAL_YAY=(
@@ -59,6 +62,8 @@ TERMINAL_YAY=(
 GNOME_YAY=(
   "adw-gtk-theme"
   "xcursor-breeze"
+  "insync"
+  "google-chrome"
 )
 
 EXCLUDE_PATHS=(
