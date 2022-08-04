@@ -36,9 +36,10 @@ TERMINAL_PACMAN=(
   "noto-fonts-cjk"
   "noto-fonts-emoji"
   "noto-fonts-extra"
+  "tree"
   "cmus"
   "locate"
-  "NetworkManager"
+  "networkmanager"
 )
 
 GNOME_PACMAN=(
