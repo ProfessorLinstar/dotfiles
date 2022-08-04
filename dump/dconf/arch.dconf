@@ -1,15 +1,3 @@
-[org/gnome/Lollypop]
-equalizer-custom=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-flatpak-access-migration=true
-import-playlists=true
-music-uris=['file:///home/linstar/Music/Music%20Files', 'file:///home/linstar/Music/Playlists']
-network-access-acl=1048574
-notification-flag=3
-volume-rate=0.5576934814453125
-window-maximized=true
-window-position=[1920, 0]
-window-size=[851, 600]
-
 [org/gnome/desktop/input-sources]
 sources=[('xkb', 'us')]
 xkb-options=['caps:escape']

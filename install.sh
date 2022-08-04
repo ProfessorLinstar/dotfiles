@@ -7,12 +7,18 @@
 # Location: ~/dotfiles/install.sh
 ################################################################################
 
+DOTFILES_ROOT="$HOME/dotfiles"
+if ! ([[ -d "$DOTFILES_ROOT" ]] && cd "$DOTFILES_ROOT"); then
+  echo "dotfiles must be at $DOTFILES_ROOT."
+  exit 1
+fi
+
 function confirmrm {
   read -p "rm "$1"? [Y/n] " -r
   [[ $REPLY =~ ^[Yy]$ ]] && return 0 || return 1
 }
 
-PACMAN_PACKAGES=(
+TERMINAL_PACMAN=(
   "zsh"
   "zsh-theme-powerlevel10k"
   "zsh-autosuggestions"
@@ -30,6 +36,18 @@ PACMAN_PACKAGES=(
   "noto-fonts-cjk"
   "noto-fonts-emoji"
   "noto-fonts-extra"
+  "cmus"
+  "locate"
+)
+
+GNOME_PACMAN=(
+  "gnome-shell"
+  "gdm"
+  "gnome-terminal"
+  "gnome-tweaks"
+  "gnome-control-center"
+  "gparted"
+  "dconf-editor"
 )
 
 YAY_PACKAGES=(
@@ -43,10 +61,11 @@ EXCLUDE_PATHS=(
   "./README.md"
 )
 
-echo "Installing pacman packages..."
-for package in ${PACMAN_PACKAGES[@]}; do
-  sudo pacman --needed -Sq $package < /dev/tty
-done
+echo "Installing pacman packages for terminal..."
+sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty
+
+echo "Installing pacman packages for gnome..."
+sudo pacman --needed -Sq ${GNOME_PACMAN[@]} < /dev/tty
 
 if [[ $(npm config get prefix) != "$HOME/.local" ]]; then
   echo "Resolving npm EACCES permissions..."
@@ -62,17 +81,17 @@ fi
 echo "Linking dotfiles..."
 while read dotfile; do
 
-  if [[ -n $(grep -E "./root" <<< $dotfile) ]]; then
-    target=$(sed "s@\./root\(.*\)@\1@" <<< $dotfile)
+  if [[ -n $(grep -E "^\./root" <<< $dotfile) ]]; then
+    target=$(sed "s@^\./root\(.*\)@\1@" <<< $dotfile)
     user="sudo"
   else
-    target=$(sed "s@\.\(.*\)@$HOME\1@" <<< $dotfile)
+    target=$(sed "s@^\.\(.*\)@$HOME\1@" <<< $dotfile)
     user=""
   fi
 
   [[ -d $(dirname $target) ]] || $user mkdir -pv $(dirname $target)
   [[ -f $target ]] && [[ ! -L $target ]] && confirmrm $target < /dev/tty && $user rm -v $target
-  [[ -L $target ]] || $user ln -sv $(sed "s@\.\(.*\)@"$(pwd)"\1@" <<< $dotfile) $target
+  [[ -L $target ]] || $user ln -sv $(sed "s@^\.\(.*\)@"$(pwd)"\1@" <<< $dotfile) $target
 
 done <<< $(find . -type f -print | grep -Ev $(tr " " "|" <<< ${EXCLUDE_PATHS[@]}) )
 
