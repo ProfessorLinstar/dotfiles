@@ -19,13 +19,21 @@ PACMAN_PACKAGES=(
   "zsh-syntax-highlighting"
   "zsh-history-substring-search"
   "zsh-completions"
-  "neovim"
   "tmux"
   "git"
   "make"
   "python"
   "npm"
   "cargo"
+  "neovim"
+  "noto-fonts"
+  "noto-fonts-cjk"
+  "noto-fonts-emoji"
+  "noto-fonts-extra"
+)
+
+YAY_PACKAGES=(
+  "nerd-fonts-ubuntu-mono"
 )
 
 EXCLUDE_PATHS=(
@@ -35,10 +43,21 @@ EXCLUDE_PATHS=(
   "./README.md"
 )
 
-echo "Installing packages..."
+echo "Installing pacman packages..."
 for package in ${PACMAN_PACKAGES[@]}; do
   sudo pacman --needed -Sq $package < /dev/tty
 done
+
+if [[ $(npm config get prefix) != "$HOME/.local" ]]; then
+  echo "Resolving npm EACCES permissions..."
+  npm config set prefix "$HOME/.local"
+fi
+
+if ! command -v lvim &>/dev/null; then
+  echo "Installing Lunarvim..."
+  gio trash -v ~/.config/lvim/config.lua # Prevent installation from overwriting existing config
+  LV_BRANCH=rolling bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/rolling/utils/installer/install.sh)
+fi
 
 echo "Linking dotfiles..."
 while read dotfile; do
@@ -62,19 +81,15 @@ if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
   git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 fi
 
-if [[ $(npm config get prefix) != "$HOME/.local" ]]; then
-  echo "Resolving npm EACCES permissions..."
-  npm config set prefix "$HOME/.local"
-fi
-
-if ! command -v lvim &>/dev/null; then
-  echo "Installing Lunarvim..."
-  LV_BRANCH=rolling bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/rolling/utils/installer/install.sh)
-fi
-
 if ! command -v yay &>/dev/null; then
   echo "Installing yay..."
   sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
 fi
+
+echo "Installing yay packages..."
+for package in ${YAY_PACKAGES[@]}; do
+  yay --needed -Sq $package < /dev/tty
+done
+
 
 echo "Installation and linking complete."
