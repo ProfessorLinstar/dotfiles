@@ -4,9 +4,12 @@ xkb-options=['caps:escape']
 
 [org/gnome/desktop/interface]
 color-scheme='prefer-dark'
+cursor-theme='Breeze'
 enable-animations=false
 font-antialiasing='grayscale'
 font-hinting='slight'
+gtk-theme='Adw-dark'
+icon-theme='Papirus-Dark'
 show-battery-percentage=true
 
 [org/gnome/desktop/notifications]
