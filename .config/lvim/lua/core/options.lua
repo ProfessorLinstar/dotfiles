@@ -30,7 +30,7 @@ formatters.setup {
 
 local linters = require "lvim.lsp.null-ls.linters"
 linters.setup {
-  { name = "pylint", args = {"--disable=C0321,W0603"} },
+  { name = "pylint", args = {"--disable=C0321,W0603", "--max-line-length", "150"} },
 }
 
 --------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ lvim.plugins = {
 
 -- Extra setup
 require "lsp_signature".setup { toggle_key = "<C-s>", select_signature_key = "<M-s>" }
-require "onedark".setup { style = "warmer", toggle_style_key = "<C-M-S-F12>", code_style = { keywords = "bold", functions = "italic,bold" } }
+require "onedark".setup { style = "warmer", code_style = { keywords = "bold", functions = "italic,bold" } }
 
 -- vimtex
 vim.g.vimtex_view_general_viewer = 'okular'

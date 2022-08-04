@@ -89,3 +89,5 @@ And for bash:
 And finally, in general, shell-specific profile files source the global .profile file:
 
  - .{shell-profile} &rarr; .profile
+
+Note: in an attempt to fix the occasional suspend failure, I have added "nvidia nvidia_modeset nvidia_uvm nvidia_drm" to MODULES in /etc/mkinitcpio.conf, as per this [suggestion](https://bbs.archlinux.org/viewtopic.php?id=262221) to enable [KMS](https://wiki.archlinux.org/title/Kernel_mode_setting#Early_KMS_start).
