@@ -76,8 +76,10 @@ GNOME_PACMAN=(
   "okular"
   "gnome-system-monitor"
   "fragments"
-  "gthumb"
-  "kid3"
+  "gthumb"                                                      # Image viewer
+  "totem"                                                       # Video player
+  "gst-libav"                                                   # Required multimedia framework for totem
+  "kid3"                                                        # audio metadata editor
   "bluez-utils"                                                 # Bluetooth support
   "discord"                                                     # Social media
   "qgnomeplatform-qt5"                                          # Gnome themes (adwaita) for qt5 applications
