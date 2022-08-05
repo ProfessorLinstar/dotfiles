@@ -61,8 +61,17 @@ GNOME_PACMAN=(
   "fragments"
   "gthumb"
   "kid3"
-  "bluez"
-  "bluez-utils"
+  "bluez-utils"                                                 # Bluetooth support
+  "discord"                                                     # Social media
+  "qgnomeplatform-qt5"                                          # Gnome themes (adwaita) for qt5 applications
+)
+
+LATEX_PACMAN=(
+  "texlive-most"                                                # Provide most latex packages
+  "texlive-biblatexextra"                                       # Enable biblatex
+  "biber"                                                       # Enable biber for latexmk
+  "perl-clone"                                                  # Fix missing dependency for biber (08-05-2022)
+  "cpanminus"                                                   # install cpan modules more easily
 )
 
 TERMINAL_YAY=(
@@ -74,6 +83,7 @@ GNOME_YAY=(
   "xcursor-breeze"
   "insync"
   "google-chrome"
+  "caffeine-ng"
 )
 
 EXCLUDE_PATHS=(
@@ -88,6 +98,8 @@ echo "Installing pacman packages for terminal..."
 sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty
 echo "Installing pacman packages for gnome..."
 sudo pacman --needed -Sq ${GNOME_PACMAN[@]} < /dev/tty
+echo "Installing pacman packages for latex..."
+sudo pacman --needed -Sq ${LATEX_PACMAN[@]} < /dev/tty
 
 if ! command -v yay &>/dev/null; then
   echo "Installing yay..."

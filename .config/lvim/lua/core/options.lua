@@ -49,10 +49,7 @@ lvim.plugins = {
   { "navarasu/onedark.nvim" },      -- More colorful onedark theme
 
   -- filetype specific plugins
-  {
-    "lervag/vimtex",                -- Provides LaTeX bindings and compilation features
-    ft = { "tex", "sty" }
-  },
+  { "lervag/vimtex", },             -- Provides LaTeX bindings and compilation features
   {
     "iamcco/markdown-preview.nvim", -- Markdown preview
     run = "cd app && npm install",
