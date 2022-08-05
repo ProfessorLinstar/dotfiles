@@ -7,17 +7,20 @@
 # Location: ~/dotfiles/install.sh
 ################################################################################
 
+# Ensure that cwd is at ~/dotfiles
 DOTFILES_ROOT="$HOME/dotfiles"
 if ! ([[ -d "$DOTFILES_ROOT" ]] && cd "$DOTFILES_ROOT"); then
   echo "dotfiles must be at $DOTFILES_ROOT."
   exit 1
 fi
 
+# Get user confirmation.
 function confirm {
   read -p "$1 [Y/n] " -r
   [[ $REPLY =~ ^[Yy]$ ]] && return 0 || return 1
 }
 
+# Tries to $pattern in $replace in $file if it exists, and backs up original in ./.backup.
 function confirmsed {
   local file="$1"; local pattern="$2"; local replace="$3"; local user="$4"
 
@@ -36,46 +39,46 @@ function confirmsed {
 
 
 TERMINAL_PACMAN=(
-  "zsh"
-  "zsh-theme-powerlevel10k"
-  "zsh-autosuggestions"
-  "zsh-syntax-highlighting"
-  "zsh-history-substring-search"
-  "zsh-completions"
-  "tmux"
-  "git"
-  "make"
-  "python"
-  "npm"
-  "cargo"
-  "neovim"
-  "noto-fonts"
-  "noto-fonts-cjk"
-  "noto-fonts-emoji"
-  "noto-fonts-extra"
-  "tree"
-  "cmus"
-  "locate"
-  "networkmanager"
-  "xclip"
-  "man"
-  "man-pages"
+  "zsh"                                                         #
+  "zsh-theme-powerlevel10k"                                     #
+  "zsh-autosuggestions"                                         #
+  "zsh-syntax-highlighting"                                     #
+  "zsh-history-substring-search"                                #
+  "zsh-completions"                                             #
+  "tmux"                                                        #
+  "git"                                                         #
+  "make"                                                        #
+  "python"                                                      #
+  "npm"                                                         #
+  "cargo"                                                       #
+  "neovim"                                                      #
+  "noto-fonts"                                                  #
+  "noto-fonts-cjk"                                              #
+  "noto-fonts-emoji"                                            #
+  "noto-fonts-extra"                                            #
+  "tree"                                                        #
+  "cmus"                                                        #
+  "locate"                                                      #
+  "networkmanager"                                              #
+  "xclip"                                                       #
+  "man"                                                         #
+  "man-pages"                                                   #
 )
 
 GNOME_PACMAN=(
-  "gnome-shell"
-  "gdm"
-  "gnome-terminal"
-  "gnome-tweaks"
-  "gnome-control-center"
-  "gparted"
-  "dconf-editor"
-  "papirus-icon-theme"
-  "nautilus"
-  "gnome-screenshot"
-  "okular"
-  "gnome-system-monitor"
-  "fragments"
+  "gnome-shell"                                                 #
+  "gdm"                                                         #
+  "gnome-terminal"                                              #
+  "gnome-tweaks"                                                #
+  "gnome-control-center"                                        #
+  "gparted"                                                     #
+  "dconf-editor"                                                #
+  "papirus-icon-theme"                                          #
+  "nautilus"                                                    #
+  "gnome-screenshot"                                            #
+  "okular"                                                      # PDF viewer
+  "gnome-system-monitor"                                        # System monitor
+  "fragments"                                                   # Torrent downloader
   "gthumb"                                                      # Image viewer
   "totem"                                                       # Video player
   "gst-libav"                                                   # Required multimedia framework for totem
@@ -94,22 +97,23 @@ LATEX_PACMAN=(
 )
 
 TERMINAL_YAY=(
-  "nerd-fonts-ubuntu-mono"
+  "nerd-fonts-ubuntu-mono"                                      #
 )
 
 GNOME_YAY=(
-  "adw-gtk-theme"
-  "xcursor-breeze"
-  "insync"
-  "google-chrome"
+  "adw-gtk-theme"                                               #
+  "xcursor-breeze"                                              #
+  "insync"                                                      #
+  "google-chrome"                                               #
 )
 
+# Exclude paths beginning with these prefixes when linking
 EXCLUDE_PATHS=(
-  "./.git"
-  "./dump"
-  "./install.sh"
-  "./README.md"
-  "./.backup"
+  "./.git"                                                      #
+  "./dump"                                                      #
+  "./install.sh"                                                #
+  "./README.md"                                                 #
+  "./.backup"                                                   #
 )
 
 # Packages
