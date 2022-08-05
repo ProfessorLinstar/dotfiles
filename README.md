@@ -65,6 +65,8 @@ I try to avoid modifying plugin files directly, but the following have been chan
    - `vis` attempts to execute `vi -S` in the closest parent directory that contains a `Session.vim` file. When tmux is resurrected, the cwd of the pane may not be the same as the Session.vim file, so `nvim -S` may not work.
  - **~/.local/share/lunarvim/site/pack/packer/opt/vimtex/autoload/vimtex/syntax/core.vim**: `48-57` removed from `set iskeyword`, so `nvim -S` may not work.
    - Prevents numbers from being recognized as keywords in LaTeX macros when determining syntax highlighting.
+ - **/etc/bluetooth/main.conf**: `#Autoenable=false` changed to `Autoenable=true`
+   - Allows bluetooth to start automatically on boot and after suspend. `main.conf` must be a normal file, rather than a symlink.
 
 ## Shell Startup Files
 The key things to know regarding shell startup files are the following. By default,

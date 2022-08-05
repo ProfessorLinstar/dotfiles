@@ -13,10 +13,27 @@ if ! ([[ -d "$DOTFILES_ROOT" ]] && cd "$DOTFILES_ROOT"); then
   exit 1
 fi
 
-function confirmrm {
-  read -p "rm "$1"? [Y/n] " -r
+function confirm {
+  read -p "$1 [Y/n] " -r
   [[ $REPLY =~ ^[Yy]$ ]] && return 0 || return 1
 }
+
+function confirmsed {
+  local file="$1"; local pattern="$2"; local replace="$3"; local user="$4"
+
+  if [[ ! -f "$file" ]]; then
+    echo "Warning: $file does not exist." 
+
+  elif grep -Eq "^$pattern$" < "$file" && confirm "Edit $file to replace '$pattern' with '$replace'?"; then
+    local backup="$DOTFILES_ROOT/.backup$file"
+    mkdir -pv "$(dirname $backup)" && cp -v "$file" "$backup"
+    $user sed -Ei "s@^$pattern\$@$replace@" "$file"
+
+  else
+    grep -Eq "^$replace$" < "$file" || echo "Warning: Neither '$pattern' nor '$replace' were found in $file."
+  fi
+}
+
 
 TERMINAL_PACMAN=(
   "zsh"
@@ -68,7 +85,7 @@ GNOME_PACMAN=(
 
 LATEX_PACMAN=(
   "texlive-most"                                                # Provide most latex packages
-  "texlive-biblatexextra"                                       # Enable biblatex
+  "texlive-bibtexextra"                                         # Enable biblatex
   "biber"                                                       # Enable biber for latexmk
   "perl-clone"                                                  # Fix missing dependency for biber (08-05-2022)
   "cpanminus"                                                   # install cpan modules more easily
@@ -83,7 +100,6 @@ GNOME_YAY=(
   "xcursor-breeze"
   "insync"
   "google-chrome"
-  "caffeine-ng"
 )
 
 EXCLUDE_PATHS=(
@@ -91,6 +107,7 @@ EXCLUDE_PATHS=(
   "./dump"
   "./install.sh"
   "./README.md"
+  "./.backup"
 )
 
 # Packages
@@ -107,9 +124,9 @@ if ! command -v yay &>/dev/null; then
 fi
 
 echo "Installing yay packages for terminal..."
-yay --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty
+yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty
 echo "Installing yay packages for gnome..."
-yay --needed -Sq ${GNOME_YAY[@]} < /dev/tty
+yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]} < /dev/tty
 
 
 # logiops
@@ -161,10 +178,17 @@ while read dotfile; do
   fi
 
   [[ -d $(dirname $target) ]] || $user mkdir -pv $(dirname $target)
-  [[ -f $target ]] && [[ ! -L $target ]] && confirmrm $target < /dev/tty && $user rm -v $target
+  [[ -f $target ]] && [[ ! -L $target ]] && $user rm -vi $target
   [[ -L $target ]] || $user ln -sv $(sed "s@^\.\(.*\)@"$(pwd)"\1@" <<< $dotfile) $target
 
 done <<< $(find . -type f -print | grep -Ev $(tr " " "|" <<< ${EXCLUDE_PATHS[@]}) )
+
+
+# Manual modifications
+confirmsed /etc/bluetooth/main.conf "#AutoEnable=false" "AutoEnable=true" sudo
+confirmsed ~/.local/share/lunarvim/site/pack/packer/opt/vimtex/autoload/vimtex/syntax/core.vim "  syntax iskeyword 48-57,a-z,A-Z,192-255" "  syntax iskeyword a-z,A-Z,192-255"
+confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim -S"' '		echo "vis"'
+confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim"' '		echo "vis"'
 
 
 # tmux plugins
