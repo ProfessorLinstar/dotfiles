@@ -4,6 +4,7 @@ xkb-options=['caps:escape']
 
 [org/gnome/desktop/interface]
 color-scheme='prefer-dark'
+cursor-blink=false
 cursor-theme='Breeze'
 enable-animations=false
 font-antialiasing='grayscale'
@@ -49,6 +50,9 @@ switch-to-workspace-right=['<Shift><Super>j']
 switch-windows=['<Alt>Tab']
 switch-windows-backward=['<Shift><Alt>Tab']
 unmaximize=['<Super>j']
+
+[org/gnome/mutter]
+workspaces-only-on-primary=false
 
 [org/gnome/nautilus/icon-view]
 captions=['detailed_type', 'none', 'none']

@@ -17,7 +17,7 @@ Plug 'moll/vim-bbye'                  " More intelligent buffer deletion
 Plug 'tpope/vim-fugitive'             " Git-integration for vim
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install' } " Markdown integration for neovim
 
-Plug '~/Documents/GitHub/vimkeys'     " My plugin!
+" Plug '~/Documents/GitHub/vimkeys'     " My plugin!
 
 call plug#end()
 

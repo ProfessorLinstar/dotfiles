@@ -41,6 +41,8 @@ TERMINAL_PACMAN=(
   "locate"
   "networkmanager"
   "xclip"
+  "man"
+  "man-pages"
 )
 
 GNOME_PACMAN=(
@@ -89,13 +91,36 @@ sudo pacman --needed -Sq ${GNOME_PACMAN[@]} < /dev/tty
 
 if ! command -v yay &>/dev/null; then
   echo "Installing yay..."
-  sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
+  sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
 fi
 
 echo "Installing yay packages for terminal..."
 yay --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty
 echo "Installing yay packages for gnome..."
 yay --needed -Sq ${GNOME_YAY[@]} < /dev/tty
+
+
+# logiops
+if ! systemctl list-unit-files | grep -q "logid.service"; then
+  echo "Installing PixlOne/logiops..."
+  sudo pacman --needed -S cmake libevdev libconfig pkgconf
+  git clone https://github.com/PixlOne/logiops
+  cd logiops
+
+  mkdir build
+  cd build
+  cmake ..
+  make
+  sudo make install
+
+  cd ../..
+  rm -rf logiops
+fi
+
+if [[ $(systemctl is-active logid.service) != "active" ]]; then
+  echo "Enabling logid.service..."
+  sudo systemctl enable --now logid.service
+fi
 
 
 # Lunarvim
