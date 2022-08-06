@@ -166,3 +166,15 @@ welcome-dialog-last-shown-version='41.5'
 
 [org/gnome/shell/app-switcher]
 current-workspace-only=true
+
+[org/gnome/terminal/legacy/profiles:]
+default='00c3d612-8ded-4ac4-8dc4-23edf1b5f277'
+list=['00c3d612-8ded-4ac4-8dc4-23edf1b5f277']
+
+[org/gnome/terminal/legacy/profiles:/:00c3d612-8ded-4ac4-8dc4-23edf1b5f277]
+audible-bell=false
+font='UbuntuMono Nerd Font Mono 12'
+text-blink-mode='always'
+use-system-font=false
+use-theme-colors=true
+visible-name='default'
