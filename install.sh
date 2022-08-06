@@ -46,12 +46,14 @@ TERMINAL_PACMAN=(
   "zsh-history-substring-search"                                #
   "zsh-completions"                                             #
   "tmux"                                                        #
-  "git"                                                         #
-  "make"                                                        #
-  "python"                                                      #
-  "npm"                                                         #
-  "cargo"                                                       #
-  "neovim"                                                      #
+  "git"                                                         # install.sh
+  "make"                                                        # Lunarvim dependency
+  "python"                                                      # Lunarvim dependency
+  "npm"                                                         # Lunarvim dependency
+  "cargo"                                                       # Lunarvim dependency
+  "ripgrep"                                                     # Lunarvim telescope dependency
+  "fd"                                                          # Lunarvim telescope dependency
+  "neovim"                                                      # Text editor
   "noto-fonts"                                                  #
   "noto-fonts-cjk"                                              #
   "noto-fonts-emoji"                                            #
