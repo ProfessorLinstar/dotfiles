@@ -3,4 +3,10 @@
 .DS_Store
 desktop.ini
 node_modules
-.backup 
+.backup
+venv
+*.gddoc
+*.gddrawing
+*.gdslides
+*.gdsheet
+*.gdlink

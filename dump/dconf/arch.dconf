@@ -109,6 +109,10 @@ unmaximize=['<Super>j']
 [org/gnome/mutter]
 workspaces-only-on-primary=false
 
+[org/gnome/mutter/keybindings]
+toggle-tiled-left=['<Super>h']
+toggle-tiled-right=['<Super>l']
+
 [org/gnome/nautilus/icon-view]
 captions=['detailed_type', 'none', 'none']
 default-zoom-level='small'
