@@ -7,6 +7,39 @@
 # Location: ~/dotfiles/install.sh
 ################################################################################
 
+usage() { echo "Usage: $0 [-p|--skip-pacman] [-y|--skip-yay]" 1>&2; }
+
+SHORT=py
+LONG=skip-pacman,skip-yay
+OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
+
+SKIP_PACMAN=false
+SKIP_YAY=false
+
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    -p | --skip-pacman )
+      SKIP_PACMAN=true
+      shift
+      ;;
+    -y | --skip-yay )
+      SKIP_YAY=true
+      shift
+      ;;
+    -- )
+      shift
+      break
+      ;;
+    * )
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+exit 0
+
 # Ensure that cwd is at ~/dotfiles
 DOTFILES_ROOT="$HOME/dotfiles"
 BACKUPS_ROOT="$DOTFILES_ROOT/.backup"
@@ -119,23 +152,29 @@ EXCLUDE_PATHS=(
   "./.backup"                                                   # temporary backup file of modified files
 )
 
-# Packages
-echo "Installing pacman packages for terminal..."
-sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty
-echo "Installing pacman packages for gnome..."
-sudo pacman --needed -Sq ${GNOME_PACMAN[@]} < /dev/tty
-echo "Installing pacman packages for latex..."
-sudo pacman --needed -Sq ${LATEX_PACMAN[@]} < /dev/tty
 
-if ! command -v yay &>/dev/null; then
-  echo "Installing yay..."
-  sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
+# Pacman packages
+if ! SKIP_PACMAN; then
+  echo "Installing pacman packages for terminal..."
+  sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty
+  echo "Installing pacman packages for gnome..."
+  sudo pacman --needed -Sq ${GNOME_PACMAN[@]} < /dev/tty
+  echo "Installing pacman packages for latex..."
+  sudo pacman --needed -Sq ${LATEX_PACMAN[@]} < /dev/tty
 fi
 
-echo "Installing yay packages for terminal..."
-yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty
-echo "Installing yay packages for gnome..."
-yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]} < /dev/tty
+# Yay packages
+if ! SKIP_YAY; then
+  if ! command -v yay &>/dev/null; then
+    echo "Installing yay..."
+    sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
+  fi
+
+  echo "Installing yay packages for terminal..."
+  yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty
+  echo "Installing yay packages for gnome..."
+  yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]} < /dev/tty
+fi
 
 
 # logiops
