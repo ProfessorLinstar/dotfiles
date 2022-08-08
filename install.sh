@@ -7,38 +7,33 @@
 # Location: ~/dotfiles/install.sh
 ################################################################################
 
-usage() { echo "Usage: $0 [-p|--skip-pacman] [-y|--skip-yay] [-h|--help]" >&2; }
+usage() { echo "Usage: $0 [-pgvylmth] " >&2; }
 
-SHORT=pyh
-LONG=skip-pacman,skip-yay,help
+SHORT=pgvylmth
+LONG=skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmus,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
 SKIP_PACMAN=false
 SKIP_YAY=false
+SKIP_LOGIOPS=false
+SKIP_LUNARVIM=false
+SKIP_LINK=false
+SKIP_MANUAL=false
+SKIP_TMUX=false
 
 eval set -- "$OPTS"
 while true; do
   case "$1" in
-    -p | --skip-pacman )
-      SKIP_PACMAN=true
-      shift
-      ;;
-    -y | --skip-yay )
-      SKIP_YAY=true
-      shift
-      ;;
-    -h | --help )
-      usage
-      exit 0
-      ;;
-    -- )
-      shift
-      break
-      ;;
-    * )
-      usage
-      exit 1
-      ;;
+    -p | --skip-pacman )   SKIP_PACMAN=true;   shift; ;;
+    -g | --skip-logiops )  SKIP_LOGIOPS=true;  shift; ;;
+    -v | --skip-lunarvim ) SKIP_LUNARVIM=true; shift; ;;
+    -y | --skip-yay )      SKIP_YAY=true;      shift; ;;
+    -l | --skip-link )     SKIP_LINK=true;     shift; ;;
+    -m | --skip-manual )   SKIP_MANUAL=true;   shift; ;;
+    -t | --skip-tmux )     SKIP_TMUX=true;     shift; ;;
+    -h | --help ) usage; exit 0; ;;
+    -- ) shift; break; ;;
+    * ) usage; exit 1; ;;
   esac
 done
 
@@ -156,7 +151,7 @@ EXCLUDE_PATHS=(
 
 
 # Pacman packages
-if ! SKIP_PACMAN; then
+if ! $SKIP_PACMAN; then
   echo "Installing pacman packages for terminal..."
   sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty
   echo "Installing pacman packages for gnome..."
@@ -166,7 +161,7 @@ if ! SKIP_PACMAN; then
 fi
 
 # Yay packages
-if ! SKIP_YAY; then
+if ! $SKIP_YAY; then
   if ! command -v yay &>/dev/null; then
     echo "Installing yay..."
     sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
@@ -180,71 +175,81 @@ fi
 
 
 # logiops
-if ! systemctl list-unit-files | grep -q "logid.service"; then
-  echo "Installing PixlOne/logiops..."
-  sudo pacman --needed -S cmake libevdev libconfig pkgconf
-  git clone https://github.com/PixlOne/logiops
-  cd logiops
+if ! $SKIP_LOGIOPS; then
+  if ! systemctl list-unit-files | grep -q "logid.service"; then
+    echo "Installing PixlOne/logiops..."
+    sudo pacman --needed -S cmake libevdev libconfig pkgconf
+    git clone https://github.com/PixlOne/logiops
+    cd logiops
 
-  mkdir build
-  cd build
-  cmake ..
-  make
-  sudo make install
+    mkdir build
+    cd build
+    cmake ..
+    make
+    sudo make install
 
-  cd ../..
-  rm -rf logiops
+    cd ../..
+    rm -rf logiops
+  fi
+
+  if [[ $(systemctl is-active logid.service) != "active" ]]; then
+    echo "Enabling logid.service..."
+    sudo systemctl enable --now logid.service
+  fi
 fi
 
-if [[ $(systemctl is-active logid.service) != "active" ]]; then
-  echo "Enabling logid.service..."
-  sudo systemctl enable --now logid.service
-fi
 
 
 # Lunarvim
-if [[ $(npm config get prefix) != "$HOME/.local" ]]; then
-  echo "Resolving npm EACCES permissions..."
-  npm config set prefix "$HOME/.local"
-fi
+if ! $SKIP_LUNARVIM; then
+  if [[ $(npm config get prefix) != "$HOME/.local" ]]; then
+    echo "Resolving npm EACCES permissions..."
+    npm config set prefix "$HOME/.local"
+  fi
 
-if ! command -v lvim &>/dev/null; then
-  echo "Installing Lunarvim..."
-  gio trash -v ~/.config/lvim/config.lua # Prevent installation from overwriting existing config
-  LV_BRANCH=rolling bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/rolling/utils/installer/install.sh)
+  if ! command -v lvim &>/dev/null; then
+    echo "Installing Lunarvim..."
+    gio trash -v ~/.config/lvim/config.lua # Prevent installation from overwriting existing config
+    LV_BRANCH=rolling bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/rolling/utils/installer/install.sh)
+  fi
 fi
 
 
 # dotfile links
-echo "Linking dotfiles..."
-while read dotfile; do
+if ! $SKIP_LINK; then
+  while read dotfile; do
 
-  if [[ -n $(grep -E "^\./root" <<< $dotfile) ]]; then
-    target=$(sed "s@^\./root\(.*\)@\1@" <<< $dotfile)
-    user="sudo"
-  else
-    target=$(sed "s@^\.\(.*\)@$HOME\1@" <<< $dotfile)
-    user=""
-  fi
+    if [[ -n $(grep -E "^\./root" <<< $dotfile) ]]; then
+      target=$(sed "s@^\./root\(.*\)@\1@" <<< $dotfile)
+      user="sudo"
+    else
+      target=$(sed "s@^\.\(.*\)@$HOME\1@" <<< $dotfile)
+      user=""
+    fi
 
-  [[ -d $(dirname $target) ]] || $user mkdir -pv $(dirname $target)
-  [[ -f $target ]] && [[ ! -L $target ]] && $user mv -vi $target "$BACKUPS_ROOT$target" < /dev/tty
-  [[ -L $target ]] || $user ln -sv $(sed "s@^\.\(.*\)@"$(pwd)"\1@" <<< $dotfile) $target
+    [[ -d $(dirname $target) ]] || $user mkdir -pv $(dirname $target)
+    [[ -f $target ]] && [[ ! -L $target ]] && $user mv -vi $target "$BACKUPS_ROOT$target" < /dev/tty
+    [[ -L $target ]] || $user ln -sv $(sed "s@^\.\(.*\)@"$(pwd)"\1@" <<< $dotfile) $target
 
-done <<< $(find . -type f -print | grep -Ev $(tr " " "|" <<< ${EXCLUDE_PATHS[@]}) )
+  done <<< $(find . -type f -print | grep -Ev $(tr " " "|" <<< ${EXCLUDE_PATHS[@]}) )
+fi
 
 
 # Manual modifications
-confirmsed /etc/bluetooth/main.conf "#AutoEnable=false" "AutoEnable=true" sudo
-confirmsed ~/.local/share/lunarvim/site/pack/packer/opt/vimtex/autoload/vimtex/syntax/core.vim "  syntax iskeyword 48-57,a-z,A-Z,192-255" "  syntax iskeyword a-z,A-Z,192-255"
-confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim -S"' '		echo "vis"'
-confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim"' '		echo "vis"'
+if ! $SKIP_MANUAL; then
+  confirmsed /etc/bluetooth/main.conf "#AutoEnable=false" "AutoEnable=true" sudo
+  confirmsed ~/.local/share/lunarvim/site/pack/packer/opt/vimtex/autoload/vimtex/syntax/core.vim "  syntax iskeyword 48-57,a-z,A-Z,192-255" "  syntax iskeyword a-z,A-Z,192-255"
+  confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim -S"' '		echo "vis"'
+  confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim"' '		echo "vis"'
+fi
 
 
 # tmux plugins
-if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
-  echo "Installing tpm..."
-  git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+if ! $SKIP_TMUX; then
+  if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
+    echo "Installing tpm..."
+    git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+  fi
 fi
 
-echo "Installation and linking complete."
+echo "Installation complete."
