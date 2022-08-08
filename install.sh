@@ -117,12 +117,13 @@ GNOME_PACMAN=(
   "dconf-editor"                                                # gnome settings editor
   "papirus-icon-theme"                                          # nice app icon theme
   "nautilus"                                                    # gui file explorer
-  "gnome-screenshot"                                            # screenshot tool
   "okular"                                                      # PDF viewer
   "gnome-system-monitor"                                        # system monitor
   "fragments"                                                   # torrent downloader
   "gthumb"                                                      # image viewer
-  "totem"                                                       # video player
+  "gnome-screenshot"                                            # screenshot tool
+  "gst-plugins-pipewire"                                        # gnome screencast dependency
+  "totem"                                                       # video player (installs gst-plugins-good)
   "gst-libav"                                                   # required multimedia framework for totem
   "kid3"                                                        # audio metadata editor
   "bluez-utils"                                                 # bluetooth support
