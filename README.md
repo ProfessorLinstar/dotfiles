@@ -61,7 +61,7 @@ This repository contains configuration files for my linux workspace. The followi
 ```
 
 ## Installation
-These dotfiles are designed to work for Arch Linux (or other Arch-based distributions). Essential packages and applications can be installed using the `install.sh` script. This script attempts to setup the following:
+These dotfiles are designed to work for Arch Linux (or other Arch-based distributions). Essential packages and applications can be installed using the `install.sh` script as a user. This script attempts to setup the following:
  - yay
  - zshell (theme, completions, font)
  - tmux
@@ -72,6 +72,16 @@ These dotfiles are designed to work for Arch Linux (or other Arch-based distribu
  - Audiovisual media viewers and basic editors
  - Insync
  - Logiops
+
+#### Arch Linux Installation
+To setup a new computer, install Arch Linux using the [installation guide](https://wiki.archlinux.org/title/installation_guide), or use the `archinstall` utility available in live ISO's. Useful packages to install while chroot'ed using the live ISO include:
+ - sudo
+ - networkmanager
+ - neovim
+ - git
+ - tmux
+
+Remember to `systemctl enable NetworkManager.service` to enable NetworkManager. After rebooting, clone dotfiles in the user home directory and run `install.sh` to setup a standard configuration. To enable the Gnome display manager, `systemctl enable gdm.service` and reboot.
 
 ## Manual Fixes
 I try to avoid modifying plugin files directly, but the following have been changed to suit my needs. These changes are done automatically with the `install.sh` script.
@@ -113,3 +123,6 @@ See [here](https://wiki.archlinux.org/title/NTFS) for more information. Linux ke
 
 #### Enabling Trash on Data Partitions
 To enable the use of "move to trash" on secondary partitions, the user must have the proper permissions to the partition. To enable the proper permissions, add the flag `uid=XXXX` (where `XXXX` is the desired user id--usually 1000 for the first user; can be confirmed with `id` in the terminal) to the mount options of the secondary partition in the fstab file (this can also be done with Gnome Disks).
+
+#### LaTeX
+LaTeX works on Arch Linux with the `texlive-most` package group (`texlive-bibtexextra` and `biber` for bibtex and biber support). Custom LaTeX `.sty` and `.cls` files can be provided by adding a `tex/latex` directory under `~/texmf` (see the [MiKTeX page](https://miktex.org/kb/tds) for more information).

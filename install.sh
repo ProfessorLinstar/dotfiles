@@ -102,7 +102,6 @@ TERMINAL_PACMAN=(
   "tree"                                                        # show directory contents in tree form
   "cmus"                                                        # Music player
   "locate"                                                      # locate files
-  "networkmanager"                                              # ensure internet is available
   "xclip"                                                       # system clipboard tool
   "man"                                                         # manual
   "man-pages"                                                   # manual database
