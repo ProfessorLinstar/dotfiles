@@ -7,10 +7,10 @@
 # Location: ~/dotfiles/install.sh
 ################################################################################
 
-usage() { echo "Usage: $0 [-pgvylmth] " >&2; }
+usage() { echo "Usage: $0 [-pgvylmth] [--load-dconf]" >&2; }
 
 SHORT=pgvylmth
-LONG=skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmux,help
+LONG=skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmux,load-dconf,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
 SKIP_PACMAN=false
@@ -20,6 +20,7 @@ SKIP_LUNARVIM=false
 SKIP_LINK=false
 SKIP_MANUAL=false
 SKIP_TMUX=false
+SKIP_DCONF=true
 
 eval set -- "$OPTS"
 while true; do
@@ -31,6 +32,9 @@ while true; do
     -l | --skip-link )     SKIP_LINK=true;     shift; ;;
     -m | --skip-manual )   SKIP_MANUAL=true;   shift; ;;
     -t | --skip-tmux )     SKIP_TMUX=true;     shift; ;;
+
+    --load-dconf )         SKIP_DCONF=false;   shift; ;;
+
     -h | --help )          usage; exit 0;             ;;
     -- )                   shift; break;              ;; # break on positional arguments
     * )                    usage; exit 1;             ;;
@@ -59,8 +63,7 @@ function confirmsed {
     echo "Warning: $file does not exist." 
 
   elif grep -Eq "^$pattern$" < "$file" && confirm "Edit $file to replace '$pattern' with '$replace'?"; then
-    local backup="$BACKUPS_ROOT$file"
-    mkdir -pv "$(dirname $backup)" && cp -nvi "$file" "$backup" < /dev/tty
+    mkdir -pv "$(dirname $BACKUPS_ROOT$file)" && cp -nvi "$file" "$BACKUPS_ROOT$file" < /dev/tty
     $user sed -Ei "s@^$pattern\$@$replace@" "$file"
 
   else
@@ -201,7 +204,7 @@ fi
 if ! $SKIP_LUNARVIM; then
   if [[ $(npm config get prefix) != "$HOME/.local" ]]; then
     echo "Resolving npm EACCES permissions..."
-    npm config set prefix "$HOME/.local"
+    npm config set prefix "$HOME/.local"                        # install global npm packages to local directory without sudo
   fi
 
   if ! command -v lvim &>/dev/null; then
@@ -248,6 +251,21 @@ if ! $SKIP_TMUX; then
     echo "Installing tpm..."
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
   fi
+fi
+
+# dconf settings
+if ! $SKIP_DCONF; then
+  DCONF_DUMP="$DOTFILES_ROOT/dump/dconf/arch.dconf"
+
+  tmp="$(mktemp)"
+
+  echo "Backing up current dconf configuration..."
+  mkdir -pv "$(dirname $BACKUPS_ROOT$DCONF_DUMP)"
+  dconf dump / > $tmp
+  cp -vi $tmp "$BACKUPS_ROOT$DCONF_DUMP"
+  rm $tmp
+
+  # dconf load / < $DCONF_DUMP && echo "dconf configuration loaded."
 fi
 
 echo "Installation complete."
