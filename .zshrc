@@ -52,7 +52,7 @@ export LESS=-R
 
 # defaults
 alias ls="ls --color=auto"                                      #
-alias la="ls -la --block-size=M"                                # list all with filesizes in MB
+alias la="ls -la"                                               # list all with filesizes in MB
 alias cp="cp -i"                                                # Confirm before overwriting something
 alias df='df -h'                                                # Human-readable sizes
 alias free='free -m'                                            # Show sizes in MB
