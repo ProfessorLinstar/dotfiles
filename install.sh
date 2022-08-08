@@ -123,6 +123,9 @@ GNOME_PACMAN=(
   "gthumb"                                                      # image viewer
   "gnome-screenshot"                                            # screenshot tool
   "gst-plugins-pipewire"                                        # gnome screencast dependency
+  "obs-studio"                                                  # Sophisticated recorder/streamer
+  "xdg-desktop-portal"                                          # Enables pipewire to provide video capture (for obs)
+  "xdg-desktop-portal-gnome"                                    # xdg-desktop-portal backend for gnome
   "totem"                                                       # video player (installs gst-plugins-good)
   "gst-libav"                                                   # required multimedia framework for totem
   "kid3"                                                        # audio metadata editor
