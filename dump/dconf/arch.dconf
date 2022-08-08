@@ -1,5 +1,5 @@
 [org/gnome/desktop/app-folders]
-folder-children=['Utilities', 'YaST', 'b2e906c8-dffe-4208-a0ef-22b6c36d787c', 'bd32155e-33b1-4880-8e84-42ba78439317', 'f710ce10-e4ef-4b3a-99d9-081aade25e81', '674cf739-6fb7-4b22-a5e6-a0ee3687c523', '5e22e5f5-db62-4392-bd56-1aa4831ba08a', '961a092a-a0ff-494d-90db-8e574f3a05c0', '4f56acac-843a-4d80-8051-2d90e583634d', '91d5e87e-c89b-4aa3-b0b1-e481358fe97b']
+folder-children=['b2e906c8-dffe-4208-a0ef-22b6c36d787c', 'bd32155e-33b1-4880-8e84-42ba78439317', 'f710ce10-e4ef-4b3a-99d9-081aade25e81', '674cf739-6fb7-4b22-a5e6-a0ee3687c523', '5e22e5f5-db62-4392-bd56-1aa4831ba08a', '961a092a-a0ff-494d-90db-8e574f3a05c0', '4f56acac-843a-4d80-8051-2d90e583634d', '91d5e87e-c89b-4aa3-b0b1-e481358fe97b']
 
 [org/gnome/desktop/app-folders/folders/4f56acac-843a-4d80-8051-2d90e583634d]
 apps=['gnome-system-monitor.desktop', 'qv4l2.desktop']
@@ -17,7 +17,7 @@ name='Viewers'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/91d5e87e-c89b-4aa3-b0b1-e481358fe97b]
-apps=['org.gnome.Screenshot.desktop', 'caffeine.desktop']
+apps=['org.gnome.Screenshot.desktop', 'com.obsproject.Studio.desktop']
 name='Utilities'
 translate=false
 
@@ -25,18 +25,6 @@ translate=false
 apps=['google-chrome.desktop', 'discord.desktop', 'de.haeckerfelix.Fragments.desktop']
 name='Internet'
 translate=false
-
-[org/gnome/desktop/app-folders/folders/Utilities]
-apps=['gnome-abrt.desktop', 'gnome-system-log.desktop', 'nm-connection-editor.desktop', 'org.gnome.baobab.desktop', 'org.gnome.Connections.desktop', 'org.gnome.DejaDup.desktop', 'org.gnome.Dictionary.desktop', 'org.gnome.eog.desktop', 'org.gnome.Evince.desktop', 'org.gnome.FileRoller.desktop', 'org.gnome.fonts.desktop', 'org.gnome.seahorse.Application.desktop', 'org.gnome.Usage.desktop', 'vinagre.desktop']
-categories=['X-GNOME-Utilities']
-excluded-apps=['org.gnome.DiskUtility.desktop', 'org.gnome.tweaks.desktop', 'org.gnome.Screenshot.desktop']
-name='X-GNOME-Utilities.directory'
-translate=true
-
-[org/gnome/desktop/app-folders/folders/YaST]
-categories=['X-SuSE-YaST']
-name='suse-yast.directory'
-translate=true
 
 [org/gnome/desktop/app-folders/folders/b2e906c8-dffe-4208-a0ef-22b6c36d787c]
 apps=['bvnc.desktop', 'bssh.desktop', 'avahi-discover.desktop', 'lstopo.desktop', 'qvidcap.desktop', 'cmake-gui.desktop', 'xdvi.desktop']
