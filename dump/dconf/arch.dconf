@@ -164,8 +164,7 @@ sleep-inactive-ac-timeout=1800
 sleep-inactive-battery-timeout=900
 
 [org/gnome/shell]
-app-picker-layout=[{'Alacritty.desktop': <{'position': <0>}>, 'uxterm.desktop': <{'position': <1>}>, 'insync.desktop': <{'position': <2>}>, 'xterm.desktop': <{'position': <3>}>, '9453dca3-262a-424e-a21f-637c7f955313': <{'position': <4>}>, 'Utilities': <{'position': <5>}>, 'a3dbb5b9-aa79-4927-97ef-78c2a0d2184b': <{'position': <6>}>, '96902fdc-fdc9-4c18-a70c-d8f84630a278': <{'position': <7>}>, '380e8fae-4c08-4d47-85d1-f2e6b98c4b98': <{'position': <8>}>, 'c3704a3a-67c4-41b4-b0ab-78707718f80c': <{'position': <9>}>, '443a4031-87b6-4526-bcce-993c57bee7cd': <{'position': <10>}>}]
-favorite-apps=['google-chrome.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Terminal.desktop', 'discord.desktop', 'org.manjaro.pamac.manager.desktop']
+favorite-apps=['org.gnome.Nautilus.desktop', 'org.gnome.Terminal.desktop']
 welcome-dialog-last-shown-version='41.5'
 
 [org/gnome/shell/app-switcher]
