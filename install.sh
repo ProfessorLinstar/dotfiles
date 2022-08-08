@@ -7,10 +7,10 @@
 # Location: ~/dotfiles/install.sh
 ################################################################################
 
-usage() { echo "Usage: $0 [-p|--skip-pacman] [-y|--skip-yay]" 1>&2; }
+usage() { echo "Usage: $0 [-p|--skip-pacman] [-y|--skip-yay] [-h|--help]" >&2; }
 
-SHORT=py
-LONG=skip-pacman,skip-yay
+SHORT=pyh
+LONG=skip-pacman,skip-yay,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
 SKIP_PACMAN=false
@@ -27,6 +27,10 @@ while true; do
       SKIP_YAY=true
       shift
       ;;
+    -h | --help )
+      usage
+      exit 0
+      ;;
     -- )
       shift
       break
@@ -37,8 +41,6 @@ while true; do
       ;;
   esac
 done
-
-exit 0
 
 # Ensure that cwd is at ~/dotfiles
 DOTFILES_ROOT="$HOME/dotfiles"
