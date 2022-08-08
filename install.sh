@@ -8,13 +8,17 @@
 ################################################################################
 
 usage() {
-  echo "Usage: $0 [-pgvylmth] [--load-dconf] [--dump-info]"
+  echo "Usage: $0 [-apgvylmtnh] [--load-dconf] [--dump-info] [--update-xdg]"
   echo "See README.md for more information."
 }
 
-SHORT=pgvylmth
-LONG=skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmux,load-dconf,dump-info,help
+SHORT=apgvylmtnh
+LONG=all,skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmux,load-dconf,dump-info,update-xdg,none,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
+
+SKIP_XDG=true
+SKIP_DCONF=true
+SKIP_DUMPINFO=true
 
 SKIP_PACMAN=false
 SKIP_YAY=false
@@ -24,12 +28,21 @@ SKIP_LINK=false
 SKIP_MANUAL=false
 SKIP_TMUX=false
 
-SKIP_DCONF=true
-SKIP_DUMPINFO=true
-
 eval set -- "$OPTS"
 while true; do
   case "$1" in
+    -a | --all )           SKIP_XDG=false;
+                           SKIP_DCONF=false;
+                           SKIP_DUMPINFO=false; shift; ;;
+
+    -n | --none )          SKIP_PACMAN=true;
+                           SKIP_YAY=true;
+                           SKIP_LOGIOPS=true;
+                           SKIP_LUNARVIM=true;
+                           SKIP_LINK=true;
+                           SKIP_MANUAL=true;
+                           SKIP_TMUX=true;      shift; ;;
+
     -p | --skip-pacman )   SKIP_PACMAN=true;    shift; ;;
     -g | --skip-logiops )  SKIP_LOGIOPS=true;   shift; ;;
     -v | --skip-lunarvim ) SKIP_LUNARVIM=true;  shift; ;;
@@ -40,6 +53,7 @@ while true; do
 
     --load-dconf )         SKIP_DCONF=false;    shift; ;;
     --dump-info )          SKIP_DUMPINFO=false; shift; ;;
+    --update-xdg )         SKIP_XDG=false;      shift; ;;
 
     -h | --help )          usage; exit 0;              ;;
     -- )                   shift; break;               ;; # break on positional arguments
@@ -118,12 +132,13 @@ GNOME_PACMAN=(
   "seahorse"                                                    # keyring manager
   "papirus-icon-theme"                                          # nice app icon theme
   "nautilus"                                                    # gui file explorer
+  "xdg-user-dirs-gtk"                                           # Manages "well-known" user directories (e.g. Documents, Videos, etc.)
   "okular"                                                      # PDF viewer
   "gnome-system-monitor"                                        # system monitor
   "fragments"                                                   # torrent downloader
   "gthumb"                                                      # image viewer
   "gnome-screenshot"                                            # screenshot tool
-  "gst-plugins-pipewire"                                        # gnome screencast dependency
+  "gst-plugin-pipewire"                                        # gnome screencast dependency
   "obs-studio"                                                  # Sophisticated recorder/streamer
   "xdg-desktop-portal"                                          # Enables pipewire to provide video capture (for obs)
   "xdg-desktop-portal-gnome"                                    # xdg-desktop-portal backend for gnome
@@ -169,9 +184,9 @@ echo "Beginning dotfiles installation..."
 
 # Pacman packages
 if ! $SKIP_PACMAN; then
-  echo "Installing pacman packages for terminal..."; sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty
-  echo "Installing pacman packages for gnome...";    sudo pacman --needed -Sq ${GNOME_PACMAN[@]}    < /dev/tty
-  echo "Installing pacman packages for latex...";    sudo pacman --needed -Sq ${LATEX_PACMAN[@]}    < /dev/tty
+  echo "Installing pacman packages for terminal..."; sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty; echo
+  echo "Installing pacman packages for gnome...";    sudo pacman --needed -Sq ${GNOME_PACMAN[@]}    < /dev/tty; echo
+  echo "Installing pacman packages for latex...";    sudo pacman --needed -Sq ${LATEX_PACMAN[@]}    < /dev/tty; echo
 fi
 
 # Yay packages
@@ -181,8 +196,8 @@ if ! $SKIP_YAY; then
     sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
   fi
 
-  echo "Installing yay packages for terminal..."; yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty
-  echo "Installing yay packages for gnome...";    yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]}    < /dev/tty
+  echo "Installing yay packages for terminal..."; yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty; echo
+  echo "Installing yay packages for gnome...";    yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]}    < /dev/tty; echo
 fi
 
 
@@ -278,6 +293,11 @@ if ! $SKIP_DCONF; then
 
   dconf load / < $DCONF_DUMP
   echo "dconf configuration loaded."
+fi
+
+# xdg settings
+if ! $SKIP_XDG; then
+  xdg-user-dirs-update
 fi
 
 # dump information
