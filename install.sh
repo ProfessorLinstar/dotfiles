@@ -10,7 +10,7 @@
 usage() { echo "Usage: $0 [-pgvylmth] " >&2; }
 
 SHORT=pgvylmth
-LONG=skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmus,help
+LONG=skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmux,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
 SKIP_PACMAN=false
@@ -31,9 +31,9 @@ while true; do
     -l | --skip-link )     SKIP_LINK=true;     shift; ;;
     -m | --skip-manual )   SKIP_MANUAL=true;   shift; ;;
     -t | --skip-tmux )     SKIP_TMUX=true;     shift; ;;
-    -h | --help ) usage; exit 0; ;;
-    -- ) shift; break; ;;
-    * ) usage; exit 1; ;;
+    -h | --help )          usage; exit 0;             ;;
+    -- )                   shift; break;              ;; # break on positional arguments
+    * )                    usage; exit 1;             ;;
   esac
 done
 
@@ -69,6 +69,7 @@ function confirmsed {
 }
 
 
+# Pacman package list
 TERMINAL_PACMAN=(
   "zsh"                                                         # zshell essentials
   "zsh-theme-powerlevel10k"                                     # .
@@ -129,6 +130,7 @@ LATEX_PACMAN=(
   "cpanminus"                                                   # install cpan modules more easily
 )
 
+# Yay package list
 TERMINAL_YAY=(
   "nerd-fonts-ubuntu-mono"                                      # nerd font
 )
@@ -137,7 +139,7 @@ GNOME_YAY=(
   "adw-gtk-theme"                                               # dark gtk theme
   "xcursor-breeze"                                              # cursor theme
   "insync"                                                      # drive sync
-  "google-chrome"                                               #
+  "google-chrome"                                               # web browser
 )
 
 # Exclude paths beginning with these prefixes when linking
@@ -152,12 +154,9 @@ EXCLUDE_PATHS=(
 
 # Pacman packages
 if ! $SKIP_PACMAN; then
-  echo "Installing pacman packages for terminal..."
-  sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty
-  echo "Installing pacman packages for gnome..."
-  sudo pacman --needed -Sq ${GNOME_PACMAN[@]} < /dev/tty
-  echo "Installing pacman packages for latex..."
-  sudo pacman --needed -Sq ${LATEX_PACMAN[@]} < /dev/tty
+  echo "Installing pacman packages for terminal..."; sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty
+  echo "Installing pacman packages for gnome...";    sudo pacman --needed -Sq ${GNOME_PACMAN[@]}    < /dev/tty
+  echo "Installing pacman packages for latex...";    sudo pacman --needed -Sq ${LATEX_PACMAN[@]}    < /dev/tty
 fi
 
 # Yay packages
@@ -167,10 +166,8 @@ if ! $SKIP_YAY; then
     sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
   fi
 
-  echo "Installing yay packages for terminal..."
-  yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty
-  echo "Installing yay packages for gnome..."
-  yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]} < /dev/tty
+  echo "Installing yay packages for terminal..."; yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty
+  echo "Installing yay packages for gnome...";    yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]}    < /dev/tty
 fi
 
 
@@ -178,7 +175,7 @@ fi
 if ! $SKIP_LOGIOPS; then
   if ! systemctl list-unit-files | grep -q "logid.service"; then
     echo "Installing PixlOne/logiops..."
-    sudo pacman --needed -S cmake libevdev libconfig pkgconf
+    sudo pacman --needed -S cmake libevdev libconfig pkgconf    # Logiops dependencies
     git clone https://github.com/PixlOne/logiops
     cd logiops
 
@@ -209,7 +206,8 @@ if ! $SKIP_LUNARVIM; then
 
   if ! command -v lvim &>/dev/null; then
     echo "Installing Lunarvim..."
-    gio trash -v ~/.config/lvim/config.lua # Prevent installation from overwriting existing config
+    sudo pacman --needed -S git make python npm cargo           # Lunarvim dependencies
+    gio trash -v ~/.config/lvim/config.lua                      # Prevent installation from overwriting existing config
     LV_BRANCH=rolling bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/rolling/utils/installer/install.sh)
   fi
 fi
