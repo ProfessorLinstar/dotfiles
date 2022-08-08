@@ -32,7 +32,7 @@ name='Systems'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/bd32155e-33b1-4880-8e84-42ba78439317]
-apps=['org.gnome.Settings.desktop', 'org.gnome.tweaks.desktop', 'ca.desrt.dconf-editor.desktop', 'org.gnome.Extensions.desktop']
+apps=['org.gnome.Settings.desktop', 'org.gnome.tweaks.desktop', 'ca.desrt.dconf-editor.desktop', 'org.gnome.Extensions.desktop', 'org.gnome.seahorse.Application.desktop']
 name='Settings'
 translate=false
 

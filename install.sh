@@ -115,6 +115,7 @@ GNOME_PACMAN=(
   "gnome-control-center"                                        # settings
   "gparted"                                                     # disk partition editor
   "dconf-editor"                                                # gnome settings editor
+  "seahorse"                                                    # keyring manager
   "papirus-icon-theme"                                          # nice app icon theme
   "nautilus"                                                    # gui file explorer
   "okular"                                                      # PDF viewer
