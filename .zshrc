@@ -2,8 +2,8 @@
 # ~/.zshrc
 #
 
-[[ ! -o login ]] && . "$HOME/.zprofile"
-typeset -U path
+[[ ! -o login ]] && . "$HOME/.zprofile"                         # Source zprofile if shell was not interactive
+typeset -U path                                                 # Remove duplicates in path/PATH
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
@@ -23,7 +23,7 @@ source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
 
-autoload -Uz compinit colors
+autoload -Uz compinit colors                                    # Autoload these zsh functions when called
 compinit -d                                                     # Initialize zsh completion
 colors                                                          # Activate color-coding for completion
 
@@ -51,20 +51,20 @@ export LESS_TERMCAP_us=$'\E[01;36m'
 export LESS=-R
 
 # defaults
-alias ls="ls --color=auto"
-alias la="ls -la --block-size=M"
+alias ls="ls --color=auto"                                      #
+alias la="ls -la --block-size=M"                                # list all with filesizes in MB
 alias cp="cp -i"                                                # Confirm before overwriting something
 alias df='df -h'                                                # Human-readable sizes
 alias free='free -m'                                            # Show sizes in MB
 
 # shortcuts
-alias py=python3.10
-alias vi=lvim
-alias vim=\\nvim
-alias nvim=lvim
-alias vis="source vis"
-alias gitu='git add -u && git commit && git push'
-alias tt="gio trash"
+alias py=python3.10                                             # Python shortcut
+alias vi=lvim                                                   #
+alias vim=\\nvim                                                # Make neovim the default
+alias nvim=lvim                                                 # Make tmux use Lunarvim when restoring
+alias vis="source vis"                                          # Allow vis to change cwd
+alias gitu='git add -u && git commit && git push'               #
+alias tt="gio trash"                                            # move file to trash
 
 ################################################################################
 # zsh Options And Key Bindings

@@ -7,10 +7,13 @@
 # Location: ~/dotfiles/install.sh
 ################################################################################
 
-usage() { echo "Usage: $0 [-pgvylmth] [--load-dconf]" >&2; }
+usage() {
+  echo "Usage: $0 [-pgvylmth] [--load-dconf] [--dump-info]"
+  echo "See README.md for more information."
+}
 
 SHORT=pgvylmth
-LONG=skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmux,load-dconf,help
+LONG=skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmux,load-dconf,dump-info,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
 SKIP_PACMAN=false
@@ -20,31 +23,34 @@ SKIP_LUNARVIM=false
 SKIP_LINK=false
 SKIP_MANUAL=false
 SKIP_TMUX=false
+
 SKIP_DCONF=true
+SKIP_DUMPINFO=true
 
 eval set -- "$OPTS"
 while true; do
   case "$1" in
-    -p | --skip-pacman )   SKIP_PACMAN=true;   shift; ;;
-    -g | --skip-logiops )  SKIP_LOGIOPS=true;  shift; ;;
-    -v | --skip-lunarvim ) SKIP_LUNARVIM=true; shift; ;;
-    -y | --skip-yay )      SKIP_YAY=true;      shift; ;;
-    -l | --skip-link )     SKIP_LINK=true;     shift; ;;
-    -m | --skip-manual )   SKIP_MANUAL=true;   shift; ;;
-    -t | --skip-tmux )     SKIP_TMUX=true;     shift; ;;
+    -p | --skip-pacman )   SKIP_PACMAN=true;    shift; ;;
+    -g | --skip-logiops )  SKIP_LOGIOPS=true;   shift; ;;
+    -v | --skip-lunarvim ) SKIP_LUNARVIM=true;  shift; ;;
+    -y | --skip-yay )      SKIP_YAY=true;       shift; ;;
+    -l | --skip-link )     SKIP_LINK=true;      shift; ;;
+    -m | --skip-manual )   SKIP_MANUAL=true;    shift; ;;
+    -t | --skip-tmux )     SKIP_TMUX=true;      shift; ;;
 
-    --load-dconf )         SKIP_DCONF=false;   shift; ;;
+    --load-dconf )         SKIP_DCONF=false;    shift; ;;
+    --dump-info )          SKIP_DUMPINFO=false; shift; ;;
 
-    -h | --help )          usage; exit 0;             ;;
-    -- )                   shift; break;              ;; # break on positional arguments
-    * )                    usage; exit 1;             ;;
+    -h | --help )          usage; exit 0;              ;;
+    -- )                   shift; break;               ;; # break on positional arguments
+    * )                    usage; exit 1;              ;;
   esac
 done
 
-# Ensure that cwd is at ~/dotfiles
-DOTFILES_ROOT="$HOME/dotfiles"
-BACKUPS_ROOT="$DOTFILES_ROOT/.backup"
-if ! ([[ -d "$DOTFILES_ROOT" ]] && cd "$DOTFILES_ROOT"); then
+# Directory setup
+DOTFILES_ROOT="$HOME/dotfiles"                                  # dotfiles root directory
+BACKUPS_ROOT="$DOTFILES_ROOT/.backup"                           # backup dotfiles root directory
+if ! ([[ -d "$DOTFILES_ROOT" ]] && cd "$DOTFILES_ROOT"); then   # Ensure that cwd is at ~/dotfiles
   echo "dotfiles must be at $DOTFILES_ROOT."
   exit 1
 fi
@@ -154,6 +160,8 @@ EXCLUDE_PATHS=(
   "./.backup"                                                   # temporary backup file of modified files
 )
 
+# Installation begins
+echo "Beginning dotfiles installation..."
 
 # Pacman packages
 if ! $SKIP_PACMAN; then
@@ -256,7 +264,6 @@ fi
 # dconf settings
 if ! $SKIP_DCONF; then
   DCONF_DUMP="$DOTFILES_ROOT/dump/dconf/arch.dconf"
-
   tmp="$(mktemp)"
 
   echo "Backing up current dconf configuration..."
@@ -265,7 +272,23 @@ if ! $SKIP_DCONF; then
   cp -vi $tmp "$BACKUPS_ROOT$DCONF_DUMP"
   rm $tmp
 
-  # dconf load / < $DCONF_DUMP && echo "dconf configuration loaded."
+  dconf load / < $DCONF_DUMP
+  echo "dconf configuration loaded."
 fi
 
-echo "Installation complete."
+# dump information
+if ! $SKIP_DUMPINFO; then
+  echo
+  echo "Providing dump info..."
+  echo "'$DOTFILES_ROOT/dump' contains exported configuration files of various applications, typically those with gui's."
+  echo "dconf settings can be loaded automatically by using this installer with '--load-dconf'. Most settings need to be imported"
+  echo "manually."
+  echo
+  echo "Configurations that must be loaded manually include:"
+  echo " - Insync ignorerules: Account Settings > Ignore Rules (paste ignorerules text)"
+  echo " - Okular shortcuts: Settings > Configure Keyboard Shortcuts > Manage Schemes > More Actions > Import Scheme (select default.shortcuts)"
+  echo "Files are available in $DOTFILES_ROOT/dump/<application>"
+  echo
+fi
+
+echo "dotfiles installation complete."
