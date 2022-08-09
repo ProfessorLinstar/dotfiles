@@ -17,8 +17,8 @@ nnoremap <expr> <Leader>ar ':let @' . nr2char(getchar()) . "=\'<C-r>" . nr2char(
 nnoremap <Leader>l <cmd>:buffers<CR>
 nnoremap <expr> <Leader>j ":" . BufferJump()
 
-nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" .<C-f>F"i
-nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -regex ".*/.*"<C-f>F.i
+nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,}<C-f>F"i
+nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -not -regex ".*/\.git/.*" -type f -regex ".*/.*"<C-f>F.i
 
 nnoremap <Leader>e <cmd>Lexplore<CR>
 nnoremap <Leader>r <cmd>noh<CR>
