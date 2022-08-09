@@ -14,10 +14,11 @@ nnoremap <Leader>aw <cmd>TrimTrailingWhitespace<CR>
 nnoremap <Leader>at <cmd>terminal<CR>
 nnoremap <expr> <Leader>ar ':let @' . nr2char(getchar()) . "=\'<C-r>" . nr2char(getchar()) . "\'<C-f>hi"
 
-nnoremap <Leader>bl <cmd>:buffers<CR>
+nnoremap <Leader>l <cmd>:buffers<CR>
+nnoremap <expr> <Leader>j ":" . BufferJump()
 
 nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" .<C-f>F"i
-nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -regex ".*/"<C-f>F"i
+nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -regex ".*/.*"<C-f>F.i
 
 nnoremap <Leader>e <cmd>Lexplore<CR>
 nnoremap <Leader>r <cmd>noh<CR>
@@ -46,6 +47,7 @@ nnoremap [n ?\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 vnoremap // y/\V<C-R>=escape(@",'/\')->substitute('\n','\\n','g')<CR><CR>
 nnoremap gt `[v`]
 
+inoremap <C-d> <Del>
 inoremap <M-o> <CR>
 nnoremap <C-f> :<C-f>
 nnoremap - @:

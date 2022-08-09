@@ -9,17 +9,15 @@ vim.api.nvim_set_keymap("", "L", "L", { noremap = true })
 
 -- Prevent nvimtree from stealing tab key
 table.insert(lvim.builtin.nvimtree.setup.view.mappings.list, { key = "<Tab>", action = "" })
+table.insert(lvim.builtin.nvimtree.setup.view.mappings.list, { key = "f", action = "" }) -- prevent nvimtree from breaking vim-sneak
 
 --------------------------------------------------------------------------------
 -- which-key modifications
 --------------------------------------------------------------------------------
 
 -- Builtin overriding
-local merge = {
-  l = { nil, "List Buffers (:buffers)" },
-  h = nil
-}
-for k, v in pairs(merge) do lvim.builtin.which_key.mappings["b"][k] = v end
+lvim.builtin.which_key.mappings["b"]["l"] = { nil, "List Buffers (:buffers)" }
+lvim.builtin.which_key.mappings["b"]["h"] = nil
 
 -- Menu labels
 lvim.builtin.which_key.mappings["d"] = { name = "Protected Menu" }

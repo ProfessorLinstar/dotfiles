@@ -15,3 +15,26 @@ command! OpenFile call system( s:default . ' "' . expand('%:p') . '" &')
 command! EchoSyntaxGroups echo 'hi<' . synID(line('.'),col('.'),1)->synIDattr('name') . '> trans<' .
                                      \ synID(line('.'),col('.'),0)->synIDattr('name') . '> lo<' .
                                      \ synID(line('.'),col('.'),1)->synIDtrans()->synIDattr('name') . '>'
+
+" Jump to buffer by name
+function! BufferJump()
+  let l:search = ""
+  let l:bufs = map(filter(range(1, bufnr('$')), 'buflisted(v:val)'), 'fnamemodify(bufname(v:val), ":t")')
+
+  for i in [1, 2, 3]
+    let l:search = l:search . nr2char(getchar())
+    let l:matches = []
+
+    for fname in l:bufs
+      if fname =~ "^" . l:search . ".*" | call add(l:matches, fname) | endif
+    endfor
+
+    if len(l:matches) == 1
+      return "b /" . l:matches[0] . "\<CR>"
+    elseif len(l:matches) == 0
+      return "\<CR>"
+    endif
+  endfor
+
+  return "b /" . l:search
+endfunction
