@@ -8,56 +8,58 @@
 ################################################################################
 
 usage() {
-  echo "Usage: $0 [-apgvylmtnh] [--load-dconf] [--dump-info] [--update-xdg]"
+  echo "Usage: $0 [-a|-all] [-pgvylmtdixh]"
   echo "See README.md for more information."
 }
 
-SHORT=apgvylmtnh
-LONG=all,skip-pacman,skip-logiops,skip-lunarvim,skip-yay,skip-link,skip-manual,skip-tmux,load-dconf,dump-info,update-xdg,none,help
+SHORT=apgvylmtdixh
+LONG=all,pacman,logiops,lunarvim,yay,link,manual,tmux,dconf,info,xdg,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
 SKIP_XDG=true
 SKIP_DCONF=true
 SKIP_DUMPINFO=true
+SKIP_PACMAN=true
+SKIP_YAY=true
+SKIP_LOGIOPS=true
+SKIP_LUNARVIM=true
+SKIP_LINK=true
+SKIP_MANUAL=true
+SKIP_TMUX=true
 
-SKIP_PACMAN=false
-SKIP_YAY=false
-SKIP_LOGIOPS=false
-SKIP_LUNARVIM=false
-SKIP_LINK=false
-SKIP_MANUAL=false
-SKIP_TMUX=false
+if [[ $# -eq 0 ]]; then
+  usage
+  exit 0
+fi
 
 eval set -- "$OPTS"
 while true; do
   case "$1" in
-    -a | --all )           SKIP_XDG=false;
-                           SKIP_DCONF=false;
-                           SKIP_DUMPINFO=false; shift; ;;
+    -a | --all )      SKIP_XDG=false;
+                      SKIP_DCONF=false;
+                      SKIP_DUMPINFO=false;
+                      SKIP_PACMAN=false;
+                      SKIP_YAY=false;
+                      SKIP_LOGIOPS=false;
+                      SKIP_LUNARVIM=false;
+                      SKIP_LINK=false;
+                      SKIP_MANUAL=false;
+                      SKIP_TMUX=false;     shift; ;;
 
-    -n | --none )          SKIP_PACMAN=true;
-                           SKIP_YAY=true;
-                           SKIP_LOGIOPS=true;
-                           SKIP_LUNARVIM=true;
-                           SKIP_LINK=true;
-                           SKIP_MANUAL=true;
-                           SKIP_TMUX=true;      shift; ;;
+    -p | --pacman )   SKIP_PACMAN=false;   shift; ;;
+    -g | --logiops )  SKIP_LOGIOPS=false;  shift; ;;
+    -v | --lunarvim ) SKIP_LUNARVIM=false; shift; ;;
+    -y | --yay )      SKIP_YAY=false;      shift; ;;
+    -l | --link )     SKIP_LINK=false;     shift; ;;
+    -m | --manual )   SKIP_MANUAL=false;   shift; ;;
+    -t | --tmux )     SKIP_TMUX=false;     shift; ;;
+    -d | --dconf )    SKIP_DCONF=false;    shift; ;;
+    -i | --info )     SKIP_DUMPINFO=false; shift; ;;
+    -x | --xdg )      SKIP_XDG=false;      shift; ;;
 
-    -p | --skip-pacman )   SKIP_PACMAN=true;    shift; ;;
-    -g | --skip-logiops )  SKIP_LOGIOPS=true;   shift; ;;
-    -v | --skip-lunarvim ) SKIP_LUNARVIM=true;  shift; ;;
-    -y | --skip-yay )      SKIP_YAY=true;       shift; ;;
-    -l | --skip-link )     SKIP_LINK=true;      shift; ;;
-    -m | --skip-manual )   SKIP_MANUAL=true;    shift; ;;
-    -t | --skip-tmux )     SKIP_TMUX=true;      shift; ;;
-
-    --load-dconf )         SKIP_DCONF=false;    shift; ;;
-    --dump-info )          SKIP_DUMPINFO=false; shift; ;;
-    --update-xdg )         SKIP_XDG=false;      shift; ;;
-
-    -h | --help )          usage; exit 0;              ;;
-    -- )                   shift; break;               ;; # break on positional arguments
-    * )                    usage; exit 1;              ;;
+    -h | --help )     usage; exit 0;              ;;
+    -- )              shift; break;               ;; # break on positional arguments
+    * )               usage; exit 1;              ;;
   esac
 done
 
@@ -138,7 +140,7 @@ GNOME_PACMAN=(
   "fragments"                                                   # torrent downloader
   "gthumb"                                                      # image viewer
   "gnome-screenshot"                                            # screenshot tool
-  "gst-plugin-pipewire"                                        # gnome screencast dependency
+  "gst-plugin-pipewire"                                         # gnome screencast dependency
   "obs-studio"                                                  # Sophisticated recorder/streamer
   "xdg-desktop-portal"                                          # Enables pipewire to provide video capture (for obs)
   "xdg-desktop-portal-gnome"                                    # xdg-desktop-portal backend for gnome
@@ -297,7 +299,20 @@ fi
 
 # xdg settings
 if ! $SKIP_XDG; then
+  echo "Running xdg-user-dirs-update..."
   xdg-user-dirs-update
+
+  echo "Setting default applications with xdg-mime..."
+  xdg-mime default okularApplication_pdf.desktop application/pdf
+  xdg-mime default org.gnome.gThumb.desktop      image/gif
+  xdg-mime default org.gnome.gThumb.desktop      image/jpeg
+  xdg-mime default org.gnome.gThumb.desktop      image/png
+  xdg-mime default org.gnome.gThumb.desktop      image/webp
+  xdg-mime default org.gnome.Totem.desktop       audio/mpeg
+  xdg-mime default org.gnome.Totem.desktop       audio/mp4
+  xdg-mime default nvim.desktop                  text/plain
+
+  echo "xdg update complete."
 fi
 
 # dump information

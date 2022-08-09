@@ -4,6 +4,7 @@ command! CdToFile cd %:p:h | pwd
 command! CdToSession execute "cd" fnameescape("/" . split(v:this_session, "/")[:-2]->join("/") ) | pwd
 command! ToggleSyntax if exists("g:syntax_on") | syntax off | else | syntax enable | endif
 command! TrimTrailingWhitespace execute "normal! m'" | let s:search=@/ | %s/\s\+$//ge | let @/=s:search | noh | normal! `'
+command! Scratch execute "e " . tempname() | setl buftype=nofile nobuflisted
 
 " GUI interactions
 let s:default = 'xdg-open'

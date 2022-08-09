@@ -1,0 +1,9 @@
+[user]
+	email = awaw6465@gmail.com
+	name = ProfessorLinstar
+[core]
+	editor = nvim
+[credential]
+	helper = store
+[safe]
+	directory = *
