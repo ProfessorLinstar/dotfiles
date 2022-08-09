@@ -63,6 +63,7 @@ while true; do
   esac
 done
 
+
 # Directory setup
 DOTFILES_ROOT="$HOME/dotfiles"                                  # dotfiles root directory
 BACKUPS_ROOT="$DOTFILES_ROOT/.backup"                           # backup dotfiles root directory
@@ -111,6 +112,7 @@ TERMINAL_PACMAN=(
   "ripgrep"                                                     # Lunarvim telescope dependency
   "fd"                                                          # Lunarvim telescope dependency
   "neovim"                                                      # text editor
+  "yarn"                                                        # markdown-preview dependency
   "noto-fonts"                                                  # special fonts
   "noto-fonts-cjk"                                              # .
   "noto-fonts-emoji"                                            # .
@@ -181,8 +183,10 @@ EXCLUDE_PATHS=(
   "./.backup"                                                   # temporary backup file of modified files
 )
 
+
 # Installation begins
 echo "Beginning dotfiles installation..."
+
 
 # Pacman packages
 if ! $SKIP_PACMAN; then
@@ -190,6 +194,7 @@ if ! $SKIP_PACMAN; then
   echo "Installing pacman packages for gnome...";    sudo pacman --needed -Sq ${GNOME_PACMAN[@]}    < /dev/tty; echo
   echo "Installing pacman packages for latex...";    sudo pacman --needed -Sq ${LATEX_PACMAN[@]}    < /dev/tty; echo
 fi
+
 
 # Yay packages
 if ! $SKIP_YAY; then
@@ -226,7 +231,6 @@ if ! $SKIP_LOGIOPS; then
     sudo systemctl enable --now logid.service
   fi
 fi
-
 
 
 # Lunarvim
@@ -282,6 +286,7 @@ if ! $SKIP_TMUX; then
   fi
 fi
 
+
 # dconf settings
 if ! $SKIP_DCONF; then
   DCONF_DUMP="$DOTFILES_ROOT/dump/dconf/arch.dconf"
@@ -296,6 +301,7 @@ if ! $SKIP_DCONF; then
   dconf load / < $DCONF_DUMP
   echo "dconf configuration loaded."
 fi
+
 
 # xdg settings
 if ! $SKIP_XDG; then
@@ -314,6 +320,7 @@ if ! $SKIP_XDG; then
 
   echo "xdg update complete."
 fi
+
 
 # dump information
 if ! $SKIP_DUMPINFO; then
