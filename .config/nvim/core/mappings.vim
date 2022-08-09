@@ -46,9 +46,8 @@ nnoremap gt `[v`]
 inoremap <M-o> <CR>
 nnoremap <C-f> :<C-f>
 nnoremap - @:
-nnoremap _ @@
-vnoremap _ g_
-onoremap _ g_
+nnoremap + @@
+noremap _ g_
 
 noremap <M-q> <cmd>ToggleSyntax<CR>
 noremap <M-p> "0p
