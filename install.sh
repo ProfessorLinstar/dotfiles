@@ -132,6 +132,7 @@ GNOME_PACMAN=(
   "gnome-tweaks"                                                # more settings
   "gnome-control-center"                                        # settings
   "gparted"                                                     # disk partition editor
+  "baobab"                                                      # disk usage analyzer
   "dconf-editor"                                                # gnome settings editor
   "seahorse"                                                    # keyring manager
   "papirus-icon-theme"                                          # nice app icon theme

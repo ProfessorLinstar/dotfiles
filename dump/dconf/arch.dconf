@@ -7,7 +7,7 @@ name='Diagnostics'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/5e22e5f5-db62-4392-bd56-1aa4831ba08a]
-apps=['gparted.desktop', 'org.gnome.DiskUtility.desktop', 'insync.desktop']
+apps=['gparted.desktop', 'org.gnome.DiskUtility.desktop', 'org.gnome.baobab.desktop', 'insync.desktop']
 name='Disk Management'
 translate=false
 
@@ -57,7 +57,7 @@ icon-theme='Papirus-Dark'
 show-battery-percentage=true
 
 [org/gnome/desktop/notifications]
-application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem']
+application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem', 'org-gnome-baobab']
 
 [org/gnome/desktop/peripherals/keyboard]
 delay=uint32 197

@@ -5,6 +5,9 @@ nnoremap <Leader>dd <cmd>Bdelete<CR>
 noremap ' <Plug>Sneak_s
 noremap <M-'> <Plug>Sneak_S
 
+" tpope/vim-obsession: shortcut for editing Sessionx.vim file
+nnoremap <Leader>ax <cmd>if v:this_session != "" \| execute "e " . substitute(g:this_obsession, "Session.vim", "Sessionx.vim", "") \| endif<CR>
+
 " lervag/vimtex: Prevent vimtex from stealing ts chord
 nnoremap ts<Space> ts
 
