@@ -80,6 +80,7 @@ To setup a new computer, install Arch Linux using the [installation guide](https
  - neovim
  - git
  - tmux
+ - zsh
 
 Remember to `systemctl enable NetworkManager.service` to enable NetworkManager. After rebooting, clone dotfiles in the user home directory and run `install.sh` to setup a standard configuration. To enable the Gnome display manager, `systemctl enable gdm.service` and reboot.
 
