@@ -24,13 +24,13 @@ lvim.lsp.automatic_servers_installation = false
 
 local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
-  { name = "yapf", args = {"--style={based_on_style: google, column_limit: 120}"} },
+  { name = "yapf", args = {"--style={based_on_style: google, column_limit: 150}"} },
   { name = "prettier", filetypes = { "vue" } }
 }
 
 local linters = require "lvim.lsp.null-ls.linters"
 linters.setup {
-  { name = "pylint", args = {"--disable=C0321,W0603", "--max-line-length", "150", "--good-names=i,j,k,l,ex,Run,_,pk,x,y,a,b,c,d,lo,hi"} },
+  { name = "pylint", args = {"--disable=C0321,W0603", "--max-line-length", "150", "--good-names=Q,W,E,R,T,Y,U,I,O,P,A,S,D,F,G,H,J,K,L,Z,X,C,V,B,N,M,q,w,e,r,t,y,u,i,o,p,a,s,d,f,g,h,j,k,l,z,x,c,v,b,n,m,Run,_,pk,lo,hi"} },
 }
 
 --------------------------------------------------------------------------------
