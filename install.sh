@@ -158,7 +158,6 @@ GNOME_PACMAN=(
 
 LATEX_PACMAN=(
   "texlive-most"                                                # provide most latex packages
-  "texlive-bibtexextra"                                         # enable biblatex
   "biber"                                                       # enable biber for latexmk
   "perl-clone"                                                  # fix missing dependency for biber (08-05-2022)
   "cpanminus"                                                   # install cpan modules more easily
@@ -264,7 +263,7 @@ if ! $SKIP_LINK; then
     fi
 
     [[ -d $(dirname $target) ]] || $user mkdir -pv $(dirname $target)
-    [[ -f $target ]] && [[ ! -L $target ]] && $user mv -vi $target "$BACKUPS_ROOT$target" < /dev/tty
+    [[ -f $target ]] && [[ ! -L $target ]] && mkdir -pv $(dirname "$BACKUPS_ROOT$target") && $user mv -vi $target "$BACKUPS_ROOT$target" < /dev/tty
     [[ -L $target ]] || $user ln -sv $(sed "s@^\.\(.*\)@"$(pwd)"\1@" <<< $dotfile) $target
 
   done <<< $(find . -type f -print | grep -Ev $(tr " " "|" <<< ${EXCLUDE_PATHS[@]}) )
