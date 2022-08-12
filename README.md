@@ -73,6 +73,8 @@ These dotfiles are designed to work for Arch Linux (or other Arch-based distribu
  - Insync
  - Logiops
 
+A basic Arch installation along with `install.sh` requires ~15gb of drive space.
+
 #### Arch Linux Installation
 To setup a new computer, install Arch Linux using the [installation guide](https://wiki.archlinux.org/title/installation_guide), or use the `archinstall` utility available in live ISO's. Useful packages to install while chroot'ed using the live ISO include:
  - sudo
