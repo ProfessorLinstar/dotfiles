@@ -177,8 +177,9 @@ GNOME_YAY=(
 
 # Exclude paths beginning with these prefixes when linking
 EXCLUDE_PATHS=(
-  "./.git"                                                      # git information
-  "./dump"                                                      # manually loaded configuration files
+  "./.git/"                                                     # dotfiles git repository information
+  "./dump/"                                                     # manually loaded configuration files
+  "./.gitignore"                                                #
   "./install.sh"                                                # this script!
   "./README.md"                                                 # dotfiles readme
   "./.backup"                                                   # temporary backup file of modified files
