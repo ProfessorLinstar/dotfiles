@@ -32,7 +32,7 @@ name='Systems'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/bd32155e-33b1-4880-8e84-42ba78439317]
-apps=['org.gnome.Settings.desktop', 'org.gnome.tweaks.desktop', 'ca.desrt.dconf-editor.desktop', 'org.gnome.Extensions.desktop', 'org.gnome.seahorse.Application.desktop']
+apps=['org.gnome.Settings.desktop', 'org.gnome.tweaks.desktop', 'ca.desrt.dconf-editor.desktop', 'org.gnome.Extensions.desktop', 'org.gnome.seahorse.Application.desktop', 'solaar.desktop']
 name='Settings'
 translate=false
 
@@ -57,7 +57,7 @@ icon-theme='Papirus-Dark'
 show-battery-percentage=true
 
 [org/gnome/desktop/notifications]
-application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem', 'org-gnome-baobab']
+application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem', 'org-gnome-baobab', 'solaar']
 
 [org/gnome/desktop/peripherals/keyboard]
 delay=uint32 197

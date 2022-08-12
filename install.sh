@@ -153,6 +153,7 @@ GNOME_PACMAN=(
   "bluez-utils"                                                 # bluetooth support
   "discord"                                                     # social media
   "qgnomeplatform-qt5"                                          # gnome themes (adwaita) for qt5 applications
+  "solaar"                                                      # logitech pairing software
 )
 
 LATEX_PACMAN=(

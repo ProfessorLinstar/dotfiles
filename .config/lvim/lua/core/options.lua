@@ -30,7 +30,7 @@ formatters.setup {
 
 local linters = require "lvim.lsp.null-ls.linters"
 linters.setup {
-  { name = "pylint", args = {"--disable=C0321,W0603", "--max-line-length", "150", "--good-names=Q,W,E,R,T,Y,U,I,O,P,A,S,D,F,G,H,J,K,L,Z,X,C,V,B,N,M,q,w,e,r,t,y,u,i,o,p,a,s,d,f,g,h,j,k,l,z,x,c,v,b,n,m,Run,_,pk,lo,hi"} },
+  { name = "pylint", args = {"--disable=C0321,W0603", "--max-line-length", "150", "--good-names-rgxs=^[a-zA-Z][a-zA-Z0-9]?$", "--good-names=Run,_,pk,lo,hi"} },
 }
 
 --------------------------------------------------------------------------------
