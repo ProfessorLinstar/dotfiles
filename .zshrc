@@ -60,8 +60,6 @@ alias free='free -m'                                            # Show sizes in 
 # shortcuts
 alias py=python3.10                                             # Python shortcut
 alias vi=lvim                                                   #
-alias vim=\\nvim                                                # Make neovim the default
-alias nvim=lvim                                                 # Make tmux use Lunarvim when restoring
 alias vis="source vis"                                          # Allow vis to change cwd
 alias gitu='git add -u && git commit && git push'               #
 alias tt="gio trash"                                            # move file to trash

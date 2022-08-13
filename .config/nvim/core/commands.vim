@@ -39,8 +39,12 @@ function! BufferJump()
   return ":b /" . l:search
 endfunction
 
-" returns expression for editing registers
-function! EditRegister()
+" returns expression for editing registers. Cleans up bad characters in macro
+" (e.g. single-quotes, null characters, and terminating carriage returns)
+function! EditMacro()
   let l:reg = nr2char(getchar())
-  return ':let @' . l:reg . "='\<C-r>\<C-r>" . l:reg . "'\<C-f>hi"
+  return 'let @' . l:reg . "='\<C-r>\<C-r>=getreg('" . l:reg . "')" .
+        \ "->substitute('''', '''''', 'g')\<CR>'\<ESC>"             .
+        \ ":s/\\(\<C-v>\<CR>\\)\\@<='$/\<C-_>\<C-_>'/e\<CR>"        .
+        \ ":s/\<C-v>000/\<C-v>\<C-_>j/ge\<CR>$i"
 endfunction

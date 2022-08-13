@@ -11,10 +11,15 @@ nnoremap <Leader>ae <cmd>OpenDirectory<CR>
 nnoremap <Leader>aE <cmd>OpenFile<CR>
 nnoremap <Leader>af <cmd>if v:count \| let &shiftwidth=v:count \| let &tabstop=v:count \| endif<CR>
 nnoremap <Leader>aw <cmd>TrimTrailingWhitespace<CR>
+nnoremap <Leader>as <cmd>Scratch<CR>
 nnoremap <Leader>at <cmd>terminal<CR>
-nnoremap <expr> <Leader>ar EditRegister()
+nnoremap <expr> <Leader>ar ':<C-f>i' . EditMacro() 
 
-nnoremap <Leader>l <cmd>:buffers<CR>
+nnoremap <Leader>bj <cmd>bn<CR>
+nnoremap <Leader>bk <cmd>bp<CR>
+nnoremap <Leader>bh <cmd>tabp<CR>
+nnoremap <Leader>bl <cmd>tabn<CR>
+nnoremap <Leader>bl <cmd>:buffers<CR>
 nnoremap <expr> <Leader>j BufferJump()
 
 nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,}<C-f>F"i
@@ -32,10 +37,11 @@ nnoremap <Leader>x <cmd>tabclose<CR>
 nnoremap <Leader>z <C-w>\|
 nnoremap <Leader>Z <C-w>=
 
-nnoremap <C-j> <cmd>bn<cr>
-nnoremap <C-k> <cmd>bp<cr>
-nnoremap <C-h> <cmd>tabp<cr>
-nnoremap <C-l> <cmd>tabn<cr>
+" Note: Do not use <C-j> in registers; use <C-/>j instead
+nnoremap <C-j> <cmd>bn<CR>
+nnoremap <C-k> <cmd>bp<CR>
+nnoremap <C-h> <cmd>tabp<CR>
+nnoremap <C-l> <cmd>tabn<CR>
 nnoremap <S-tab> <C-w>W
 nnoremap <tab> <C-w>w
 nnoremap <M-i> <C-i>
@@ -44,12 +50,12 @@ nnoremap <expr> k v:count ? ("m'" . v:count) . 'k' : 'gk'
 nnoremap ]n /\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 nnoremap [n ?\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 
-vnoremap // y/\V<C-r><C-r>=escape(@",'/\')->substitute('\n','\\n','g')<CR><CR>
+vnoremap // y/\V<C-r><C-r>=escape(@",'/\')->substitute('\n','\\n','g')
 nnoremap gt `[v`]
 
 inoremap <C-d> <Del>
 inoremap <M-o> <CR>
-nnoremap <C-f> :<C-f>
+nnoremap <C-f> :<C-p><C-f>
 nnoremap - @:
 nnoremap + @@
 noremap _ g_
@@ -65,3 +71,11 @@ cnoremap <C-d> <Del>
 
 tnoremap <ESC> <C-\><C-n>
 tnoremap <expr> <C-R> '<C-\><C-N>"'.nr2char(getchar()).'pi'
+
+" no-operation keybinding
+noremap <C-_><C-_> <nop>
+cnoremap <C-_><C-_> <nop>
+
+" substitute for <C-j> to avoid null character issues in macros
+map <C-_>j <C-j>
+cmap <C-_>j <C-j>
