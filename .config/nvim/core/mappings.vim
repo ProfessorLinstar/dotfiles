@@ -73,11 +73,11 @@ tnoremap <ESC> <C-\><C-n>
 tnoremap <expr> <C-R> '<C-\><C-N>"'.nr2char(getchar()).'pi'
 
 " universal no-operation keybinding
-noremap <C-q> <nop>
-noremap! <C-q> <nop>
-lnoremap <C-q> <nop>
+noremap <C-q><C-q> <nop>
+noremap! <C-q><C-q> <nop>
+lnoremap <C-q><C-q> <nop>
 
 " universal alias for <C-j> to avoid null character issues in macros
-map <M-j> <C-j>
-map! <M-j> <C-j>
-lmap <M-j> <C-j>
+map <C-q>j <C-j>
+map! <C-q>j <C-j>
+lmap <C-q>j <C-j>

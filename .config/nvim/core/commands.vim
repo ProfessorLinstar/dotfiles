@@ -44,10 +44,10 @@ endfunction
 function! EditMacro()
   let l:reg = nr2char(getchar())
 	let l:expandtab = &expandtab
-  return  ":set noexpandtab\<CR>"                                     .
-				\ 'ilet @' . l:reg . "='\<C-r>\<C-r>=getreg('" . l:reg . "')" .
-        \ "->substitute('''', '''''', 'g')\<CR>'\<ESC>"               .
-        \ ":s/\\(\<C-v>\<CR>\\)\\@<='$/\<C-v><C-q>'/e\<CR>"           .
-        \ ":s/\<C-v>000/\<C-v>\<M-j>/ge\<CR>"                         .
+  return  ":set noexpandtab\<CR>"                                        .
+				\ 'ilet @' . l:reg . "='\<C-r>\<C-r>=getreg('" . l:reg . "')"    .
+        \ "->substitute('''', '''''', 'g')\<CR>'\<ESC>"                  .
+        \ ":s/\\(\<C-v>\<CR>\\)\\@<='$/\<C-v>\<C-q>\<C-v>\<C-q>'/e\<CR>" .
+        \ ":s/\<C-v>000/\<C-v>\<C-q>j/ge\<CR>"                           .
         \ ":let &expandtab = " . l:expandtab . "\<CR>$i"
 endfunction
