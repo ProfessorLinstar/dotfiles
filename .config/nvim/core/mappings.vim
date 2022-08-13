@@ -13,7 +13,7 @@ nnoremap <Leader>af <cmd>if v:count \| let &shiftwidth=v:count \| let &tabstop=v
 nnoremap <Leader>aw <cmd>TrimTrailingWhitespace<CR>
 nnoremap <Leader>as <cmd>Scratch<CR>
 nnoremap <Leader>at <cmd>terminal<CR>
-nnoremap <expr> <Leader>ar ':<C-f>i' . EditMacro() 
+nnoremap <expr> <Leader>ar ':<C-f>' . EditMacro() 
 
 nnoremap <Leader>bj <cmd>bn<CR>
 nnoremap <Leader>bk <cmd>bp<CR>
