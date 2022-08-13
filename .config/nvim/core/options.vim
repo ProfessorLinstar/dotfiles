@@ -16,7 +16,6 @@ set wrap
 set backspace=indent,eol,start
 set complete-=i
 set formatoptions=tcqjrol
-set allowrevins
 
 set smarttab
 set autoindent
