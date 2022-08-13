@@ -14,7 +14,7 @@ function _vis {
   local no_session=true
 
   for i in {1..10}; do
-    if ls | grep Session.vim; then
+    if [ -n "$(find . -maxdepth 1 -name Session.vim)" ]; then
       no_session=false
       vi -S
       break
