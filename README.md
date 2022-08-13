@@ -61,6 +61,7 @@ This repository contains configuration files for my linux workspace. The followi
 │           └── kbd                  ---
 │               └── keymaps          ---
 │                   └── us-caps.map  --- Keymap for linux console remapping caps to escape
+├── Sessionx.vim                     --- Useful vim options for maintaining dotfiles
 ├── .tmux                            ---
 │   └── resurrect                    ---
 │       └── saferestore.sh           --- safe restore script for tmux resurrect

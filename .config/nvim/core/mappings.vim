@@ -50,7 +50,7 @@ nnoremap <expr> k v:count ? ("m'" . v:count) . 'k' : 'gk'
 nnoremap ]n /\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 nnoremap [n ?\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 
-vnoremap // y/\V<C-r><C-r>=escape(@",'/\')->substitute('\n','\\n','g')
+vnoremap // y/\V<C-r><C-r>=escape(@",'/\')->substitute('\n','\\n','g')<CR><CR>
 nnoremap gt `[v`]
 
 inoremap <C-d> <Del>
@@ -72,10 +72,12 @@ cnoremap <C-d> <Del>
 tnoremap <ESC> <C-\><C-n>
 tnoremap <expr> <C-R> '<C-\><C-N>"'.nr2char(getchar()).'pi'
 
-" no-operation keybinding
-noremap <C-_><C-_> <nop>
-cnoremap <C-_><C-_> <nop>
+" universal no-operation keybinding
+noremap <C-q> <nop>
+noremap! <C-q> <nop>
+lnoremap <C-q> <nop>
 
-" substitute for <C-j> to avoid null character issues in macros
-map <C-_>j <C-j>
-cmap <C-_>j <C-j>
+" universal alias for <C-j> to avoid null character issues in macros
+map <M-j> <C-j>
+map! <M-j> <C-j>
+lmap <M-j> <C-j>

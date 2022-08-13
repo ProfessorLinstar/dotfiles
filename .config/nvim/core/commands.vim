@@ -47,7 +47,7 @@ function! EditMacro()
   return  ":set noexpandtab\<CR>"                                     .
 				\ 'ilet @' . l:reg . "='\<C-r>\<C-r>=getreg('" . l:reg . "')" .
         \ "->substitute('''', '''''', 'g')\<CR>'\<ESC>"               .
-        \ ":s/\\(\<C-v>\<CR>\\)\\@<='$/\<C-_>\<C-_>'/e\<CR>"          .
-        \ ":s/\<C-v>000/\<C-v>\<C-_>j/ge\<CR>"                        .
+        \ ":s/\\(\<C-v>\<CR>\\)\\@<='$/\<C-v><C-q>'/e\<CR>"           .
+        \ ":s/\<C-v>000/\<C-v>\<M-j>/ge\<CR>"                         .
         \ ":let &expandtab = " . l:expandtab . "\<CR>$i"
 endfunction
