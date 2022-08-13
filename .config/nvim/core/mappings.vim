@@ -12,10 +12,10 @@ nnoremap <Leader>aE <cmd>OpenFile<CR>
 nnoremap <Leader>af <cmd>if v:count \| let &shiftwidth=v:count \| let &tabstop=v:count \| endif<CR>
 nnoremap <Leader>aw <cmd>TrimTrailingWhitespace<CR>
 nnoremap <Leader>at <cmd>terminal<CR>
-nnoremap <expr> <Leader>ar ':let @' . nr2char(getchar()) . "=\'<C-r>" . nr2char(getchar()) . "\'<C-f>hi"
+nnoremap <expr> <Leader>ar EditRegister()
 
 nnoremap <Leader>l <cmd>:buffers<CR>
-nnoremap <expr> <Leader>j ":" . BufferJump()
+nnoremap <expr> <Leader>j BufferJump()
 
 nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,}<C-f>F"i
 nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -not -regex ".*/\.git/.*" -type f -regex ".*/.*"<C-f>F.i
@@ -44,7 +44,7 @@ nnoremap <expr> k v:count ? ("m'" . v:count) . 'k' : 'gk'
 nnoremap ]n /\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 nnoremap [n ?\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 
-vnoremap // y/\V<C-R>=escape(@",'/\')->substitute('\n','\\n','g')<CR><CR>
+vnoremap // y/\V<C-r><C-r>=escape(@",'/\')->substitute('\n','\\n','g')<CR><CR>
 nnoremap gt `[v`]
 
 inoremap <C-d> <Del>

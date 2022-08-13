@@ -31,18 +31,25 @@ This repository contains configuration files for my linux workspace. The followi
 │   ├── dconf                        ---
 │   │   ├── arch.dconf               --- Selected entries from 'dconf dump /' in Arch
 │   │   └── manjaro.dconf            --- Result of 'dconf dump /' in Manjaro (deprecated)
+│   ├── google-chrome                ---
+│   │   └── vimium.conf              --- Configuration for chrome vimium extension
 │   ├── insync                       ---
 │   │   └── ignorerules              ---
 │   └── okular                       ---
 │       └── default.shortcuts        ---
+├── .gitconfig                       --- global git configuration file
 ├── .gitignore                       ---
 ├── install.sh                       --- dotfiles install script
+├── .local                           ---
+│   └── share                        ---
+│       └── backgrounds              ---
+│           └── GH2.jpg              --- placeholder background
 ├── .p10k.zsh                        --- powerlevel theme settings
 ├── .profile                         --- sh-compatible login startup file
 ├── README.md                        --- dotfiles overview
 ├── root                             ---
 │   ├── etc                          ---
-│   │   ├── logid.cfg                --- Logid configuration file for Logitech peripherals
+│   │   ├── logid.cfg                --- logid configuration file for Logitech peripherals
 │   │   ├── modprobe.d               ---
 │   │   │   └── hid_apple.conf       --- NuPhy Air75 fix for function keys
 │   │   └── vconsole.conf            --- Linux virtual console configuration file
@@ -54,6 +61,9 @@ This repository contains configuration files for my linux workspace. The followi
 │           └── kbd                  ---
 │               └── keymaps          ---
 │                   └── us-caps.map  --- Keymap for linux console remapping caps to escape
+├── .tmux                            ---
+│   └── resurrect                    ---
+│       └── saferestore.sh           --- safe restore script for tmux resurrect
 ├── .tmux.conf                       --- tmux configuration file
 ├── .vimrc                           --- Vim main configuration file (deprecated)
 ├── .zprofile                        --- zshell login startup file

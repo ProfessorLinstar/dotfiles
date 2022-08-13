@@ -30,11 +30,17 @@ function! BufferJump()
     endfor
 
     if len(l:matches) == 1
-      return "b /" . l:matches[0] . "\<CR>"
+      return ":b /" . l:matches[0] . "\<CR>"
     elseif len(l:matches) == 0
-      return "\<CR>"
+      return ":\<CR>"
     endif
   endfor
 
-  return "b /" . l:search
+  return ":b /" . l:search
+endfunction
+
+" returns expression for editing registers
+function! EditRegister()
+  let l:reg = nr2char(getchar())
+  return ':let @' . l:reg . "='\<C-r>\<C-r>" . l:reg . "'\<C-f>hi"
 endfunction
