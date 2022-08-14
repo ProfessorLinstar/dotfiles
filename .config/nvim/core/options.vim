@@ -13,6 +13,7 @@ set relativenumber
 set cmdheight=2
 set wrap
 
+set timeoutlen=250
 set backspace=indent,eol,start
 set complete-=i
 set formatoptions=tcqjrol

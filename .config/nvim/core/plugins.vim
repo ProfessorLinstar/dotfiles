@@ -16,10 +16,14 @@ Plug 'tpope/vim-obsession'            " Improve vim sessions functionality
 Plug 'moll/vim-bbye'                  " More intelligent buffer deletion
 Plug 'tpope/vim-fugitive'             " Git-integration for vim
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install' } " Markdown integration for neovim
-
-" Plug '~/Documents/GitHub/vimkeys'     " My plugin!
+Plug 'folke/which-key.nvim'           " keybinding hints
 
 call plug#end()
+
+" lua plugin setup
+lua << EOF
+  require("which-key").setup {}
+EOF
 
 " vim-airline & vim-airline-themes
 let g:airline#extensions#tabline#show_buffers = 1
