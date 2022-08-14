@@ -5,6 +5,7 @@ nnoremap <Leader>dr <cmd>set all& \| wqa <CR>
 nnoremap <Leader>df <cmd>earlier 1f<CR>
 nnoremap <Leader>dF <cmd>later 1f<CR>
 
+nnoremap <Leader>ai <cmd>e $MYVIMRC<CR>
 nnoremap <Leader>ap <cmd>let @+=expand('%:p:h') \| echo @+<CR>
 nnoremap <Leader>aP <cmd>let @+=expand('%:p') \| echo @+<CR>
 nnoremap <Leader>ae <cmd>OpenDirectory<CR>
@@ -22,7 +23,6 @@ nnoremap <Leader>bl <cmd>tabn<CR>
 nnoremap <Leader>bl <cmd>:buffers<CR>
 nnoremap <expr> <Leader>j BufferJump()
 
-nnoremap <Leader>Lc <cmd>e $MYVIMRC<CR>
 
 nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,}<C-f>F"i
 nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -not -regex ".*/\.git/.*" -type f -regex ".*/.*"<C-f>F.i
