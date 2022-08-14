@@ -41,12 +41,12 @@ endfunction
 
 " returns expression for editing registers. Cleans up bad characters in macro
 " (e.g. tabs, single-quotes, null characters, and terminating carriage returns)
+" Calls setreg in charwise mode (instead of linewise) to avoid appending null
+" character to terminating carriage return. Uses  to insert register
+" literally, including tabs (unlike , which does not escape tabs with ,
+" and consequently expands tabs when expandtab is set)
 function! EditMacro()
   let l:reg = nr2char(getchar())
-	let l:expandtab = &expandtab
-  return  ":\<C-f>:set noexpandtab\<CR>"                                        .
-				\ "icall setreg('" . l:reg . "', '\<C-r>\<C-r>=getreg('" . l:reg . "')" .
-        \ "->substitute('''', '''''', 'g')\<CR>', 'c')\<ESC>"                   .
-        \ ":s/\<C-v>000/\<C-v>\<C-q>/ge\<CR>"                                   .
-        \ ":let &expandtab = " . l:expandtab . "\<CR>$F,hi"
+  return ":icall setreg('" . l:reg . "', '=getreg('" . l:reg . "')" .
+       \ "->substitute('''', '''''', 'g')', 'c'):s/000//ge$F,hi"
 endfunction
