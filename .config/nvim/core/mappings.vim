@@ -22,6 +22,8 @@ nnoremap <Leader>bl <cmd>tabn<CR>
 nnoremap <Leader>bl <cmd>:buffers<CR>
 nnoremap <expr> <Leader>j BufferJump()
 
+nnoremap <Leader>Lc <cmd>e $MYVIMRC<CR>
+
 nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,}<C-f>F"i
 nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -not -regex ".*/\.git/.*" -type f -regex ".*/.*"<C-f>F.i
 
