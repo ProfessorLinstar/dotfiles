@@ -13,7 +13,7 @@ nnoremap <Leader>af <cmd>if v:count \| let &shiftwidth=v:count \| let &tabstop=v
 nnoremap <Leader>aw <cmd>TrimTrailingWhitespace<CR>
 nnoremap <Leader>as <cmd>Scratch<CR>
 nnoremap <Leader>at <cmd>terminal<CR>
-nnoremap <expr> <Leader>ar ':<C-f>' . EditMacro() 
+nnoremap <expr> <Leader>ar EditMacro() 
 
 nnoremap <Leader>bj <cmd>bn<CR>
 nnoremap <Leader>bk <cmd>bp<CR>
@@ -72,12 +72,7 @@ cnoremap <C-d> <Del>
 tnoremap <ESC> <C-\><C-n>
 tnoremap <expr> <C-R> '<C-\><C-N>"'.nr2char(getchar()).'pi'
 
-" universal no-operation keybinding
-noremap <C-q><C-q> <nop>
-noremap! <C-q><C-q> <nop>
-lnoremap <C-q><C-q> <nop>
-
 " universal alias for <C-j> to avoid null character issues in macros
-map <C-q>j <C-j>
-map! <C-q>j <C-j>
-lmap <C-q>j <C-j>
+map <C-q> <C-j>
+map! <C-q> <C-j>
+lmap <C-q> <C-j>
