@@ -1,6 +1,6 @@
 #!/bin/sh
 
-usage() { echo "$0 safe|prev"; }
+usage() { echo "$0 [safe|prev]"; }
 cd $(dirname $0)
 
 # delete empty tmux_resurrect files
