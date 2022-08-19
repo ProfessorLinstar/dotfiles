@@ -97,6 +97,8 @@ function confirmsed {
 
 # Pacman package list
 TERMINAL_PACMAN=(
+  "alacritty"                                                   # terminal emulator
+  "wmctrl"                                                      # CLI interface for X window manager
   "zsh"                                                         # zshell essentials
   "zsh-theme-powerlevel10k"                                     # .
   "zsh-autosuggestions"                                         # .
@@ -128,7 +130,6 @@ TERMINAL_PACMAN=(
 GNOME_PACMAN=(
   "gnome-shell"                                                 # gnome desktop environment
   "gdm"                                                         # gnome display manager
-  "gnome-terminal"                                              # terminal for gnome
   "gnome-tweaks"                                                # more settings
   "gnome-control-center"                                        # settings
   "gparted"                                                     # disk partition editor
