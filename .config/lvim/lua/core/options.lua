@@ -2,7 +2,10 @@
 -- Lunarvim settings
 --------------------------------------------------------------------------------
 
+-- vim builtin
 vim.opt.showmode = true
+
+-- lvim builtin
 lvim.log.level = "warn"
 lvim.format_on_save = false
 lvim.colorscheme = "onedark"
@@ -20,6 +23,7 @@ lvim.builtin.treesitter.ignore_install = { "haskell", "latex" }
 lvim.builtin.treesitter.highlight.enabled = true
 lvim.builtin.treesitter.indent = { enable = true, disable = { "python", "go", "tex" } } -- prevent treesitter from breaking indenting
 
+-- LSP Settings
 lvim.lsp.automatic_servers_installation = false
 
 local formatters = require "lvim.lsp.null-ls.formatters"
