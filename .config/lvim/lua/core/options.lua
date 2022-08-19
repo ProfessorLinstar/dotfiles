@@ -75,7 +75,7 @@ require "onedark".setup {
 
 -- vimtex
 vim.g.vimtex_view_general_viewer = 'okular'
-vim.g.vimtex_view_general_options = '--unique file:@pdf#src:@line@tex'
+vim.g.vimtex_view_general_options = 'file:@pdf#src:@line@tex'
 vim.g.vimtex_indent_on_ampersands = 0
 -- Okular inverse search command: sh -c "echo -n \"%l\" | xclip -selection clipboard"
 
