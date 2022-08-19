@@ -6,6 +6,8 @@ This repository contains configuration files for my linux workspace. The followi
 ├── .bash_profile                    --- bash login interactive startup file
 ├── .bashrc                          --- bash non-login interactive startup file
 ├── .config                          ---
+│   ├── alacritty                    ---
+│   │   └── alacritty.yml            --- alacritty terminal emulatro configuration file
 │   ├── lvim                         ---
 │   │   ├── config.lua               --- Lunarvim main configuration file
 │   │   ├── lua                      ---
@@ -42,6 +44,8 @@ This repository contains configuration files for my linux workspace. The followi
 ├── install.sh                       --- dotfiles install script
 ├── .local                           ---
 │   └── share                        ---
+│       ├── applications             ---
+│       │   └── Alacritty.desktop    --- custom launch settings for Wayland
 │       └── backgrounds              ---
 │           └── GH2.jpg              --- placeholder background
 ├── .p10k.zsh                        --- powerlevel theme settings
@@ -56,6 +60,7 @@ This repository contains configuration files for my linux workspace. The followi
 │   └── usr                          ---
 │       ├── local                    ---
 │       │   └── bin                  ---
+│       │       ├── colortest        --- prints 256 terminal colors
 │       │       └── vis              --- execute "vi -S" in closest parent directory
 │       └── share                    ---
 │           └── kbd                  ---
