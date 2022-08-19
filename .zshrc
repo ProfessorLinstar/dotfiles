@@ -38,7 +38,8 @@ colors                                                          # Activate color
 HISTFILE=~/.zhistory
 HISTSIZE=10000
 SAVEHIST=10000
-WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters part of the word
+WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters as words
+ZLE_RPROMPT_INDENT=0                                            # No space after right prompt
 
 # Color man pages
 export LESS_TERMCAP_mb=$'\E[01;32m'
