@@ -64,7 +64,14 @@ lvim.plugins = {
 
 -- Extra setup
 require "lsp_signature".setup { toggle_key = "<C-s>", select_signature_key = "<M-s>" }
-require "onedark".setup { style = "warmer", code_style = { keywords = "bold", functions = "italic,bold" } }
+require "onedark".setup {
+  style = "warmer",
+  code_style = { keywords = "bold", functions = "italic,bold" },
+  colors = {
+    bg0 = "#1c1c1c",
+    bg_d = "#232326",
+  }
+}
 
 -- vimtex
 vim.g.vimtex_view_general_viewer = 'okular'

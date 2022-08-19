@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ################################################################################
 # Program: vis
@@ -9,22 +9,27 @@
 # Location: /usr/local/bin/vis
 ################################################################################
 
-function _vis {
-  local cwd=$(pwd)
-  local no_session=true
+function color { printf "\x1b[48;5;%sm%3d\e[0m " "$1" "$1"; }
 
-  for i in {1..10}; do
-    if [ -n "$(find . -maxdepth 1 -name Session.vim)" ]; then
-      no_session=false
-      vi -S
-      break
-    fi
-    cd ..
+for i in {0..15}; do
+  color $i
+done
+echo -e "\n"
+
+for row in {0..1}; do
+  for i in {0..5}; do
+    for col in {0..2}; do
+      for j in {0..5}; do
+        color $((16 + 108*row + 6*i + 36*col + j))
+      done
+      printf " "
+    done
+    echo
   done
+  echo
+done
 
-  if $no_session; then
-    cd $cwd
-    echo "No Session.vim file found in CWD prefix."
-  fi
-}
-_vis
+for i in {232..255}; do
+  color $i
+  if (( (i-231) % 12 == 0 )); then echo; fi
+done
