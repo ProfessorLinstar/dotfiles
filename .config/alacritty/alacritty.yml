@@ -13,14 +13,14 @@ colors:
     background: '#1c1c1c'
 
   normal:
-    black:   '#101012'
+    white:   '#d0cfcc'
     red:     '#de5d68'
     green:   '#8fb573'
-    yellow:  '#dbb671'
     blue:    '#57a5e5'
-    magenta: '#a347ba'
+    black:   '#101012'
     cyan:    '#51a8b3'
-    white:   '#d0cfcc'
+    magenta: '#bb70d2'
+    yellow:  '#dbb671'
 
 key_bindings:
   - { key: F11, command: {program: "wmctrl", args: ["-r", ":ACTIVE:", "-b", "toggle,fullscreen"]} }
