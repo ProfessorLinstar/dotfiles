@@ -20,6 +20,11 @@ promptnumber() {
   done
 }
 
+if ! command -v mutool &> /dev/null; then
+  echo "'mutool' executable not found. (can be installed as part of the 'mupdf-tools' package in Arch.)"
+  exit 1
+fi
+
 SHORT=o:
 LONG=output:
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
@@ -32,24 +37,24 @@ fi
 eval set -- "$OPTS"
 while true; do
   case "$1" in
-    -o | --output ) out=$2; shift 2; ;;
+    -o | --output ) outfile=$2; shift 2; ;;
 
     -h | --help )   usage;  exit 0;  ;;
     -- )            shift;  break;   ;;
-    * )             usage;  exit 1;  ;;
+    * )             usage;  exit 2;  ;;
   esac
 done
 
-in=$1
-if [[ ! -f "$in" ]] || [[ "${in##*.}" != "pdf" ]]; then
+infile=$1
+if [[ ! -f "$infile" ]] || [[ "${infile##*.}" != "pdf" ]]; then
   badfile
-  exit 2
+  exit 3
 fi
 
-[[ -z "$out" ]] && out=$(basename "$in" ".pdf")" (A4).pdf"
-if [[ -f "$out" ]]; then
-  echo "File ${out} exists. Confirm overwrite."
-  rm -vi "$out" && [[ -f "$out" ]] && exit 3
+[[ -z "$outfile" ]] && outfile=$(basename "$infile" ".pdf")" (A4).pdf"
+if [[ -f "$outfile" ]]; then
+  echo "File ${outfile} exists. Confirm overwrite."
+  rm -vi "$outfile" && [[ -f "$outfile" ]] && exit 4
   echo
 fi
 
@@ -65,12 +70,11 @@ while read -r line; do
   length=$(bc <<< "$hi - $lo")
 
   pages+=( $(mktemp --suffix=".pdf") )
-  mutool clean -ggggz "$in" "${pages[-1]}" $pagenum
+  mutool clean -ggggz "$infile" "${pages[-1]}" $pagenum
 
   partnum=1
   case $length in
     $one_length ) ;;
-
     $five_length ) partnum=5; ;;
 
     * )
@@ -86,11 +90,11 @@ while read -r line; do
   [[ $partnum -gt 1 ]] && mutool poster -y $partnum "${pages[-1]}" "${pages[-1]}"
   pagenum=$((pagenum+1))
 
-done <<< $(mutool pages "$in" | grep -E "<MediaBox.*/>")
+done <<< $(mutool pages "$infile" | grep -E "<MediaBox.*/>")
 
-if [[ -z $(mutool merge -o "$out" "${pages[@]}" 2>&1) ]] ; then 
+if [[ -z $(mutool merge -o "$outfile" "${pages[@]}" 2>&1) ]] ; then 
   rm "${pages[@]}"
-  echo "Merge successful at $out."
+  echo "Merge successful at $outfile."
 else
   echo "Merge failed with ${pages[@]}"
 fi
