@@ -100,4 +100,3 @@ if [[ -z $(mutool merge -o "$outfile" "${pages[@]}" 2>&1) ]] ; then
 else
   echo "Merge failed with ${pages[@]}"
 fi
-
