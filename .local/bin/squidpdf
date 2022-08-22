@@ -55,7 +55,8 @@ fi
 [[ -z "$outfile" ]] && outfile=$(basename "$infile" ".pdf")" (A4).pdf"
 if [[ -f "$outfile" ]]; then
   echo "File ${outfile} exists. Confirm overwrite."
-  rm -vi "$outfile" && [[ -f "$outfile" ]] && exit 4
+  rm -vi "$outfile"
+  [[ -f "$outfile" ]] && exit 4
   echo
 fi
 
