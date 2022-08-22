@@ -3,7 +3,8 @@
 ################################################################################
 # Program: squidpdf
 # Description: Takes a pdf file as an argument with (1x) and (5x) A4 pages, and
-#              produces an output pdf file with standard A4 pages.
+#              produces an output pdf file with standard A4 pages. Uses mutool
+#              to modify pdfs.
 # Location: /usr/.local/bin/squidpdf
 ################################################################################
 
