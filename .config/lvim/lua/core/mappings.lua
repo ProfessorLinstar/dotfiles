@@ -15,9 +15,14 @@ table.insert(lvim.builtin.nvimtree.setup.view.mappings.list, { key = "f", action
 -- which-key modifications
 --------------------------------------------------------------------------------
 
--- Builtin overriding
+-- which_key overridings
 lvim.builtin.which_key.mappings["b"]["l"] = { nil, "List Buffers (:buffers)" }
 lvim.builtin.which_key.mappings["b"]["h"] = nil
+
+-- keys overridings
+lvim.keys.insert_mode["jk"] = false
+lvim.keys.insert_mode["jj"] = false
+lvim.keys.insert_mode["kj"] = false
 
 -- Menu labels
 lvim.builtin.which_key.mappings["d"] = { name = "Protected Menu" }
