@@ -286,6 +286,7 @@ if ! $SKIP_TMUX; then
   if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
     echo "Installing tpm..."
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+    echo "tpm installation complete."
   fi
 fi
 
