@@ -1,4 +1,3 @@
-nnoremap <space> <nop>
 let mapleader = " "
 
 nnoremap <Leader>dq <cmd>q<CR>
