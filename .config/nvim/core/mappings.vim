@@ -1,3 +1,6 @@
+nnoremap <space> <nop>
+let mapleader = " "
+
 nnoremap <Leader>dq <cmd>q<CR>
 nnoremap <Leader>dd <cmd>bp \| bd #<CR>
 nnoremap <Leader>da <cmd>wqa<CR>
@@ -55,7 +58,7 @@ nnoremap [n ?\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 vnoremap // y/\V<C-r><C-r>=escape(@",'/\')->substitute('\n','\\n','g')<CR><CR>
 nnoremap gt `[v`]
 
-inoremap <C-d> <Del>
+inoremap <C-d> <del>
 inoremap <M-o> <CR>
 nnoremap <C-f> :<C-p><C-f>
 nnoremap - @:
@@ -69,7 +72,7 @@ noremap <M-P> "0P
 cnoremap <M-f> <C-right>
 cnoremap <M-b> <C-left>
 cnoremap <C-a> <C-b>
-cnoremap <C-d> <Del>
+cnoremap <C-d> <del>
 
 tnoremap <ESC> <C-\><C-n>
 tnoremap <expr> <C-R> '<C-\><C-N>"' . nr2char(getchar()) . 'pi'
