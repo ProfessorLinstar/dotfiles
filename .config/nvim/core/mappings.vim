@@ -22,7 +22,7 @@ nnoremap <Leader>bj <cmd>bn<CR>
 nnoremap <Leader>bk <cmd>bp<CR>
 nnoremap <Leader>bh <cmd>tabp<CR>
 nnoremap <Leader>bl <cmd>tabn<CR>
-nnoremap <Leader>bl <cmd>:buffers<CR>
+nnoremap <Leader>bl <cmd>buffers<CR>
 nnoremap <expr> <Leader>j BufferJump()
 
 
