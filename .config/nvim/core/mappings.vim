@@ -47,8 +47,8 @@ nnoremap <C-l> <cmd>tabn<CR>
 nnoremap <S-tab> <C-w>W
 nnoremap <tab> <C-w>w
 nnoremap <M-i> <C-i>
-nnoremap <expr> j v:count ? ("m'" .. v:count) .. 'j' : 'gj'
-nnoremap <expr> k v:count ? ("m'" .. v:count) .. 'k' : 'gk'
+nnoremap <expr> j v:count ? ("m'" . v:count) . 'j' : 'gj'
+nnoremap <expr> k v:count ? ("m'" . v:count) . 'k' : 'gk'
 nnoremap ]n /\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 nnoremap [n ?\(<<<<<<<\\|=======\\|>>>>>>>\)<CR>
 
@@ -72,7 +72,7 @@ cnoremap <C-a> <C-b>
 cnoremap <C-d> <Del>
 
 tnoremap <ESC> <C-\><C-n>
-tnoremap <expr> <C-R> '<C-\><C-N>"' .. nr2char(getchar()) .. 'pi'
+tnoremap <expr> <C-R> '<C-\><C-N>"' . nr2char(getchar()) . 'pi'
 
 " universal alias for <C-j> to avoid null character issues in macros
 map <C-q> <C-j>
