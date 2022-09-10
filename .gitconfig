@@ -3,7 +3,5 @@
 	name = ProfessorLinstar
 [core]
 	editor = nvim
-[credential]
-	helper = store
 [safe]
 	directory = *
