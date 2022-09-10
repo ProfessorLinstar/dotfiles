@@ -5,3 +5,5 @@
 	editor = nvim
 [safe]
 	directory = *
+[credential]
+	helper = store
