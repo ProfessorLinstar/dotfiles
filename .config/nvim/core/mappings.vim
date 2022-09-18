@@ -26,13 +26,12 @@ nnoremap <Leader>bl <cmd>buffers<CR>
 nnoremap <expr> <Leader>j BufferJump()
 
 
-nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,}<C-f>F"i
+nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,} --include={\*,}<C-f>F"i
 nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -not -regex ".*/\.git/.*" -type f -regex ".*/.*"<C-f>F.i
 
 nnoremap <Leader>e <cmd>Lexplore<CR>
 nnoremap <Leader>r <cmd>noh<CR>
 nnoremap <Leader>w <cmd>w<CR>
-nnoremap <Leader>t <cmd>JumpToClipboard<CR>
 nnoremap <Leader>c <cmd>CdToFile<CR>
 nnoremap <Leader>C <cmd>CdToSession<CR>
 nnoremap <Leader>q <cmd>qa<CR>
@@ -59,7 +58,7 @@ nnoremap gt `[v`]
 
 inoremap <C-d> <del>
 inoremap <M-o> <CR>
-nnoremap <C-f> :<C-p><C-f>
+nnoremap <C-f> :<C-f>"_dd
 nnoremap - @:
 nnoremap + @@
 noremap _ g_

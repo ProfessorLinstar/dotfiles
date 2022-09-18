@@ -11,6 +11,9 @@ nnoremap <Leader>ax <cmd>if v:this_session != "" \| execute "e " . substitute(g:
 " lervag/vimtex: Prevent vimtex from stealing ts chord
 nnoremap ts<Space> ts
 
+" lervag/vimtex: Jump to clipboard line number
+nnoremap \t <cmd>JumpToClipboard<CR>
+
 " tpope/vim-commentary: Mappings for toggling comments
 nmap <Leader>/ gcc
 vmap <Leader>/ gc

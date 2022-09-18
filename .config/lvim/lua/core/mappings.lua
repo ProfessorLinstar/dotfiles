@@ -4,6 +4,8 @@
 
 vim.api.nvim_set_keymap("n", "<Leader>j", "<cmd>BufferLinePick<CR>", { noremap = true, silent = true })
 vim.api.nvim_set_keymap("n", "<Leader>;", '<cmd>if luaeval("vim.bo.ft") != "alpha" | tab split | endif | execute "Alpha" | cd %:p:h<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<Leader>t", '<cmd>Telescope live_grep<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<Leader>f", '<cmd>Telescope find_files<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap("", "H", "H", { noremap = true })
 vim.api.nvim_set_keymap("", "L", "L", { noremap = true })
 
@@ -18,6 +20,8 @@ table.insert(lvim.builtin.nvimtree.setup.view.mappings.list, { key = "f", action
 -- which_key overridings
 lvim.builtin.which_key.mappings["b"]["l"] = { nil, "List Buffers (:buffers)" }
 lvim.builtin.which_key.mappings["b"]["h"] = nil
+lvim.builtin.which_key.mappings["s"]["t"] = nil
+lvim.builtin.which_key.mappings["s"]["f"] = nil
 
 -- keys overridings
 lvim.keys.insert_mode["jk"] = false
@@ -34,7 +38,7 @@ lvim.builtin.which_key.mappings["y"] = {
   j = { nil, "Jump to buffer (:BufferLinePick)" },
   r = { nil, "Disable highlighting (:noh)" },
   w = { nil, "Write (:w)" },
-  t = { nil, "Goto clipboard line number" },
+  t = { nil, "Search Text (:Telescope live_grep)" },
   c = { nil, "cd to current file (:cd %:p:h)" },
   C = { nil, "cd to current Session.vim (v:this_session)" },
   q = { nil, "Quit All (:qa)" },
@@ -45,5 +49,5 @@ lvim.builtin.which_key.mappings["y"] = {
 }
 
 -- Hide basic mappings from which-key menu
-local ignore = { "r", "w", "t", "c", "C", "q", "v", "x", "'", "/", "z", "Z", "h", ";", "j" }
+local ignore = { "j", "r", "w", "t", "c", "C", "q", "v", "x", "'", "/", "z", "Z", "h", ";"}
 for _, letter in pairs(ignore) do lvim.builtin.which_key.mappings[letter] = { nil, "which_key_ignore" } end
