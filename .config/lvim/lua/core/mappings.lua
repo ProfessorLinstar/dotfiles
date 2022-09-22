@@ -49,5 +49,5 @@ lvim.builtin.which_key.mappings["y"] = {
 }
 
 -- Hide basic mappings from which-key menu
-local ignore = { "j", "r", "w", "t", "c", "C", "q", "v", "x", "'", "/", "z", "Z", "h", ";"}
+local ignore = { "j", "r", "w", "t", "c", "C", "q", "v", "x", "'", "/", "z", "Z", "h", ";", "f"}
 for _, letter in pairs(ignore) do lvim.builtin.which_key.mappings[letter] = { nil, "which_key_ignore" } end
