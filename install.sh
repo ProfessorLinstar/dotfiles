@@ -12,8 +12,8 @@ usage() {
   echo "See README.md for more information."
 }
 
-SHORT=apgvylmtdixh
-LONG=all,pacman,logiops,lunarvim,yay,link,manual,tmux,dconf,info,xdg,help
+SHORT=apgvylmtdixrh
+LONG=all,pacman,logiops,lunarvim,yay,link,manual,tmux,dconf,info,xdg,printer,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
 SKIP_XDG=true
@@ -26,6 +26,7 @@ SKIP_LUNARVIM=true
 SKIP_LINK=true
 SKIP_MANUAL=true
 SKIP_TMUX=true
+SKIP_PRINTER=true
 
 if [[ $# -eq 0 ]]; then
   usage
@@ -44,7 +45,8 @@ while true; do
                       SKIP_LUNARVIM=false;
                       SKIP_LINK=false;
                       SKIP_MANUAL=false;
-                      SKIP_TMUX=false;     shift; ;;
+                      SKIP_TMUX=false;
+                      SKIP_PRINTER=false;  shift; ;;
 
     -p | --pacman )   SKIP_PACMAN=false;   shift; ;;
     -g | --logiops )  SKIP_LOGIOPS=false;  shift; ;;
@@ -56,6 +58,7 @@ while true; do
     -d | --dconf )    SKIP_DCONF=false;    shift; ;;
     -i | --info )     SKIP_DUMPINFO=false; shift; ;;
     -x | --xdg )      SKIP_XDG=false;      shift; ;;
+    -r | --printer )  SKIP_PRINTER=false;  shift; ;;
 
     -h | --help )     usage; exit 0;              ;;
     -- )              shift; break;               ;; # break on positional arguments
@@ -164,6 +167,13 @@ LATEX_PACMAN=(
   "cpanminus"                                                   # install cpan modules more easily
 )
 
+# (hp) printer package list
+PRINTER_PACMAN=(
+  "cups"                                                        # standard printing system
+  "system-config-printer"                                       # GUI printer configuration
+  "hplip"                                                       # hp printer driver installer
+)
+
 # Yay package list
 TERMINAL_YAY=(
   "nerd-fonts-ubuntu-mono"                                      # nerd font
@@ -208,6 +218,14 @@ if ! $SKIP_YAY; then
 
   echo "Installing yay packages for terminal..."; yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty; echo
   echo "Installing yay packages for gnome...";    yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]}    < /dev/tty; echo
+fi
+
+
+# printer
+if ! $SKIP_PRINTER; then
+  echo "Installing pacman packages for printer..."; sudo pacman --needed -Sq ${PRINTER_PACMAN[@]} < /dev/tty; echo
+  sudo systemctl enable --now cups
+  echo "Note: to install HP printer drivers, use 'hp-setup -i'."
 fi
 
 
