@@ -293,7 +293,7 @@ fi
 # Manual modifications
 if ! $SKIP_MANUAL; then
   confirmsed /etc/bluetooth/main.conf "#AutoEnable=false" "AutoEnable=true" sudo
-  confirmsed ~/.local/share/lunarvim/site/pack/packer/opt/vimtex/autoload/vimtex/syntax/core.vim "  syntax iskeyword 48-57,a-z,A-Z,192-255" "  syntax iskeyword a-z,A-Z,192-255"
+  confirmsed ~/.local/share/lunarvim/site/pack/packer/start/vimtex/autoload/vimtex/syntax/core.vim "  syntax iskeyword 48-57,a-z,A-Z,192-255" "  syntax iskeyword a-z,A-Z,192-255"
   confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim -S"' '		echo "vis"'
   confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim"' '		echo "vis"'
 fi
