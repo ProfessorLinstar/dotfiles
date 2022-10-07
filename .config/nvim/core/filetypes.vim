@@ -13,3 +13,9 @@ augroup filetype_indentation
   au!
   autocmd FileType cs,py set tabstop=4 | set shiftwidth=4
 augroup end
+
+" Spelling
+augroup filetype_spelling
+  au!
+  autocmd Filetype tex set spell
+augroup end
