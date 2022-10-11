@@ -1,0 +1,18 @@
+[MASTER]
+extension-pkg-whitelist=PyQt5
+init-hook='import sys; sys.path.append("/home/linstar/.local/lib/python3.10/site-packages")'
+
+[EXCEPTIONS]
+overgeneral-exceptions=BaseException
+
+[MESSAGES CONTROL]
+disable=missing-module-docstring,
+        missing-class-docstring,
+        missing-function-docstring,
+        redefined-builtin,
+        consider-using-f-string
+
+[FORMAT]
+max-line-length=72
+max-module-lines=500
+min-similarity-lines=10

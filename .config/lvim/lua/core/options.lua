@@ -32,7 +32,14 @@ formatters.setup {
 
 local linters = require "lvim.lsp.null-ls.linters"
 linters.setup {
-  { name = "pylint", args = {"--disable=C0321,W0603,R0903", "--max-line-length", "150", "--good-names-rgxs=^([a-zA-Z][a-zA-Z0-9]?|[A-Z_0-9]+)$", "--good-names=Run,_,pk,lo,hi"} },
+  {
+    name = "pylint",
+    args = {
+      "--disable=C0321,W0603,R0903",
+      "--max-line-length", "150",
+      "--good-names-rgxs=^([a-zA-Z][a-zA-Z0-9]?|[A-Z_0-9]+)$", "--good-names=Run,_,pk,lo,hi",
+    }
+  },
 }
 
 --------------------------------------------------------------------------------
