@@ -22,3 +22,7 @@ preimage
 postorder
 homeomorphism
 unmark
+previsited
+postvisited
+preorder
+postvisit
