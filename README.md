@@ -17,18 +17,18 @@ This repository contains configuration files for my linux workspace. The followi
 │   │   └── spell                    --- Lunarvim spelling files
 │   │       ├── en.utf-8.add         ---
 │   │       └── en.utf-8.add.spl     ---
-│   └── nvim                         ---
-│       ├── core                     ---
-│       │   ├── autocommands.vim     --- Global autocommands
-│       │   ├── commands.vim         ---
-│       │   ├── filetypes.vim        --- Filetype specific settings and autocommands
-│       │   ├── mappings.vim         ---
-│       │   ├── options.vim          ---
-│       │   ├── plugins.vim          ---
-│       │   └── plugmaps.vim         --- Mappings for neovim/lunarvim plugins
-│       ├── extensions               ---
-│       │   └── vscode.vim           --- Configuration file for neovim in vscode
-│       └── init.vim                 --- Neovim main configuration file (sources 'core')
+│   ├── nvim                         ---
+│   │   ├── core                     ---
+│   │   │   ├── autocommands.vim     --- Global autocommands
+│   │   │   ├── commands.vim         ---
+│   │   │   ├── filetypes.vim        --- Filetype specific settings and autocommands
+│   │   │   ├── mappings.vim         ---
+│   │   │   ├── options.vim          ---
+│   │   │   ├── plugins.vim          ---
+│   │   │   └── plugmaps.vim         --- Mappings for neovim/lunarvim plugins
+│   │   └── init.vim                 --- Neovim main configuration file (sources 'core')
+│   └── yapf                         ---
+│       └── style                    --- yapf python formatter global configuration file
 ├── dump                             --- Exported configuration settings
 │   ├── dconf                        ---
 │   │   ├── arch.dconf               --- Selected entries from 'dconf dump /' in Arch
@@ -43,6 +43,8 @@ This repository contains configuration files for my linux workspace. The followi
 ├── .gitignore                       ---
 ├── install.sh                       --- dotfiles install script
 ├── .local                           ---
+│   ├── bin                          ---
+│   │   └── squidpdf                 --- pdf splitter for Squid notes
 │   └── share                        ---
 │       ├── applications             ---
 │       │   └── Alacritty.desktop    --- custom launch settings for Wayland
@@ -50,6 +52,7 @@ This repository contains configuration files for my linux workspace. The followi
 │           └── GH2.jpg              --- placeholder background
 ├── .p10k.zsh                        --- powerlevel theme settings
 ├── .profile                         --- sh-compatible login startup file
+├── .pylintrc                        --- pylint global configuration file
 ├── README.md                        --- dotfiles overview
 ├── root                             ---
 │   ├── etc                          ---
@@ -74,6 +77,8 @@ This repository contains configuration files for my linux workspace. The followi
 ├── .vimrc                           --- Vim main configuration file (deprecated)
 ├── .zprofile                        --- zshell login startup file
 └── .zshrc                           --- zshell interactive startup file
+                                     ---
+30 directories, 44 files             ---
 ```
 
 ## Installation

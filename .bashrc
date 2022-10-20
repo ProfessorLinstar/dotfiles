@@ -22,5 +22,3 @@ alias vi=lvim                                                   #
 alias vis="source vis"                                          # Allow vis to change cwd
 alias gitu='git add -u && git commit && git push'               #
 alias tt="gio trash"                                            # move file to trash
-
-alias activate333="source ~/Documents/GitHub/.virtualenvs/cos333/bin/activate"

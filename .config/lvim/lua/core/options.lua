@@ -26,20 +26,13 @@ lvim.builtin.treesitter.indent = { enable = true, disable = { "python", "go", "t
 -- LSP Settings
 local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
-  { name = "yapf", args = {"--style={based_on_style: google, column_limit: 150}"} },
+  { name = "yapf" },
   { name = "prettier", filetypes = { "vue" } }
 }
 
 local linters = require "lvim.lsp.null-ls.linters"
 linters.setup {
-  {
-    name = "pylint",
-    args = {
-      "--disable=C0321,W0603,R0903",
-      "--max-line-length", "150",
-      "--good-names-rgxs=^([a-zA-Z][a-zA-Z0-9]?|[A-Z_0-9]+)$", "--good-names=Run,_,pk,lo,hi",
-    }
-  },
+  { name = "pylint", },
 }
 
 --------------------------------------------------------------------------------

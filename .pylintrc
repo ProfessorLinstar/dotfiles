@@ -1,2 +1,12 @@
 [MASTER]
-init-hook='import sys; sys.path.append("/home/linstar/.local/lib/python3.10/site-packages")'
+extension-pkg-allow-list=PyQt5
+
+[MESSAGES CONTROL]
+disable=no-member,
+        too-few-public-methods
+
+[FORMAT]
+max-line-length=150
+max-module-lines=500
+good-names=Run,_,pk,lo,hi
+good-names-rgxs=^([a-zA-Z][a-zA-Z0-9]?|[A-Z_0-9]+)$

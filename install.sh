@@ -8,8 +8,26 @@
 ################################################################################
 
 usage() {
+  echo "$0"
   echo "Usage: $0 [-a|-all] [-pgvylmtdixh]"
+  echo ""
+  echo "dotfiles installation and configuration script for Arch Linux."
   echo "See README.md for more information."
+  echo ""
+  echo "  -a, --all                        install all options"
+  echo "  -p, --pacman                     install pacman packages"
+  echo "  -g, --logiops                    install and configure logitech software"
+  echo "  -v, --lunarvim                   install lunarvim (default config)"
+  echo "  -y, --yay                        install yay packages"
+  echo "  -l, --link                       creates dotfile links"
+  echo "  -m, --manual                     makes manual substitutions to files in-place"
+  echo "  -t, --tmux                       installs tmux plugins"
+  echo "  -d, --dconf                      loads dconf configuration"
+  echo "  -i, --info                       provides info on manual configuartion tasks"
+  echo "  -x, --xdg                        loads default xdg configuration"
+  echo "  -r, --printer                    installs and sets up hp printer drivers"
+  echo "  -h, --help                       shows this help page"
+  echo
 }
 
 SHORT=apgvylmtdixrh
@@ -184,6 +202,7 @@ GNOME_YAY=(
   "xcursor-breeze"                                              # cursor theme
   "insync"                                                      # drive sync
   "google-chrome"                                               # web browser
+  "zoom"                                                        # video conferencing platform
 )
 
 # Exclude paths beginning with these prefixes when linking

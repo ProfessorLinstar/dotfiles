@@ -22,22 +22,22 @@ name='Utilities'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/961a092a-a0ff-494d-90db-8e574f3a05c0]
-apps=['google-chrome.desktop', 'discord.desktop', 'de.haeckerfelix.Fragments.desktop']
+apps=['google-chrome.desktop', 'discord.desktop', 'de.haeckerfelix.Fragments.desktop', 'Zoom.desktop']
 name='Internet'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/b2e906c8-dffe-4208-a0ef-22b6c36d787c]
-apps=['bvnc.desktop', 'bssh.desktop', 'avahi-discover.desktop', 'lstopo.desktop', 'qvidcap.desktop', 'cmake-gui.desktop', 'xdvi.desktop', 'jconsole-java-openjdk.desktop', 'jshell-java-openjdk.desktop']
+apps=['bvnc.desktop', 'bssh.desktop', 'avahi-discover.desktop', 'lstopo.desktop', 'qvidcap.desktop', 'cmake-gui.desktop', 'xdvi.desktop', 'jconsole-java-openjdk.desktop', 'jshell-java-openjdk.desktop', 'fluid.desktop', 'hplip.desktop', 'hp-uiscan.desktop', 'electron19.desktop']
 name='Systems'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/bd32155e-33b1-4880-8e84-42ba78439317]
-apps=['org.gnome.Settings.desktop', 'org.gnome.tweaks.desktop', 'ca.desrt.dconf-editor.desktop', 'org.gnome.Extensions.desktop', 'org.gnome.seahorse.Application.desktop', 'solaar.desktop']
+apps=['org.gnome.Settings.desktop', 'org.gnome.tweaks.desktop', 'ca.desrt.dconf-editor.desktop', 'org.gnome.Extensions.desktop', 'org.gnome.seahorse.Application.desktop', 'solaar.desktop', 'system-config-printer.desktop', 'cups.desktop']
 name='Settings'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/f710ce10-e4ef-4b3a-99d9-081aade25e81]
-apps=['nvim.desktop', 'org.kde.kid3.desktop']
+apps=['nvim.desktop', 'org.kde.kid3.desktop', 'vim.desktop', 'lmms.desktop', 'visual-studio-code.desktop']
 name='Editors'
 translate=false
 
@@ -57,7 +57,55 @@ icon-theme='Papirus-Dark'
 show-battery-percentage=true
 
 [org/gnome/desktop/notifications]
-application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem', 'org-gnome-baobab', 'solaar', 'org-kde-okular']
+application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem', 'org-gnome-baobab', 'solaar', 'org-kde-okular', 'zoom', 'alacritty', 'gnome-printers-panel', 'visual-studio-code']
+
+[org/gnome/desktop/notifications/application/alacritty]
+application-id='Alacritty.desktop'
+
+[org/gnome/desktop/notifications/application/discord]
+application-id='discord.desktop'
+
+[org/gnome/desktop/notifications/application/gnome-network-panel]
+application-id='gnome-network-panel.desktop'
+
+[org/gnome/desktop/notifications/application/gnome-power-panel]
+application-id='gnome-power-panel.desktop'
+
+[org/gnome/desktop/notifications/application/gnome-printers-panel]
+application-id='gnome-printers-panel.desktop'
+
+[org/gnome/desktop/notifications/application/google-chrome]
+application-id='google-chrome.desktop'
+
+[org/gnome/desktop/notifications/application/insync]
+application-id='insync.desktop'
+
+[org/gnome/desktop/notifications/application/org-gnome-baobab]
+application-id='org.gnome.baobab.desktop'
+
+[org/gnome/desktop/notifications/application/org-gnome-nautilus]
+application-id='org.gnome.Nautilus.desktop'
+
+[org/gnome/desktop/notifications/application/org-gnome-settings]
+application-id='org.gnome.Settings.desktop'
+
+[org/gnome/desktop/notifications/application/org-kde-okular]
+application-id='org.kde.okular.desktop'
+
+[org/gnome/desktop/notifications/application/solaar]
+application-id='solaar.desktop'
+
+[org/gnome/desktop/notifications/application/teams]
+application-id='teams.desktop'
+
+[org/gnome/desktop/notifications/application/visual-studio-code]
+application-id='visual-studio-code.desktop'
+
+[org/gnome/desktop/notifications/application/xdg-desktop-portal-gnome]
+application-id='xdg-desktop-portal-gnome.desktop'
+
+[org/gnome/desktop/notifications/application/zoom]
+application-id='Zoom.desktop'
 
 [org/gnome/desktop/peripherals/keyboard]
 delay=uint32 197
