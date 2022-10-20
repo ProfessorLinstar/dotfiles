@@ -163,3 +163,9 @@ To enable the use of "move to trash" on secondary partitions, the user must have
 
 #### LaTeX
 LaTeX works on Arch Linux with the `texlive-most` package group (and `biber` for biber support). Custom LaTeX `.sty` and `.cls` files can be provided by adding a `tex/latex` directory under `~/texmf` (see the [MiKTeX page](https://miktex.org/kb/tds) for more information).
+
+#### Optional Packages
+The following is a list of packages that are not included in the base installer script, but which you can also consider installing.
+ - lilypond: a CLI sheet music typesetter.
+ - visual-studio-code-bin (AUR): Microsoft VSCode for Arch (supports liveshare)
+ - lmms: electronic music editor
