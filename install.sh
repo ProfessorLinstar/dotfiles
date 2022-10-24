@@ -20,6 +20,7 @@ usage() {
   echo "  -v, --lunarvim                   install lunarvim (default config)"
   echo "  -y, --yay                        install yay packages"
   echo "  -l, --link                       creates dotfile links"
+  echo "  -s, --services                   enables and starts custom services"
   echo "  -m, --manual                     makes manual substitutions to files in-place"
   echo "  -t, --tmux                       installs tmux plugins"
   echo "  -d, --dconf                      loads dconf configuration"
@@ -30,8 +31,8 @@ usage() {
   echo
 }
 
-SHORT=apgvylmtdixrh
-LONG=all,pacman,logiops,lunarvim,yay,link,manual,tmux,dconf,info,xdg,printer,help
+SHORT=apgvylsmtdixrh
+LONG=all,pacman,logiops,lunarvim,yay,link,services,manual,tmux,dconf,info,xdg,printer,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
 SKIP_XDG=true
@@ -42,6 +43,7 @@ SKIP_YAY=true
 SKIP_LOGIOPS=true
 SKIP_LUNARVIM=true
 SKIP_LINK=true
+SKIP_SERVICES=true
 SKIP_MANUAL=true
 SKIP_TMUX=true
 SKIP_PRINTER=true
@@ -62,6 +64,7 @@ while true; do
                       SKIP_LOGIOPS=false;
                       SKIP_LUNARVIM=false;
                       SKIP_LINK=false;
+                      SKIP_SERVICES=false;
                       SKIP_MANUAL=false;
                       SKIP_TMUX=false;
                       SKIP_PRINTER=false;  shift; ;;
@@ -71,6 +74,7 @@ while true; do
     -v | --lunarvim ) SKIP_LUNARVIM=false; shift; ;;
     -y | --yay )      SKIP_YAY=false;      shift; ;;
     -l | --link )     SKIP_LINK=false;     shift; ;;
+    -s | --services ) SKIP_SERVICES=false; shift; ;;
     -m | --manual )   SKIP_MANUAL=false;   shift; ;;
     -t | --tmux )     SKIP_TMUX=false;     shift; ;;
     -d | --dconf )    SKIP_DCONF=false;    shift; ;;
@@ -146,6 +150,7 @@ TERMINAL_PACMAN=(
   "xclip"                                                       # system clipboard tool
   "man"                                                         # manual
   "man-pages"                                                   # manual database
+  "acpi"                                                        # battery status and acpi information
 )
 
 GNOME_PACMAN=(
@@ -308,6 +313,10 @@ if ! $SKIP_LINK; then
   done <<< $(find . -type f -print | grep -Ev $(tr " " "|" <<< ${EXCLUDE_PATHS[@]}) )
 fi
 
+# custom services
+if ! $SKIP_SERVICES; then
+  systemctl enable --now auto-suspend.timer
+fi
 
 # Manual modifications
 if ! $SKIP_MANUAL; then
