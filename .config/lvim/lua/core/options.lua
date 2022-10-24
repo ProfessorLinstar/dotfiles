@@ -27,7 +27,8 @@ lvim.builtin.treesitter.indent = { enable = true, disable = { "python", "go", "t
 local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
   { name = "yapf" },
-  { name = "prettier", filetypes = { "vue" } }
+  { name = "prettier", filetypes = { "vue" } },
+  { name = "goimports"}
 }
 
 local linters = require "lvim.lsp.null-ls.linters"
