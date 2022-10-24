@@ -1,9 +1,13 @@
 [MASTER]
 extension-pkg-allow-list=PyQt5
 
+[EXCEPTIONS]
+overgeneral-exceptions=BaseException
+
 [MESSAGES CONTROL]
 disable=no-member,
-        too-few-public-methods
+        too-few-public-methods,
+        import-error
 
 [FORMAT]
 max-line-length=150
