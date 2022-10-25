@@ -1,0 +1,85 @@
+#!/bin/bash
+
+if ! command -pv cmus &>/dev/null || ! command -pv tmux &>/dev/null; then
+  echo "$0: cmus not found. Exiting."
+  exit 1
+fi
+
+usage() {
+  echo "$0"
+  echo "Usage: $0 [-p playlists] [-l library]"
+  echo ""
+  echo "Reloads cmus library and playlists."
+  echo ""
+  echo "  -p playlists                     Specifies playlists path"
+  echo "  -l library                       Specifies library path"
+  echo "  -h, --help                       shows this help page"
+  echo ""
+}
+
+SHORT=p:l:
+LONG=playlists:,library:
+OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
+
+TMUX_SESSION=cmus
+PLAYLISTS=Playlists
+LIBRARY=Files
+
+
+eval set -- "$OPTS"
+while true; do
+  case "$1" in
+    -p | --playlists ) PLAYLISTS="$2"; shift 2; ;;
+    -l | --library   ) LIBRARY="$2";   shift 2; ;;
+    -h | --help      ) usage; exit 0;           ;;
+
+    -- )               shift; break;            ;;
+    *  )               usage; exit 1;           ;;
+  esac
+done
+
+
+if cmus-remote -C ""; then
+  echo "$0: cmus already active. Killing session with 'killall cmus'."
+  killall cmus
+fi
+
+if tmux has-session -t $TMUX_SESSION &> /dev/null; then
+  tmux kill-session -t $TMUX_SESSION
+fi
+tmux new-session -A -d -s $TMUX_SESSION "cd \"$(pwd)\"; cmus"  # Note: calling cmus-remote too early will result in a noop
+
+win_remove() {
+  while true; do
+    cmus-remote -C "view playlist"
+    exec {fd}< <(cmus-remote -C "win-remove")  # run process in background, but maintain file descriptor
+    ( while true; do tmux send-keys -t $TMUX_SESSION y; sleep 1; done ) &
+    if [[ -n $(cat <&$fd; kill $! > /dev/null; exec {fd}>&-) ]]; then # closing the file descriptor automatically kills the process
+      break
+    fi
+  done
+}
+
+# Remove and re-add all playlists
+win_remove
+cmus-remote -C "pl-rename temp"
+cmus-remote -C "pl-create default"
+win_remove
+
+
+# Remove and re-add all songs
+cmus-remote -C "view tree"
+cmus-remote -C "clear -l"
+cmus-remote -C "add $LIBRARY"  # Note: does not block!
+while read -r playlist; do
+  cmus-remote -C "pl-import $playlist"
+done <<< $(find "$PLAYLISTS" -type f -name "*.m3u")
+cmus-remote -C "update-cache"
+
+# attach cmus tmux session
+tmux send-keys -t $TMUX_SESSION : Enter
+if [[ -n "$TMUX" ]]; then
+  tmux move-pane -s $TMUX_SESSION -t "$(tmux display-message -p "#{session_name}:#{window_name}")"
+else
+  tmux a -t $TMUX_SESSION
+fi
