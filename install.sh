@@ -28,7 +28,7 @@ usage() {
   echo "  -x, --xdg                        loads default xdg configuration"
   echo "  -r, --printer                    installs and sets up hp printer drivers"
   echo "  -h, --help                       shows this help page"
-  echo
+  echo ""
 }
 
 SHORT=apgvylsmtdixrh
