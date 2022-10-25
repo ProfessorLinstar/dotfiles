@@ -1,13 +1,15 @@
 #!/bin/bash
 
+COMMAND_NAME=cmus-reload
+
 if ! command -pv cmus &>/dev/null || ! command -pv tmux &>/dev/null; then
-  echo "$0: cmus not found. Exiting."
+  echo "$COMMAND_NAME: cmus not found. Exiting."
   exit 1
 fi
 
 usage() {
-  echo "$0"
-  echo "Usage: $0 [-p playlists] [-l library]"
+  echo "$COMMAND_NAME"
+  echo "Usage: $COMMAND_NAME [-p playlists] [-l library]"
   echo ""
   echo "Reloads cmus library and playlists."
   echo ""
@@ -19,7 +21,7 @@ usage() {
 
 SHORT=p:l:
 LONG=playlists:,library:
-OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
+OPTS=$(getopt --options $SHORT --long $LONG --name $COMMAND_NAME -- "$@")
 
 TMUX_SESSION=cmus
 PLAYLISTS=Playlists
@@ -38,9 +40,13 @@ while true; do
   esac
 done
 
+if [[ $# -ne 0 ]]; then
+  usage
+  exit 1
+fi
 
 if cmus-remote -C ""; then
-  echo "$0: cmus already active. Killing session with 'killall cmus'."
+  echo "$COMMAND_NAME: cmus already active. Killing session with 'killall cmus'."
   killall cmus
 fi
 
