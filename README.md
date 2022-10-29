@@ -2,7 +2,7 @@
 This repository contains configuration files for my linux workspace. The following shows a tree of the 'dotfiles' repository, along with details describing the role of each file.
 
 ```
-. (dotfiles)
+. (~/dotfiles)
 ├── .bash_profile                    --- bash login interactive startup file
 ├── .bashrc                          --- bash non-login interactive startup file
 ├── .config                          ---
@@ -19,22 +19,22 @@ This repository contains configuration files for my linux workspace. The followi
 │   │       └── en.utf-8.add.spl     ---
 │   ├── nvim                         ---
 │   │   ├── core                     ---
-│   │   │   ├── autocommands.vim     --- Global autocommands
-│   │   │   ├── commands.vim         ---
-│   │   │   ├── filetypes.vim        --- Filetype specific settings and autocommands
-│   │   │   ├── mappings.vim         ---
+│   │   │   ├── autocommands.vim     --- global autocommands
+│   │   │   ├── commands.vim         --- global command and function definitions
+│   │   │   ├── filetypes.vim        --- filetype specific settings and autocommands
+│   │   │   ├── mappings.vim         --- 
 │   │   │   ├── options.vim          ---
-│   │   │   ├── plugins.vim          ---
-│   │   │   └── plugmaps.vim         --- Mappings for neovim/lunarvim plugins
+│   │   │   ├── plugins.vim          --- default neovim plugins and settings
+│   │   │   └── plugmaps.vim         --- mappings for neovim/lunarvim plugins
 │   │   └── init.vim                 --- Neovim main configuration file (sources 'core')
 │   └── yapf                         ---
 │       └── style                    --- yapf python formatter global configuration file
-├── dump                             --- Exported configuration settings
+├── dump                             --- exported configuration settings
 │   ├── dconf                        ---
-│   │   ├── arch.dconf               --- Selected entries from 'dconf dump /' in Arch
-│   │   └── manjaro.dconf            --- Result of 'dconf dump /' in Manjaro (deprecated)
+│   │   ├── arch.dconf               --- selected entries from 'dconf dump /' in Arch
+│   │   └── manjaro.dconf            --- result of 'dconf dump /' in Manjaro (deprecated)
 │   ├── google-chrome                ---
-│   │   └── vimium.conf              --- Configuration for chrome vimium extension
+│   │   └── vimium.conf              --- configuration for chrome vimium extension
 │   ├── insync                       ---
 │   │   └── ignorerules              ---
 │   └── okular                       ---
@@ -59,17 +59,23 @@ This repository contains configuration files for my linux workspace. The followi
 │   │   ├── logid.cfg                --- logid configuration file for Logitech peripherals
 │   │   ├── modprobe.d               ---
 │   │   │   └── hid_apple.conf       --- NuPhy Air75 fix for function keys
+│   │   ├── systemd                  ---
+│   │   │   └── system               ---
+│   │   │       ├── auto-suspend.serv--- laptop auto-suspend service to prevent death
+│   │   │       └── auto-suspend.time--- auto-suspend timer to check if battery is low
 │   │   └── vconsole.conf            --- Linux virtual console configuration file
 │   └── usr                          ---
 │       ├── local                    ---
 │       │   └── bin                  ---
+│       │       ├── auto-suspend     --- suspends computer if battery is low
+│       │       ├── cmus-reload      --- repopulates cmus library and playlists
 │       │       ├── colortest        --- prints 256 terminal colors
 │       │       └── vis              --- execute "vi -S" in closest parent directory
 │       └── share                    ---
 │           └── kbd                  ---
 │               └── keymaps          ---
-│                   └── us-caps.map  --- Keymap for linux console remapping caps to escape
-├── Sessionx.vim                     --- Useful vim options for maintaining dotfiles
+│                   └── us-caps.map  --- keymap for linux console remapping caps to escape
+├── Sessionx.vim                     --- useful vim options for maintaining dotfiles
 ├── .tmux                            ---
 │   └── resurrect                    ---
 │       └── saferestore.sh           --- safe restore script for tmux resurrect
@@ -77,8 +83,6 @@ This repository contains configuration files for my linux workspace. The followi
 ├── .vimrc                           --- Vim main configuration file (deprecated)
 ├── .zprofile                        --- zshell login startup file
 └── .zshrc                           --- zshell interactive startup file
-                                     ---
-30 directories, 44 files             ---
 ```
 
 ## Installation
