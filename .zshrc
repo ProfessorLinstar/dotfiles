@@ -75,7 +75,8 @@ bindkey -e                                                      # EMACS emulatio
 bindkey '^[[A' history-substring-search-up                      # Up key
 bindkey '^[[B' history-substring-search-down                    # Down key
 bindkey '^[[3~' delete-char                                     # Delete key
-bindkey '^[[Z' undo                                             # Shift+tab undo last action
+bindkey '^[u' undo                                              # Alt+u to undo last action
+bindkey '^[r' redo                                              # Alt+r to redo last action
 
 ## Options section
 setopt correct                                                  # Auto correct mistakes
