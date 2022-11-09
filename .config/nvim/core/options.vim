@@ -1,4 +1,4 @@
-syntax enable
+" syntax enable
 filetype plugin indent on
 
 set foldmethod=indent

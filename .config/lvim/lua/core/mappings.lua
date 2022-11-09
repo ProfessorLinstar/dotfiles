@@ -12,7 +12,6 @@ vim.api.nvim_set_keymap("", "L", "L", { noremap = true })
 
 -- Prevent nvimtree from stealing tab key
 table.insert(lvim.builtin.nvimtree.setup.view.mappings.list, { key = "<Tab>", action = "" })
-table.insert(lvim.builtin.nvimtree.setup.view.mappings.list, { key = "f", action = "" }) -- prevent nvimtree from breaking vim-sneak
 
 --------------------------------------------------------------------------------
 -- which-key modifications
@@ -46,7 +45,6 @@ lvim.builtin.which_key.mappings["y"] = {
   Q = { nil, "Toggle syntax (M-q)" },
   v = { nil, "Tab Split (:tab split)" },
   x = { nil, "Delete Tab (:tabclose)" },
-  ["'"] = { "<Plug>Sneak_S", "Sneak backwards (:<Plug>Sneak_S)" },
 }
 
 -- Hide basic mappings from which-key menu
