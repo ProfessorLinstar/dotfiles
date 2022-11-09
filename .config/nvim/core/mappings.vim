@@ -3,7 +3,6 @@ let mapleader = " "
 nnoremap <Leader>dq <cmd>q<CR>
 nnoremap <Leader>dd <cmd>bp \| bd #<CR>
 nnoremap <Leader>da <cmd>wqa<CR>
-nnoremap <Leader>dr <cmd>set all& \| wqa <CR>
 nnoremap <Leader>df <cmd>earlier 1f<CR>
 nnoremap <Leader>dF <cmd>later 1f<CR>
 

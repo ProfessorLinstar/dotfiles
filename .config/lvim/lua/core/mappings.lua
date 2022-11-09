@@ -24,7 +24,7 @@ lvim.builtin.which_key.mappings["b"]["h"] = nil
 lvim.builtin.which_key.mappings["s"]["t"] = nil
 lvim.builtin.which_key.mappings["s"]["f"] = nil
 
--- keys overridings
+-- Key overridings
 lvim.keys.insert_mode["jk"] = false
 lvim.keys.insert_mode["jj"] = false
 lvim.keys.insert_mode["kj"] = false

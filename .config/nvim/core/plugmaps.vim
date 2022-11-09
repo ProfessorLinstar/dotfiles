@@ -5,6 +5,10 @@ nnoremap <Leader>dd <cmd>Bdelete<CR>
 noremap ' <Plug>Sneak_s
 noremap <M-'> <Plug>Sneak_S
 
+" ggandor/leap.nvim: Use '/M-' as the default jump keys
+noremap ' <Plug>(leap-forward-to)
+noremap <M-'> <Plug>(leap-backward-to)
+
 " tpope/vim-obsession: shortcut for editing Sessionx.vim file
 nnoremap <Leader>ax <cmd>if v:this_session != "" \| execute "e " . substitute(g:this_obsession, "Session.vim", "Sessionx.vim", "") \| endif<CR>
 
@@ -19,7 +23,7 @@ nmap <Leader>/ gcc
 vmap <Leader>/ gc
 
 " tpope/vim-fugitive: Vim diff shorcuts
-nnoremap <Leader>gt <cmd>Gdiffsplit!<CR>
+nnoremap <Leader>gt <cmd>Gvdiffsplit!<CR>
 nnoremap <Leader>g2 <cmd>diffget //2<CR>
 nnoremap <Leader>g3 <cmd>diffget //3<CR>
 

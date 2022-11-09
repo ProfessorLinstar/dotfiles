@@ -257,7 +257,7 @@ fi
 if ! $SKIP_LOGIOPS; then
   if ! systemctl list-unit-files | grep -q "logid.service"; then
     echo "Installing PixlOne/logiops..."
-    sudo pacman --needed -S cmake libevdev libconfig pkgconf    # Logiops dependencies
+    sudo pacman --needed -S cmake libevdev libconfig pkgconf  # Logiops dependencies
     git clone https://github.com/PixlOne/logiops
     cd logiops
 
@@ -288,7 +288,7 @@ if ! $SKIP_LUNARVIM; then
   if ! command -v lvim &>/dev/null; then
     echo "Installing Lunarvim..."
     sudo pacman --needed -S git make python npm cargo           # Lunarvim dependencies
-    gio trash -v ~/.config/lvim/config.lua                      # Prevent installation from overwriting existing config
+    gio trash ~/.config/lvim/config.lua                         # Prevent installation from overwriting existing config
     LV_BRANCH=rolling bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/rolling/utils/installer/install.sh)
   fi
 fi
@@ -324,6 +324,7 @@ if ! $SKIP_MANUAL; then
   confirmsed ~/.local/share/lunarvim/site/pack/packer/start/vimtex/autoload/vimtex/syntax/core.vim "  syntax iskeyword 48-57,a-z,A-Z,192-255" "  syntax iskeyword a-z,A-Z,192-255"
   confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim -S"' '		echo "vis"'
   confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim"' '		echo "vis"'
+  confirmsed ~/.local/share/lunarvim/lvim/lua/lvim/core/dap.lua '  lvim.builtin.which_key.mappings\["d"\] = \{' '  lvim.builtin.which_key.mappings\["u"\] = \{'
 fi
 
 

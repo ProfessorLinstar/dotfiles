@@ -7,7 +7,7 @@ endif
 
 call plug#begin('~/.vim/plugged')
 
-Plug 'justinmk/vim-sneak'             " Two-letter vim navigation
+Plug 'ggandor/leap.nvim'              " vim navigation
 Plug 'tpope/vim-surround'             " Provides some shortcuts for delimiter manipulation
 Plug 'tpope/vim-commentary'	          " Provides commenting
 Plug 'vim-airline/vim-airline' 	      " Provides status bars

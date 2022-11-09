@@ -14,7 +14,6 @@ lvim.builtin.lualine.sections.lualine_z = { "location" } -- show line/column num
 lvim.builtin.cmp.preselect = false -- don't select suggestion automatically
 
 lvim.builtin.alpha.active = true
-lvim.builtin.notify.active = true
 lvim.builtin.terminal.active = true
 lvim.builtin.nvimtree.setup.view.side = "left"
 
@@ -42,10 +41,9 @@ linters.setup {
 
 -- After changing plugin config exit and reopen LunarVim, Run :PackerInstall :PackerCompile
 lvim.plugins = {
-  { "folke/tokyonight.nvim" },      -- Default LunarVim theme
   { "tpope/vim-obsession" },        -- Improve vim sessions functionality for tmux
   { "tpope/vim-surround" },         -- Provides some keybindings for delimiter manipulation
-  { "justinmk/vim-sneak" },         -- Faster navigation keybindings
+  { "ggandor/leap.nvim" },          -- Faster navigation keybindings
   { "moll/vim-bbye" },              -- More intelligent buffer deletion
   { "tpope/vim-fugitive" },         -- Git-integration for vim
   { "ray-x/lsp_signature.nvim" },   -- LSP signature help
@@ -62,6 +60,7 @@ lvim.plugins = {
 }
 
 -- Extra setup
+require "leap".opts.safe_labels = {}
 require "lsp_signature".setup { toggle_key = "<C-s>", select_signature_key = "<M-s>" }
 require "onedark".setup {
   style = "warmer",
