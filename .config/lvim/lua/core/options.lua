@@ -4,7 +4,6 @@
 
 -- vim builtin
 vim.opt.showmode = true
-vim.opt.syntax = "off" -- prevent failed language-server spawning errors
 
 -- lvim builtin
 lvim.log.level = "warn"
