@@ -1,10 +1,6 @@
 " moll/vim-bbye: intelligent buffer deletion (overrides <Leader>dd)
 nnoremap <Leader>dd <cmd>Bdelete<CR>
 
-" justinmk/vim-sneak: Prevent vim-sneak from stealing s key
-noremap ' <Plug>Sneak_s
-noremap <M-'> <Plug>Sneak_S
-
 " ggandor/leap.nvim: Use '/M-' as the default jump keys
 noremap ' <Plug>(leap-forward-to)
 noremap <M-'> <Plug>(leap-backward-to)
