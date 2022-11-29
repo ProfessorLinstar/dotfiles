@@ -8,15 +8,19 @@ if ! command -pv acpi &>/dev/null; then
   exit 1
 fi
 
-status="$(acpi -b | awk -F '[,:% ]' '{print $2, $4, $6}')"
+information="$(acpi -b)"
 
-logger "$SERVICE: Battery information: $status"
+logger "$SERVICE: $information"
 while read -r battery status capacity; do
-  if [ "$status" = Charging -o "$capacity" -gt "$CRITICAL" ]; then
+  if [ "${capacity//[0-9]}" != "" ]; then
+    logger "$SERVICE: Battery $battery at unknown capacity."
+    continue
+  fi
+  if [ "$status" = Charging ] || [ "$capacity" -gt "$CRITICAL" ]; then
     logger "$SERVICE: Battery $battery $status at $capacity% capacity."
     exit 0
   fi
-done <<< "$status"
+done <<< "$(awk -F '[,:% ]' '{print $2, $4, $6}' <<< "$information")"
 
 
 logger "$SERVICE: Critical battery threshold reached (<$CRITICAL%). Suspending."
