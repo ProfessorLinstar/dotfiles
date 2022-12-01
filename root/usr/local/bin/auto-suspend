@@ -11,16 +11,17 @@ fi
 information="$(acpi -b)"
 
 logger "$SERVICE: $information"
-while read -r battery status capacity; do
-  if [ "${capacity//[0-9]}" != "" -o "$capacity" = "" ]; then
-    logger "$SERVICE: Battery $battery at unknown capacity."
+while read -r line; do
+  capacity="$(grep -Po "[0-9]+(?=%)" <<< "$information")"
+  if [ ! $? ]; then
+    logger "$SERVICE: Battery at unknown capacity."
     continue
   fi
-  if [ "$status" = Charging ] || [ "$capacity" -gt "$CRITICAL" ]; then
-    logger "$SERVICE: Battery $battery $status at $capacity% capacity."
+  if grep -q ": Charging" <<< "$information" || [ "$capacity" -gt "$CRITICAL" ]; then
+    logger "$SERVICE: Battery charging at $capacity% capacity."
     exit 0
   fi
-done <<< "$(awk -F '[,:% ]' '{print $2, $4, $6}' <<< "$information")"
+done <<< "$information"
 
 
 logger "$SERVICE: Critical battery threshold reached (<$CRITICAL%). Suspending."
