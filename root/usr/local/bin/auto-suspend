@@ -12,7 +12,7 @@ information="$(acpi -b)"
 
 logger "$SERVICE: $information"
 while read -r battery status capacity; do
-  if [ "${capacity//[0-9]}" != "" ]; then
+  if [ "${capacity//[0-9]}" != "" -o "$capacity" = "" ]; then
     logger "$SERVICE: Battery $battery at unknown capacity."
     continue
   fi
