@@ -14,6 +14,7 @@ This repository contains configuration files for my linux workspace. The followi
 │   │   │   └── core                 ---
 │   │   │       ├── mappings.lua     --- Lunarvim-specific mappings
 │   │   │       └── options.lua      --- Lunarvim options and plugins
+│   │   ├── .luarc.json              ---
 │   │   └── spell                    --- Lunarvim spelling files
 │   │       ├── en.utf-8.add         ---
 │   │       └── en.utf-8.add.spl     ---
