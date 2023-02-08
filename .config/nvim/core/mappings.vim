@@ -38,6 +38,7 @@ nnoremap <Leader>v <cmd>tab split<CR>
 nnoremap <Leader>x <cmd>tabclose<CR>
 nnoremap <Leader>z <C-w>\|
 nnoremap <Leader>Z <C-w>=
+nnoremap <Leader>Q <cmd>call TargetRegister()<CR>
 
 " Note: Do not use <C-j> in registers; use <C-/>j instead
 nnoremap <C-j> <cmd>bn<CR>

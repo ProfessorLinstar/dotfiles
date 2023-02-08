@@ -11,7 +11,7 @@ augroup end
 " Filetype specific indentation rules
 augroup filetype_indentation
   au!
-  autocmd FileType cs,py set tabstop=4 | set shiftwidth=4
+  autocmd FileType cs,py,java set tabstop=4 | set shiftwidth=4
 augroup end
 
 " Spelling

@@ -50,3 +50,9 @@ function! EditMacro()
   return ":icall setreg('" . l:reg . "', '=getreg('" . l:reg . "')" .
        \ "->substitute('''', '''''', 'g')', 'c'):s/000//ge$F,hi"
 endfunction
+
+" targets getchar() register with Q
+function! TargetRegister()
+  normal! qmq
+  let @m = getreg(nr2char(getchar()))
+endfunction
