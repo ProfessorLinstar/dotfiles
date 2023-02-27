@@ -155,6 +155,7 @@ TERMINAL_PACMAN=(
 
 GNOME_PACMAN=(
   "gnome-shell"                                                 # gnome desktop environment
+  "gnome-terminal"                                              # gnome default terminal
   "gdm"                                                         # gnome display manager
   "gnome-tweaks"                                                # more settings
   "gnome-control-center"                                        # settings

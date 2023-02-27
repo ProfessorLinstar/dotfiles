@@ -27,7 +27,7 @@ name='Internet'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/b2e906c8-dffe-4208-a0ef-22b6c36d787c]
-apps=['bvnc.desktop', 'bssh.desktop', 'avahi-discover.desktop', 'lstopo.desktop', 'qvidcap.desktop', 'cmake-gui.desktop', 'xdvi.desktop', 'jconsole-java-openjdk.desktop', 'jshell-java-openjdk.desktop', 'fluid.desktop', 'hplip.desktop', 'hp-uiscan.desktop', 'electron19.desktop']
+apps=['bvnc.desktop', 'bssh.desktop', 'avahi-discover.desktop', 'lstopo.desktop', 'qvidcap.desktop', 'cmake-gui.desktop', 'xdvi.desktop', 'jconsole-java-openjdk.desktop', 'jshell-java-openjdk.desktop', 'fluid.desktop', 'hplip.desktop', 'hp-uiscan.desktop', 'electron19.desktop', 'assistant.desktop', 'designer.desktop', 'linguist.desktop', 'qdbusviewer.desktop', 'byobu_old.desktop', 'htop.desktop']
 name='Systems'
 translate=false
 
@@ -37,7 +37,7 @@ name='Settings'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/f710ce10-e4ef-4b3a-99d9-081aade25e81]
-apps=['nvim.desktop', 'org.kde.kid3.desktop', 'vim.desktop', 'lmms.desktop', 'visual-studio-code.desktop']
+apps=['nvim.desktop', 'org.kde.kid3.desktop', 'vim.desktop', 'lmms.desktop', 'code-oss.desktop', 'visual-studio-code.desktop', 'lvim.desktop', 'mscore.desktop', 'org.musescore.MuseScore.desktop', 'helix.desktop', 'code.desktop']
 name='Editors'
 translate=false
 
@@ -57,7 +57,7 @@ icon-theme='Papirus-Dark'
 show-battery-percentage=true
 
 [org/gnome/desktop/notifications]
-application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem', 'org-gnome-baobab', 'solaar', 'org-kde-okular', 'zoom', 'alacritty', 'gnome-printers-panel', 'visual-studio-code']
+application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem', 'org-gnome-baobab', 'solaar', 'org-kde-okular', 'zoom', 'alacritty', 'gnome-printers-panel', 'visual-studio-code', 'org-musescore-musescore']
 
 [org/gnome/desktop/notifications/application/alacritty]
 application-id='Alacritty.desktop'
@@ -212,7 +212,11 @@ list=['00c3d612-8ded-4ac4-8dc4-23edf1b5f277']
 
 [org/gnome/terminal/legacy/profiles:/:00c3d612-8ded-4ac4-8dc4-23edf1b5f277]
 audible-bell=false
+background-color='rgb(255,255,255)'
+bold-is-bright=false
 font='UbuntuMono Nerd Font Mono 12'
+foreground-color='rgb(23,20,33)'
+palette=['rgb(16,16,18)', 'rgb(222,93,104)', 'rgb(143,181,115)', 'rgb(219,182,113)', 'rgb(87,165,229)', 'rgb(187,112,210)', 'rgb(81,168,179)', 'rgb(208,207,204)', 'rgb(102,102,102)', 'rgb(213,78,83)', 'rgb(185,202,74)', 'rgb(231,197,71)', 'rgb(122,166,218)', 'rgb(195,151,216)', 'rgb(112,192,177)', 'rgb(234,234,234)']
 text-blink-mode='always'
 use-system-font=false
 use-theme-colors=true
