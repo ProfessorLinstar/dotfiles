@@ -20,7 +20,7 @@ lvim.builtin.nvimtree.setup.view.side = "left"
 lvim.builtin.treesitter.ensure_installed = { "bash", "json", "python", "lua" }
 lvim.builtin.treesitter.ignore_install = { "haskell", "latex" }
 lvim.builtin.treesitter.highlight.enabled = true
-lvim.builtin.treesitter.indent = { enable = true, disable = { "python", "go", "tex" } } -- prevent treesitter from breaking indenting
+lvim.builtin.treesitter.indent = { enable = true, disable = { "python", "go", "tex", "java" } } -- prevent treesitter from breaking indenting
 
 -- LSP Settings
 local formatters = require "lvim.lsp.null-ls.formatters"
