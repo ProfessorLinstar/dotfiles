@@ -57,3 +57,9 @@ sparsify
 Lindenstrauss
 Mergeable
 Composable
+Residuosity
+prover
+MIP
+NEXP
+nondeterministic
+provers
