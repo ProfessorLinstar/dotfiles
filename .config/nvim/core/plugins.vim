@@ -15,7 +15,7 @@ Plug 'vim-airline/vim-airline-themes' " Airline themes
 Plug 'tpope/vim-obsession'            " Improve vim sessions functionality
 Plug 'moll/vim-bbye'                  " More intelligent buffer deletion
 Plug 'tpope/vim-fugitive'             " Git-integration for vim
-Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install' } " Markdown integration for neovim
+Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install' } " Markdown integration for neovim (requires yarn)
 Plug 'folke/which-key.nvim'           " keybinding hints
 
 call plug#end()
