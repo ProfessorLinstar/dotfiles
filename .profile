@@ -4,6 +4,7 @@
 
 # Environmental Variables
 export PATH="$HOME/.local/bin${PATH:+:$PATH}"                   # User executables
+export PATH="$HOME/go/bin${PATH:+:$PATH}"                       # Go executables
 export PATH="/usr/bin/vendor_perl${PATH:+:$PATH}"               # Perl executables (e.g. biber)
 export PYTHONPATH="$HOME/.local/lib/python3.10/site-packages${PYTHONPATH:+:$PYTHONPATH}"  # Path to user Python modules
 
