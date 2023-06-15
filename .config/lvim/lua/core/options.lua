@@ -51,7 +51,7 @@ lvim.plugins = {
   { "lervag/vimtex", },             -- Provides LaTeX bindings and compilation features
   {
     "iamcco/markdown-preview.nvim", -- Markdown preview
-    run = "cd app && npm install",
+    build = "cd app && npm install",
     ft = "markdown"
   },
 
