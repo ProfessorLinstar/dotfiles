@@ -26,3 +26,8 @@ set tabstop=2
 
 set clipboard=
 set undofile
+
+if !has('nvim')
+  silent execute '!mkdir -p ~/.vim/undodir'
+  set undodir=~/.vim/undodir
+endif
