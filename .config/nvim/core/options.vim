@@ -1,4 +1,5 @@
 filetype plugin indent on
+syntax on
 
 set foldmethod=indent
 set nofoldenable
@@ -24,3 +25,4 @@ set shiftwidth=2
 set tabstop=2
 
 set clipboard=
+set undofile
