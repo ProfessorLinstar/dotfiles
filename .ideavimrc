@@ -1,0 +1,2 @@
+source ~/.vimrc
+nnoremap <leader>q q
