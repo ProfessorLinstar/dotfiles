@@ -66,6 +66,17 @@ alias vis="source vis"                                          # Allow vis to c
 alias gitu='git pull && git add -u && git commit && git push'   #
 alias tt="gio trash"                                            # move file to trash
 
+# git shortcuts
+alias gs="git status"
+alias gd="git diff"
+alias gds="git diff --staged"
+alias gr="git restore --staged"
+alias gc="git checkout"
+alias ga="git add"
+alias gm="git commit -m"
+alias gam="ga . && gm"
+gamp() { gam $1 && git push }
+
 ################################################################################
 # zsh Options And Key Bindings
 ################################################################################
