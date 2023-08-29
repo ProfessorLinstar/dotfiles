@@ -12,7 +12,7 @@ name='Disk Management'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/674cf739-6fb7-4b22-a5e6-a0ee3687c523]
-apps=['org.kde.okular.desktop', 'org.gnome.gThumb.desktop', 'org.gnome.Totem.desktop']
+apps=['org.kde.okular.desktop', 'org.gnome.gThumb.desktop', 'org.gnome.Totem.desktop', 'org.wireshark.Wireshark.desktop']
 name='Viewers'
 translate=false
 
@@ -27,7 +27,7 @@ name='Internet'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/b2e906c8-dffe-4208-a0ef-22b6c36d787c]
-apps=['bvnc.desktop', 'bssh.desktop', 'avahi-discover.desktop', 'lstopo.desktop', 'qvidcap.desktop', 'cmake-gui.desktop', 'xdvi.desktop', 'jconsole-java-openjdk.desktop', 'jshell-java-openjdk.desktop', 'fluid.desktop', 'hplip.desktop', 'hp-uiscan.desktop', 'electron19.desktop', 'assistant.desktop', 'designer.desktop', 'linguist.desktop', 'qdbusviewer.desktop', 'byobu_old.desktop', 'htop.desktop']
+apps=['bvnc.desktop', 'bssh.desktop', 'avahi-discover.desktop', 'lstopo.desktop', 'qvidcap.desktop', 'cmake-gui.desktop', 'xdvi.desktop', 'jconsole-java-openjdk.desktop', 'jshell-java-openjdk.desktop', 'fluid.desktop', 'hplip.desktop', 'hp-uiscan.desktop', 'electron19.desktop', 'assistant.desktop', 'designer.desktop', 'linguist.desktop', 'qdbusviewer.desktop', 'byobu_old.desktop', 'htop.desktop', 'byobu.desktop', 'org.gnome.Terminal.desktop', 'virtualbox.desktop']
 name='Systems'
 translate=false
 
@@ -57,7 +57,7 @@ icon-theme='Papirus-Dark'
 show-battery-percentage=true
 
 [org/gnome/desktop/notifications]
-application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem', 'org-gnome-baobab', 'solaar', 'org-kde-okular', 'zoom', 'alacritty', 'gnome-printers-panel', 'visual-studio-code', 'org-musescore-musescore']
+application-children=['org-gnome-nautilus', 'org-manjaro-pamac-manager', 'org-gnome-settings', 'google-chrome', 'gnome-power-panel', 'org-gnome-lollypop', 'org-gnome-cheese', 'org-gnome-evince', 'insync', 'de-haeckerfelix-fragments', 'discord', 'gnome-system-monitor', 'org-gnome-dejadup', 'xdg-desktop-portal-gnome', 'org-gnome-terminal', 'gnome-network-panel', 'org-gnome-evolution-alarm-notify', 'ca-desrt-dconf-editor', 'org-gnome-totem', 'org-gnome-baobab', 'solaar', 'org-kde-okular', 'zoom', 'alacritty', 'gnome-printers-panel', 'visual-studio-code', 'org-musescore-musescore', 'virtualbox']
 
 [org/gnome/desktop/notifications/application/alacritty]
 application-id='Alacritty.desktop'
@@ -108,9 +108,9 @@ application-id='xdg-desktop-portal-gnome.desktop'
 application-id='Zoom.desktop'
 
 [org/gnome/desktop/peripherals/keyboard]
-delay=uint32 197
-numlock-state=true
-repeat-interval=uint32 21
+delay=uint32 120
+numlock-state=false
+repeat-interval=uint32 10
 
 [org/gnome/desktop/peripherals/touchpad]
 natural-scroll=false
@@ -164,7 +164,6 @@ search-filter-time-type='last_modified'
 search-view='list-view'
 
 [org/gnome/nautilus/window-state]
-initial-size=(1087, 606)
 maximized=false
 sidebar-width=230
 start-with-sidebar=true
