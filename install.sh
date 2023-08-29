@@ -182,6 +182,7 @@ GNOME_PACMAN=(
   "discord"                                                     # social media
   "qgnomeplatform-qt5"                                          # gnome themes (adwaita) for qt5 applications
   "solaar"                                                      # logitech pairing software
+  "ttf-ubuntu-mono-nerd"                                        # patched ubuntu mono nerd font
 )
 
 LATEX_PACMAN=(
@@ -200,7 +201,6 @@ PRINTER_PACMAN=(
 
 # Yay package list
 TERMINAL_YAY=(
-  "nerd-fonts-ubuntu-mono"                                      # nerd font
 )
 
 GNOME_YAY=(
