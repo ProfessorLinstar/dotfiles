@@ -12,12 +12,12 @@ information="$(acpi -b)"
 
 logger "$SERVICE: $information"
 while read -r line; do
-  capacity="$(grep -Po "[0-9]+(?=%)" <<< "$information")"
+  capacity="$(grep -Po "[0-9]+(?=%)" <<< "$line")"
   if [ ! $? ]; then
     logger "$SERVICE: Battery at unknown capacity."
     continue
   fi
-  if grep -q ": Charging" <<< "$information" || [ "$capacity" -gt "$CRITICAL" ]; then
+  if grep -q ": Charging" <<< "$line" || [ "$capacity" -gt "$CRITICAL" ]; then
     logger "$SERVICE: Battery charging at $capacity% capacity."
     exit 0
   fi
