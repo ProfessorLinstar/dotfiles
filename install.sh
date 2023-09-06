@@ -16,6 +16,7 @@ usage() {
   echo ""
   echo "  -a, --all                        install all options"
   echo "  -p, --pacman                     install pacman packages"
+  echo "  -f, --font                       install meslo font for powerlevel10k"
   echo "  -g, --logiops                    install and configure logitech software"
   echo "  -v, --lunarvim                   install lunarvim (default config)"
   echo "  -y, --yay                        install yay packages"
@@ -31,14 +32,15 @@ usage() {
   echo ""
 }
 
-SHORT=apgvylsmtdixrh
-LONG=all,pacman,logiops,lunarvim,yay,link,services,manual,tmux,dconf,info,xdg,printer,help
+SHORT=apfgvylsmtdixrh
+LONG=all,pacman,font,logiops,lunarvim,yay,link,services,manual,tmux,dconf,info,xdg,printer,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
 SKIP_XDG=true
 SKIP_DCONF=true
 SKIP_DUMPINFO=true
 SKIP_PACMAN=true
+SKIP_FONT=true
 SKIP_YAY=true
 SKIP_LOGIOPS=true
 SKIP_LUNARVIM=true
@@ -60,6 +62,7 @@ while true; do
                       SKIP_DCONF=false;
                       SKIP_DUMPINFO=false;
                       SKIP_PACMAN=false;
+                      SKIP_FONT=false;
                       SKIP_YAY=false;
                       SKIP_LOGIOPS=false;
                       SKIP_LUNARVIM=false;
@@ -70,6 +73,7 @@ while true; do
                       SKIP_PRINTER=false;  shift; ;;
 
     -p | --pacman )   SKIP_PACMAN=false;   shift; ;;
+    -f | --font )     SKIP_FONT=false;     shift; ;;
     -g | --logiops )  SKIP_LOGIOPS=false;  shift; ;;
     -v | --lunarvim ) SKIP_LUNARVIM=false; shift; ;;
     -y | --yay )      SKIP_YAY=false;      shift; ;;
@@ -182,7 +186,6 @@ GNOME_PACMAN=(
   "discord"                                                     # social media
   "qgnomeplatform-qt5"                                          # gnome themes (adwaita) for qt5 applications
   "solaar"                                                      # logitech pairing software
-  "ttf-ubuntu-mono-nerd"                                        # patched ubuntu mono nerd font
 )
 
 LATEX_PACMAN=(
@@ -201,6 +204,14 @@ PRINTER_PACMAN=(
 
 # Yay package list
 TERMINAL_YAY=(
+)
+
+# Meslo font installation
+MESLO_FONT_URLS=(
+  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Regular.ttf"
+  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold.ttf"
+  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Italic.ttf"
+  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold%20Italic.ttf"
 )
 
 GNOME_YAY=(
@@ -231,6 +242,19 @@ if ! $SKIP_PACMAN; then
   echo "Installing pacman packages for terminal..."; sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty; echo
   echo "Installing pacman packages for gnome...";    sudo pacman --needed -Sq ${GNOME_PACMAN[@]}    < /dev/tty; echo
   echo "Installing pacman packages for latex...";    sudo pacman --needed -Sq ${LATEX_PACMAN[@]}    < /dev/tty; echo
+fi
+
+
+# Powerlevel font installation
+if ! $SKIP_FONT; then
+  (
+    mkdir -p "$HOME/.local/share/fonts" && \
+    cd "$HOME/.local/share/fonts" && \
+    for url in "${MESLO_FONT_URLS[@]}"; do
+      fname="$(sed "s/%20/ /g" <<< "${url##*/}")"
+      curl -L -o "$fname" "$url"
+    done
+  )
 fi
 
 
