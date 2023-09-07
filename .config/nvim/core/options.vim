@@ -10,7 +10,6 @@ set ignorecase
 
 set number
 set relativenumber
-set cmdheight=2
 set wrap
 
 set timeoutlen=250
