@@ -37,7 +37,7 @@ name='Settings'
 translate=false
 
 [org/gnome/desktop/app-folders/folders/f710ce10-e4ef-4b3a-99d9-081aade25e81]
-apps=['nvim.desktop', 'org.kde.kid3.desktop', 'vim.desktop', 'lmms.desktop', 'code-oss.desktop', 'visual-studio-code.desktop', 'lvim.desktop', 'mscore.desktop', 'org.musescore.MuseScore.desktop', 'helix.desktop', 'code.desktop']
+apps=['nvim.desktop', 'org.kde.kid3.desktop', 'vim.desktop', 'lmms.desktop', 'lvim.desktop', 'org.musescore.MuseScore.desktop', 'helix.desktop', 'code.desktop', 'libreoffice-startcenter.desktop', 'libreoffice-base.desktop', 'libreoffice-impress.desktop', 'libreoffice-math.desktop', 'libreoffice-writer.desktop', 'libreoffice-draw.desktop', 'libreoffice-calc.desktop']
 name='Editors'
 translate=false
 
@@ -179,7 +179,7 @@ www=['<Control><Alt>g']
 
 [org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0]
 binding='<Control><Alt>t'
-command='env -u WAYLAND_DISPLAY alacritty'
+command='gnome-terminal'
 name='Terminal'
 
 [org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1]
@@ -199,7 +199,7 @@ sleep-inactive-ac-timeout=1800
 sleep-inactive-battery-timeout=900
 
 [org/gnome/shell]
-favorite-apps=['org.gnome.Nautilus.desktop', 'Alacritty.desktop']
+favorite-apps=['org.gnome.Nautilus.desktop', 'org.gnome.Terminal.desktop']
 welcome-dialog-last-shown-version='41.5'
 
 [org/gnome/shell/app-switcher]
