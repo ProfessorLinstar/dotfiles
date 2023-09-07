@@ -189,6 +189,7 @@ GNOME_PACMAN=(
 
 LATEX_PACMAN=(
   "texlive-most"                                                # provide most latex packages
+  "texlive-binextra"                                            # get latexmk
   "biber"                                                       # enable biber for latexmk
   "perl-clone"                                                  # fix missing dependency for biber (08-05-2022)
   "cpanminus"                                                   # install cpan modules more easily
