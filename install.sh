@@ -126,7 +126,6 @@ function confirmsed {
 
 # Pacman package list
 TERMINAL_PACMAN=(
-  "alacritty"                                                   # terminal emulator
   "wmctrl"                                                      # CLI interface for X window manager
   "zsh"                                                         # zshell essentials
   "zsh-theme-powerlevel10k"                                     # .
@@ -350,6 +349,7 @@ if ! $SKIP_MANUAL; then
   confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim -S"' '		echo "vis"'
   confirmsed ~/.tmux/plugins/tmux-resurrect/strategies/nvim_session.sh '		echo "nvim"' '		echo "vis"'
   confirmsed ~/.local/share/lunarvim/lvim/lua/lvim/core/dap.lua '  lvim.builtin.which_key.mappings\["d"\] = \{' '  lvim.builtin.which_key.mappings\["u"\] = \{'
+  confirmsed ~/.local/share/lunarvim/site/pack/packer/start/onedark.nvim/lua/onedark/highlights.lua '    IndentBlanklineChar = \{ fg = c.bg1, gui = "nocombine" \},' '    IndentBlanklineChar = \{ fg = c.grey, gui = "nocombine" \},'
 fi
 
 
