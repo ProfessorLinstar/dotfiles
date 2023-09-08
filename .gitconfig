@@ -7,3 +7,5 @@
 	directory = *
 [init]
 	defaultBranch = main
+[credential]
+	helper = store
