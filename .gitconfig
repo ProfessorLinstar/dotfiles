@@ -1,11 +1,9 @@
 [user]
-	email = awaw6465@gmail.com
+	email = andywang@princeton.edu
 	name = TOGLinstar
 [core]
 	editor = nvim
 [safe]
 	directory = *
-[credential]
-	helper = store
 [init]
 	defaultBranch = main
