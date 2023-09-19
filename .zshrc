@@ -74,7 +74,7 @@ alias gr="git restore --staged"
 alias gc="git checkout"
 alias ga="git add"
 alias gm="git commit -m"
-alias gam="ga -a && gm"
+alias gam="ga -u && gm"
 gamp() { gam $1 && git push }
 
 ################################################################################
