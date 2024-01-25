@@ -4,6 +4,7 @@
 desktop.ini
 node_modules
 .backup
+_build
 venv
 *.gddoc
 *.gddrawing
