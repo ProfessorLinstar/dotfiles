@@ -27,7 +27,8 @@ local formatters = require "lvim.lsp.null-ls.formatters"
 formatters.setup {
   { name = "yapf" },
   { name = "prettier", filetypes = { "vue" } },
-  { name = "goimports"}
+  { name = "goimports" },
+  { name = "ocamlformat", args = {"--enable-outside-detected-project"}, filetypes = { "ocaml" } },
 }
 
 local linters = require "lvim.lsp.null-ls.linters"
@@ -70,11 +71,24 @@ require "onedark".setup {
 }
 
 -- vimtex
-vim.g.vimtex_view_general_viewer = 'okular'
-vim.g.vimtex_view_general_options = 'file:@pdf#src:@line@tex'
+vim.g.vimtex_view_general_viewer = "okular"
+vim.g.vimtex_view_general_options = "file:@pdf#src:@line@tex" -- Okular inverse search command: sh -c "echo -n \"%l\" | xclip -selection clipboard"
 vim.g.vimtex_indent_on_ampersands = 0
--- Okular inverse search command: sh -c "echo -n \"%l\" | xclip -selection clipboard"
+vim.g.vimtex_compiler_latexmk = {
+  build_dir = "",
+  callback = 1,
+  continuous = 1,
+  executable = "latexmk",
+  hooks = {},
+  options = {
+    "-verbose",
+    "-file-line-error",
+    "-synctex=1",
+    "-interaction=nonstopmode",
+    "-shell-escape"
+  }
+}
 
 -- markdown-preview.nvim
-vim.g.mkdp_theme = 'dark'
+vim.g.mkdp_theme = "dark"
 vim.g.mkdp_auto_close = 0
