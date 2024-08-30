@@ -1,3 +1,7 @@
+# Alacritty.toml: configuration file for alacritty
+# Example: /usr/share/doc/alacritty/example/alacritty.toml
+
+# Default alacritty.yml bright colors
 [colors.bright]
 black = "#666666"
 blue = "#7aa6da"
@@ -8,6 +12,7 @@ red = "#d54e53"
 white = "#eaeaea"
 yellow = "#e7c547"
 
+# Lunarvim onedark warmer (~/.local/share/lunarvim/site/pack/packer/start/onedark.nvim/lua/onedark/palette.lua)
 [colors.normal]
 black = "#101012"
 blue = "#57a5e5"
