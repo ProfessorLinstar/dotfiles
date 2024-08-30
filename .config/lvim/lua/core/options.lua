@@ -65,8 +65,8 @@ require "onedark".setup {
   style = "warmer",
   code_style = { keywords = "bold", functions = "italic,bold" },
   colors = {
-    bg0 = "#1c1c1c",
-    bg_d = "#232326",
+    bg0 = "#1c1c1c",  -- main background color
+    bg_d = "#232326", -- file explorer background color
   }
 }
 

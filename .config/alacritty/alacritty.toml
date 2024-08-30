@@ -1,0 +1,36 @@
+[colors.bright]
+black = "#666666"
+blue = "#7aa6da"
+cyan = "#70c0b1"
+green = "#b9ca4a"
+magenta = "#c397d8"
+red = "#d54e53"
+white = "#eaeaea"
+yellow = "#e7c547"
+
+[colors.normal]
+black = "#101012"
+blue = "#57a5e5"
+cyan = "#51a8b3"
+green = "#8fb573"
+magenta = "#bb70d2"
+red = "#de5d68"
+white = "#d0cfcc"
+yellow = "#dbb671"
+
+[colors.primary]
+background = "#1c1c1c"
+foreground = "#ffffff"
+
+[font]
+size = 12.0
+
+[font.normal]
+family = "MesloLGS NF"
+
+[[keyboard.bindings]]
+key = "F11"
+
+[keyboard.bindings.command]
+args = ["-r", ":ACTIVE:", "-b", "toggle,fullscreen"]
+program = "wmctrl"

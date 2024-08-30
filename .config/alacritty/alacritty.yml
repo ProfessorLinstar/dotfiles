@@ -3,7 +3,7 @@
 
 font:
   normal:
-    family: "UbuntuMono Nerd Font Mono"
+    family: "MesloLGS NF"
   size: 12.0
 
 # Lunarvim onedark warmer (~/.local/share/lunarvim/site/pack/packer/start/onedark.nvim/lua/onedark/palette.lua)
