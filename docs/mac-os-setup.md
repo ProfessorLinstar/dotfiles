@@ -14,6 +14,7 @@
     * Configure vimium: import vimium.conf from dotfiles; uncheck smooth scrolling; check ignore keyboard layout
 * Setup useful search shortcuts
 * Move dock to side and hide
+* Disable automatically rearrange spaces based on most recent use
 * Setup terminal
     * Clone dotfiles
     * Install brew -> powerlevel-10k
