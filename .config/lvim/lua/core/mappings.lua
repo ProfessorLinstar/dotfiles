@@ -16,8 +16,9 @@ vim.api.nvim_set_keymap("", "L", "L", { noremap = true })
 --------------------------------------------------------------------------------
 
 -- which_key overridings
-lvim.builtin.which_key.mappings["b"]["l"] = { nil, "List Buffers (:buffers)" }
-lvim.builtin.which_key.mappings["b"]["h"] = nil
+lvim.builtin.which_key.mappings["b"]["b"] = { nil, "List Buffers (:buffers)" }
+lvim.builtin.which_key.mappings["b"]["r"] = { "<cmd>BufferLineCloseRight<CR>", "Close buffers to the right" }
+lvim.builtin.which_key.mappings["b"]["l"] = { "<cmd>BufferLineCloseLeft<CR>", "Close buffers to the left" }
 lvim.builtin.which_key.mappings["s"]["t"] = nil
 lvim.builtin.which_key.mappings["s"]["f"] = nil
 
