@@ -23,7 +23,7 @@ nnoremap <Leader>br <cmd>BufferLineCloseRight<CR>
 nnoremap <Leader>bo <cmd>g/^/exe ":norm gf" \| exe ":norm <C-6>"<CR>
 nnoremap <expr> <Leader>j BufferJump()
 
-nnoremap <Leader>gm <cmd>Scratch<CR>:%! git diff --name-only --diff-filter=U<CR>
+nnoremap <Leader>gm <cmd>Scratch<CR>:%! git diff --name-only --line-prefix=`git rev-parse --show-toplevel`/ --diff-filter=U<CR>
 
 nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,} --include={\*,}<C-f>F"i
 nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -not -regex ".*/\.git/.*" -type f -regex ".*/.*"<C-f>F.i
