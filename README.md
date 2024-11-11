@@ -7,7 +7,7 @@ This repository contains configuration files for my linux workspace. The followi
 ├── .bashrc                          --- bash non-login interactive startup file
 ├── .config                          ---
 │   ├── alacritty                    ---
-│   │   └── alacritty.yml            --- alacritty terminal emulatro configuration file
+│   │   └── alacritty.toml           --- alacritty terminal emulator configuration file
 │   ├── lvim                         ---
 │   │   ├── config.lua               --- Lunarvim main configuration file
 │   │   ├── lua                      ---
@@ -40,7 +40,6 @@ This repository contains configuration files for my linux workspace. The followi
 │   │   └── ignorerules              ---
 │   └── okular                       ---
 │       └── default.shortcuts        ---
-├── .gitconfig                       --- global git configuration file
 ├── .gitignore                       ---
 ├── install.sh                       --- dotfiles install script
 ├── .local                           ---
