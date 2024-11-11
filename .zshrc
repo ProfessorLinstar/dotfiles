@@ -75,6 +75,9 @@ alias gc="git checkout"
 alias ga="git add"
 alias gm="git commit -m"
 alias gam="ga -u && gm"
+alias gh="git stash push -u -m"
+alias ghl="git stash list"
+gmp() {gm $1 && git push}
 gamp() { gam $1 && git push }
 
 ################################################################################

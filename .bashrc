@@ -20,5 +20,4 @@ alias free='free -m'                                            # Show sizes in 
 alias py=python3.10                                             # Python shortcut
 alias vi=lvim                                                   #
 alias vis="source vis"                                          # Allow vis to change cwd
-alias gitu='git add -u && git commit && git push'               #
 alias tt="gio trash"                                            # move file to trash
