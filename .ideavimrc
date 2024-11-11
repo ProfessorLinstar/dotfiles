@@ -1,2 +1,9 @@
-source ~/.vimrc
-nnoremap <leader>q q
+source ~/dotfiles/.config/nvim/core/options.vim
+
+" Highlight copied text
+Plug 'machakann/vim-highlightedyank'
+" Commentary plugin
+Plug 'tpope/vim-commentary'
+
+nmap gqq <Action>(com.andrewbrookins.idea.wrap.WrapAction)
+vmap gq <Action>(com.andrewbrookins.idea.wrap.WrapAction)
