@@ -18,9 +18,7 @@ nnoremap <Leader>at <cmd>terminal<CR>
 nnoremap <expr> <Leader>ar EditMacro() 
 
 nnoremap <Leader>bb <cmd>buffers<CR>
-nnoremap <Leader>bl <cmd>BufferLineCloseLeft<CR>
-nnoremap <Leader>br <cmd>BufferLineCloseRight<CR>
-nnoremap <Leader>bo <cmd>g/^/exe ":norm gf" \| exe ":norm <C-6>"<CR>
+nnoremap <Leader>bd <cmd>g/^/exe ":norm gf" \| exe ":norm <C-6>"<CR>
 nnoremap <expr> <Leader>j BufferJump()
 
 nnoremap <Leader>gm <cmd>Scratch<CR>:%! git diff --name-only --line-prefix=`git rev-parse --show-toplevel`/ --diff-filter=U<CR>
@@ -28,6 +26,7 @@ nnoremap <Leader>gm <cmd>Scratch<CR>:%! git diff --name-only --line-prefix=`git 
 nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,} --include={\*,}<C-f>F"i
 nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -not -regex ".*/\.git/.*" -type f -regex ".*/.*"<C-f>F.i
 
+nnoremap <Leader>G ggVG
 nnoremap <Leader>e <cmd>Lexplore<CR>
 nnoremap <Leader>r <cmd>noh<CR>
 nnoremap <Leader>w <cmd>w<CR>

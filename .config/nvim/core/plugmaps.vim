@@ -18,11 +18,17 @@ nnoremap \t <cmd>JumpToClipboard<CR>
 nmap <Leader>/ gcc
 vmap <Leader>/ gc
 
-" tpope/vim-fugitive: Vim diff shorcuts
+" tpope/vim-fugitive: git shortcuts
+nnoremap go <cmd>Git<CR><C-w>o
 nnoremap <Leader>gt <cmd>Gvdiffsplit!<CR>
 nnoremap <Leader>g2 <cmd>diffget //2<CR>
 nnoremap <Leader>g3 <cmd>diffget //3<CR>
 
-" Markdown preview
+" iamcco/markdown-preview.nvim: preview shortcuts
 nnoremap <Leader>am <cmd>MarkdownPreview<CR>
 nnoremap <Leader>aM <cmd>MarkdownPreviewStop<CR>
+
+" akinsho/bufferline.nvim: buffer close shortcuts
+nnoremap <Leader>bl <cmd>BufferLineCloseLeft<CR>
+nnoremap <Leader>br <cmd>BufferLineCloseRight<CR>
+nnoremap <Leader>bo <cmd>BufferLineCloseOthers<CR>
