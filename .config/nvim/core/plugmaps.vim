@@ -21,8 +21,6 @@ vmap <Leader>/ gc
 " tpope/vim-fugitive: git shortcuts
 nnoremap go <cmd>Git<CR><C-w>o
 nnoremap <Leader>gt <cmd>Gvdiffsplit!<CR>
-nnoremap <Leader>g2 <cmd>diffget //2<CR>
-nnoremap <Leader>g3 <cmd>diffget //3<CR>
 
 " iamcco/markdown-preview.nvim: preview shortcuts
 nnoremap <Leader>am <cmd>MarkdownPreview<CR>
