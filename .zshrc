@@ -77,6 +77,7 @@ alias gm="git commit -m"
 alias gam="ga -u && gm"
 alias ghp="git stash push -u -m"
 alias ghl="git stash list"
+alias gp="git push"
 gmp() {gm $1 && git push}
 gamp() { gam $1 && git push }
 
