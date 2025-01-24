@@ -1,0 +1,23 @@
+// Place your key bindings in this file to override the defaults
+[
+    {
+        "key": "escape",
+        "command":"workbench.action.focusActiveEditorGroup",
+        "when":"searchViewLetFocus"
+    },
+    {
+        "key": "escape",
+        "command":"workbench.action.focusActiveEditorGroup",
+        "when":"explorerViewletFocus"
+    },
+    {
+        "key": "ctrl+alt+o",
+        "command": "editor.action.organizeImports",
+        "when": "textInputFocus && !editorReadonly && supportedCodeAction =~ /(\\s|^)source\\.organizeImports\\b/"
+    },
+    {
+        "key": "shift+alt+o",
+        "command": "-editor.action.organizeImports",
+        "when": "textInputFocus && !editorReadonly && supportedCodeAction =~ /(\\s|^)source\\.organizeImports\\b/"
+    }
+]
