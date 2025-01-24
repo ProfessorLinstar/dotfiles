@@ -29,4 +29,4 @@ nnoremap <Leader>aM <cmd>MarkdownPreviewStop<CR>
 " akinsho/bufferline.nvim: buffer close shortcuts
 nnoremap <Leader>bl <cmd>BufferLineCloseLeft<CR>
 nnoremap <Leader>br <cmd>BufferLineCloseRight<CR>
-nnoremap <Leader>bo <cmd>BufferLineCloseOthers<CR>
+nnoremap <Leader>bo <cmd>BufferLineCloseOthers<CR><C-w>o
