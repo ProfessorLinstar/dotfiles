@@ -3,7 +3,17 @@
     {
         "key": "escape",
         "command":"workbench.action.focusActiveEditorGroup",
-        "when":"searchViewLetFocus"
+        "when":"searchViewletFocus"
+    },
+    {
+        "key": "escape",
+        "command":"workbench.action.focusActiveEditorGroup",
+        "when":"searchInputBoxFocus"
+    },
+    {
+        "key": "escape",
+        "command":"workbench.action.focusActiveEditorGroup",
+        "when":"searchResultListFocused"
     },
     {
         "key": "escape",
