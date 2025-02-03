@@ -78,8 +78,13 @@ alias gam="ga -u && gm"
 alias ghp="git stash push -u -m"
 alias ghl="git stash list"
 alias gp="git push"
-gmp() {gm $1 && git push}
-gamp() { gam $1 && git push }
+gmp() { gm "$1" && git push }
+gamp() { gam "$1" && git push }
+gb() { 
+  branch="$1"
+  $branch || branch=develop
+  echo "gc "$branch" && git pull && gc - && git rebase -i "$branch""
+}
 
 ################################################################################
 # zsh Options And Key Bindings
