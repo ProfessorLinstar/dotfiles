@@ -80,10 +80,28 @@ alias ghl="git stash list"
 alias gp="git push"
 gmp() { gm "$1" && git push }
 gamp() { gam "$1" && git push }
-gb() { 
-  branch="$1"
-  $branch || branch=develop
-  echo "gc "$branch" && git pull && gc - && git rebase -i "$branch""
+gb() {
+  rebase="$1"
+  if [ -z "$rebase" ]; then
+    remote="$(git remote show)"
+    rebase="$(git rev-parse --abbrev-ref "$remote"/HEAD | sed "s@$remote/@@")"
+  fi
+  if [ -z "$remote" ] || [ -z "$rebase" ]; then
+    echo "Branch not found. (remote: '$remote'; branch: '$rebase')"
+    return 1
+  fi
+
+  command -v gh && target="$(gh pr view --json baseRefName -q '.baseRefName')"
+  if [ -z "$target" ]; then
+    echo "Warning: Could not use 'gh' to determine target branch. Skipping target check."
+    read -n 1
+  elif [ "$target" != "$rebase" ]; then
+    echo "Warning: Target branch ('$target') is not the same as rebase branch ('$rebase')"
+    read -n 1
+  fi
+
+  echo "Running command: git fetch && git fetch . "$rebase:$rebase" && git rebase -i "$rebase""
+  git fetch && git fetch . "$rebase:$rebase" && git rebase -i "$rebase"
 }
 
 ################################################################################
