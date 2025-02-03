@@ -82,24 +82,25 @@ gmp() { gm "$1" && git push }
 gamp() { gam "$1" && git push }
 gb() {
   rebase="$1"
-  if [ -z "$rebase" ]; then
+
+  command -v gh && target="$(gh pr view --json baseRefName -q '.baseRefName')"
+  if [ -z "$target" ]; then
     remote="$(git remote show)"
     rebase="$(git rev-parse --abbrev-ref "$remote"/HEAD | sed "s@$remote/@@")"
+    echo "Could not use 'gh' to determine target branch. Using remote HEAD '$rebase' as rebase target."
+  elif [ -z "$rebase" ]; then
+    rebase="$target"
+    echo "Using remote PR target branch '$rebase' as rebase target."
+  elif [ "$rebase" != "$target" ]; then
+    echo "Warning: Remote target branch ('$target') is not the same as provided rebase branch ('$rebase')."
   fi
-  if [ -z "$remote" ] || [ -z "$rebase" ]; then
+
+  if [ -z "$rebase" ]; then
     echo "Branch not found. (remote: '$remote'; branch: '$rebase')"
     return 1
   fi
 
-  command -v gh && target="$(gh pr view --json baseRefName -q '.baseRefName')"
-  if [ -z "$target" ]; then
-    echo "Warning: Could not use 'gh' to determine target branch. Skipping target check."
-    read -n 1
-  elif [ "$target" != "$rebase" ]; then
-    echo "Warning: Target branch ('$target') is not the same as rebase branch ('$rebase')"
-    read -n 1
-  fi
-
+  read -n 1
   echo "Running command: git fetch && git fetch . "$rebase:$rebase" && git rebase -i "$rebase""
   git fetch && git fetch . "$rebase:$rebase" && git rebase -i "$rebase"
 }
