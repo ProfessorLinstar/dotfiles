@@ -21,6 +21,7 @@ lvim.builtin.which_key.mappings["b"]["r"] = { "<cmd>BufferLineCloseRight<CR>", "
 lvim.builtin.which_key.mappings["b"]["l"] = { "<cmd>BufferLineCloseLeft<CR>", "Close buffers to the left" }
 lvim.builtin.which_key.mappings["s"]["t"] = nil
 lvim.builtin.which_key.mappings["s"]["f"] = nil
+lvim.builtin.which_key.mappings["e"] = { "<cmd>NvimTreeFocus<CR>", "Explorer" }
 
 -- Key overridings
 lvim.keys.insert_mode["jk"] = false
@@ -49,3 +50,47 @@ lvim.builtin.which_key.mappings["y"] = {
 -- Hide basic mappings from which-key menu
 local ignore = { "j", "r", "w", "t", "c", "C", "q", "v", "x", "'", "/", "z", "Z", "h", ";", "f"}
 for _, letter in pairs(ignore) do lvim.builtin.which_key.mappings[letter] = { nil, "which_key_ignore" } end
+
+--------------------------------------------------------------------------------
+-- nvim-tree keymappings
+--------------------------------------------------------------------------------
+
+-- Mostly copied from nvim-tree.lua
+-- https://github.com/LunarVim/LunarVim/blob/85ccca97acfea9a465e354e18bb2f6109ba417f8/lua/lvim/core/nvimtree.lua#L285-L314
+-- Use escape to unfocus explorer (changes highlighted by comments)
+local function nvim_tree_on_attach(bufnr)
+  local api = require "nvim-tree.api"
+
+  local function telescope_find_files(_)
+    require("lvim.core.nvimtree").start_telescope "find_files"
+  end
+
+  local function telescope_live_grep(_)
+    require("lvim.core.nvimtree").start_telescope "live_grep"
+  end
+
+  local function opts(desc)
+    return { desc = "nvim-tree: " .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
+  end
+
+  api.config.mappings.default_on_attach(bufnr)
+
+  local useful_keys = {
+    ["l"] = { api.node.open.edit, opts "Open" },
+    ["o"] = { api.node.open.edit, opts "Open" },
+    ["<CR>"] = { api.node.open.edit, opts "Open" },
+    ["v"] = { api.node.open.vertical, opts "Open: Vertical Split" },
+    ["h"] = { api.node.navigate.parent_close, opts "Close Directory" },
+    ["C"] = { api.tree.change_root_to_node, opts "CD" },
+    ["gtg"] = { telescope_live_grep, opts "Telescope Live Grep" },
+    ["gtf"] = { telescope_find_files, opts "Telescope Find File" },
+
+    -- Change: use escape to unfocus explorer
+    ["<esc>"] = {"<C-w>w", opts "Unfocus explorer"}
+  }
+
+  require("lvim.keymappings").load_mode("n", useful_keys)
+end
+
+lvim.builtin.nvimtree.setup.view.adaptive_size = true
+lvim.builtin.nvimtree.setup.on_attach = nvim_tree_on_attach

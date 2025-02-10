@@ -84,19 +84,22 @@ gb() {
   rebase="$1"
 
   command -v gh && target="$(gh pr view --json baseRefName -q '.baseRefName')"
-  if [ -z "$target" ]; then
-    remote="$(git remote show)"
-    rebase="$(git rev-parse --abbrev-ref "$remote"/HEAD | sed "s@$remote/@@")"
-    echo "Could not use 'gh' to determine target branch. Using remote HEAD '$rebase' as rebase target."
-  elif [ -z "$rebase" ]; then
+  if [ -n "$rebase" ]; then
     rebase="$target"
     echo "Using remote PR target branch '$rebase' as rebase target."
+  elif [ -z "$target" ]; then
+    remote="$(git remote show)"
+    rebase="$(git rev-parse --abbrev-ref "$remote"/HEAD | sed "s@$remote/@@")"
+  fi
+
+  if [ -z "$target" ]; then
+    echo "Could not use 'gh' to determine target branch. Using remote HEAD '$rebase' as rebase target."
   elif [ "$rebase" != "$target" ]; then
     echo "Warning: Remote target branch ('$target') is not the same as provided rebase branch ('$rebase')."
   fi
 
   if [ -z "$rebase" ]; then
-    echo "Branch not found. (remote: '$remote'; branch: '$rebase')"
+    echo "Rebase branch could not be found."
     return 1
   fi
 
