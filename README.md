@@ -8,13 +8,15 @@ This repository contains configuration files for my linux workspace. The followi
 ├── .config                          ---
 │   ├── alacritty                    ---
 │   │   └── alacritty.toml           --- alacritty terminal emulator configuration file
+│   ├── git                          ---
+│   │   └── ignore                   --- default ignored git files
 │   ├── lvim                         ---
+│   │   ├── .luarc.json              ---
 │   │   ├── config.lua               --- Lunarvim main configuration file
 │   │   ├── lua                      ---
 │   │   │   └── core                 ---
 │   │   │       ├── mappings.lua     --- Lunarvim-specific mappings
 │   │   │       └── options.lua      --- Lunarvim options and plugins
-│   │   ├── .luarc.json              ---
 │   │   └── spell                    --- Lunarvim spelling files
 │   │       ├── en.utf-8.add         ---
 │   │       └── en.utf-8.add.spl     ---
@@ -28,20 +30,14 @@ This repository contains configuration files for my linux workspace. The followi
 │   │   │   ├── plugins.vim          --- default neovim plugins and settings
 │   │   │   └── plugmaps.vim         --- mappings for neovim/lunarvim plugins
 │   │   └── init.vim                 --- Neovim main configuration file (sources 'core')
-│   └── yapf                         ---
-│       └── style                    --- yapf python formatter global configuration file
-├── dump                             --- exported configuration settings
-│   ├── dconf                        ---
-│   │   ├── arch.dconf               --- selected entries from 'dconf dump /' in Arch
-│   │   └── manjaro.dconf            --- result of 'dconf dump /' in Manjaro (deprecated)
-│   ├── google-chrome                ---
-│   │   └── vimium.conf              --- configuration for chrome vimium extension
-│   ├── insync                       ---
-│   │   └── ignorerules              ---
-│   └── okular                       ---
-│       └── default.shortcuts        ---
+│   ├── sh                           ---
+│   │   └── aliases.sh               --- default shell aliases
+│   ├── yapf                         ---
+│   │   └── style                    --- yapf python formatter global configuration file
+│   └── zsh                          ---
+│       └── keybindings.zsh          --- default zsh keybindings
 ├── .gitignore                       ---
-├── install.sh                       --- dotfiles install script
+├── .ideavimrc                       ---
 ├── .local                           ---
 │   ├── bin                          ---
 │   │   └── squidpdf                 --- pdf splitter for Squid notes
@@ -50,39 +46,56 @@ This repository contains configuration files for my linux workspace. The followi
 │       │   └── Alacritty.desktop    --- custom launch settings for Wayland
 │       └── backgrounds              ---
 │           └── GH2.jpg              --- placeholder background
+├── .ocamlformat                     ---
 ├── .p10k.zsh                        --- powerlevel theme settings
 ├── .profile                         --- sh-compatible login startup file
 ├── .pylintrc                        --- pylint global configuration file
-├── README.md                        --- dotfiles overview
-├── root                             ---
-│   ├── etc                          ---
-│   │   ├── logid.cfg                --- logid configuration file for Logitech peripherals
-│   │   ├── modprobe.d               ---
-│   │   │   └── hid_apple.conf       --- NuPhy Air75 fix for function keys
-│   │   ├── systemd                  ---
-│   │   │   └── system               ---
-│   │   │       ├── auto-suspend.serv--- laptop auto-suspend service to prevent death
-│   │   │       └── auto-suspend.time--- auto-suspend timer to check if battery is low
-│   │   └── vconsole.conf            --- Linux virtual console configuration file
-│   └── usr                          ---
-│       ├── local                    ---
-│       │   └── bin                  ---
-│       │       ├── auto-suspend     --- suspends computer if battery is low
-│       │       ├── cmus-reload      --- repopulates cmus library and playlists
-│       │       ├── colortest        --- prints 256 terminal colors
-│       │       └── vis              --- execute "vi -S" in closest parent directory
-│       └── share                    ---
-│           └── kbd                  ---
-│               └── keymaps          ---
-│                   └── us-caps.map  --- keymap for linux console remapping caps to escape
-├── Sessionx.vim                     --- useful vim options for maintaining dotfiles
 ├── .tmux                            ---
 │   └── resurrect                    ---
 │       └── saferestore.sh           --- safe restore script for tmux resurrect
 ├── .tmux.conf                       --- tmux configuration file
 ├── .vimrc                           --- Vim main configuration file (deprecated)
 ├── .zprofile                        --- zshell login startup file
-└── .zshrc                           --- zshell interactive startup file
+├── .zshrc                           --- zshell interactive startup file
+├── README.md                        --- dotfiles overview
+├── Session.vim                      ---
+├── Sessionx.vim                     --- useful vim options for maintaining dotfiles
+├── docs                             ---
+│   └── mac-os-setup.md              ---
+├── dump                             --- exported configuration settings
+│   ├── dconf                        ---
+│   │   ├── arch.dconf               --- selected entries from 'dconf dump /' in Arch
+│   │   └── manjaro.dconf            --- result of 'dconf dump /' in Manjaro (deprecated)
+│   ├── google-chrome                ---
+│   │   └── vimium.conf              --- configuration for chrome vimium extension
+│   ├── insync                       ---
+│   │   └── ignorerules              ---
+│   ├── okular                       ---
+│   │   └── default.shortcuts        ---
+│   └── vscode                       ---
+│       └── keybindings.json         ---
+├── install.sh                       --- dotfiles install script
+└── root                             ---
+    ├── etc                          ---
+    │   ├── logid.cfg                --- logid configuration file for Logitech peripherals
+    │   ├── modprobe.d               ---
+    │   │   └── hid_apple.conf       --- NuPhy Air75 fix for function keys
+    │   ├── systemd                  ---
+    │   │   └── system               ---
+    │   │       ├── auto-suspend.serv--- laptop auto-suspend service to prevent death
+    │   │       └── auto-suspend.time--- auto-suspend timer to check if battery is low
+    │   └── vconsole.conf            --- Linux virtual console configuration file
+    └── usr                          ---
+        ├── local                    ---
+        │   └── bin                  ---
+        │       ├── auto-suspend     --- suspends computer if battery is low
+        │       ├── cmus-reload      --- repopulates cmus library and playlists
+        │       ├── colortest        --- prints 256 terminal colors
+        │       └── vis              --- execute "vi -S" in closest parent directory
+        └── share                    ---
+            └── kbd                  ---
+                └── keymaps          ---
+                    └── us-caps.map  --- keymap for linux console remapping caps to escape
 ```
 
 ## Installation
