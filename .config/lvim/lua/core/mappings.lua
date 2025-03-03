@@ -86,7 +86,9 @@ local function nvim_tree_on_attach(bufnr)
     ["gtf"] = { telescope_find_files, opts "Telescope Find File" },
 
     -- Change: use escape to unfocus explorer
-    ["<esc>"] = {"<C-w>w", opts "Unfocus explorer"}
+    ["<esc>"] = {"<C-w>w", opts "Unfocus explorer"},
+    ["<tab>"] = {"<C-w>w", opts "Switch to next window"},
+    ["<S-tab>"] = {"<C-w>W", opts "Switch to previous window"}
   }
 
   require("lvim.keymappings").load_mode("n", useful_keys)
