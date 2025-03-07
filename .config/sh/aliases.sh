@@ -22,11 +22,17 @@ alias gds="git diff --staged"
 alias gr="git restore --staged"
 alias gc="git checkout"
 alias ga="git add"
-alias gm="git commit -m"
 alias gam="ga -u && gm"
 alias ghp="git stash push -u"
 alias ghl="git stash list"
 alias gp="git push"
+gm() {
+  if [ -z "$1" ]; then
+    git commit
+  else
+    git commit -m "$1"
+  fi
+} 
 gmp() { gm "$1" && git push }
 gamp() { gam "$1" && git push }
 gb() {
