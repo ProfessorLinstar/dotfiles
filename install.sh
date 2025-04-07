@@ -156,6 +156,7 @@ TERMINAL_PACMAN=(
   "man"                                                         # manual
   "man-pages"                                                   # manual database
   "acpi"                                                        # battery status and acpi information
+  "obsidian"                                                    # markdown note taker
 )
 
 GNOME_PACMAN=(
