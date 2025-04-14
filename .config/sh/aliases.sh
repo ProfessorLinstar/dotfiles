@@ -69,3 +69,5 @@ gb() {
   echo "Running command..."
   eval "$cmd"
 }
+
+alias dnuke='docker kill $(docker ps -aq); docker rm -fv $(docker ps -aq)'
