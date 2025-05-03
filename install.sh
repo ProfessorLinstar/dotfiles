@@ -92,8 +92,6 @@ while true; do
   esac
 done
 
-SKIP_LUNARVIM=false
-
 
 # Directory setup
 DOTFILES_ROOT="$HOME/dotfiles"                                  # dotfiles root directory
@@ -130,7 +128,6 @@ function confirmsed {
 TERMINAL_PACMAN=(
   "wmctrl"                                                      # CLI interface for X window manager
   "zsh"                                                         # zshell essentials
-  "zsh-theme-powerlevel10k"                                     # .
   "zsh-autosuggestions"                                         # .
   "zsh-syntax-highlighting"                                     # .
   "zsh-history-substring-search"                                # .
@@ -156,7 +153,6 @@ TERMINAL_PACMAN=(
   "man"                                                         # manual
   "man-pages"                                                   # manual database
   "acpi"                                                        # battery status and acpi information
-  "obsidian"                                                    # markdown note taker
 )
 
 GNOME_PACMAN=(
@@ -188,6 +184,7 @@ GNOME_PACMAN=(
   "discord"                                                     # social media
   "qgnomeplatform-qt5"                                          # gnome themes (adwaita) for qt5 applications
   "solaar"                                                      # logitech pairing software
+  "obsidian"                                                    # markdown note taker
 )
 
 LATEX_PACMAN=(
@@ -207,6 +204,7 @@ PRINTER_PACMAN=(
 
 # Yay package list
 TERMINAL_YAY=(
+  "zsh-theme-powerlevel10k"                                     # zsh powerlevel10k theme
 )
 
 # Meslo font installation
@@ -317,7 +315,7 @@ if ! $SKIP_LUNARVIM; then
     echo "Installing Lunarvim..."
     sudo pacman --needed -S git make python npm cargo           # Lunarvim dependencies
     mv ~/.config/lvim/config.lua ~/.config/lvim/config.lua.old  # Prevent installation from overwriting existing config
-    LV_BRANCH='release-1.2/neovim-0.8' bash <(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/fc6873809934917b470bff1b072171879899a36b/utils/installer/install.sh)
+    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
   fi
 fi
 
