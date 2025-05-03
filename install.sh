@@ -231,6 +231,8 @@ EXCLUDE_PATHS=(
   "./install.sh"                                                # this script!
   "./README.md"                                                 # dotfiles readme
   "./.backup"                                                   # temporary backup file of modified files
+  "./Sessionx.vim"                                              # vim Obsession session file
+  "docs"                                                        # dotfile docs
 )
 
 
