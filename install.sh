@@ -15,6 +15,7 @@ usage() {
   echo "See README.md for more information."
   echo ""
   echo "  -a, --all                        install all options"
+  echo "  -e, --terminal                   install terminal packages"
   echo "  -p, --pacman                     install pacman packages"
   echo "  -f, --font                       install meslo font for powerlevel10k"
   echo "  -g, --logiops                    install and configure logitech software"
@@ -32,22 +33,23 @@ usage() {
   echo ""
 }
 
-SHORT=apfgvylsmtdixrh
-LONG=all,pacman,font,logiops,lunarvim,yay,link,services,manual,tmux,dconf,info,xdg,printer,help
+SHORT=aepfgvylsmtdixrh
+LONG=all,terminal,pacman,font,logiops,lunarvim,yay,link,services,manual,tmux,dconf,info,xdg,printer,help
 OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
 
-SKIP_XDG=true
-SKIP_DCONF=true
-SKIP_DUMPINFO=true
+SKIP_TERMINAL=true
 SKIP_PACMAN=true
 SKIP_FONT=true
-SKIP_YAY=true
 SKIP_LOGIOPS=true
 SKIP_LUNARVIM=true
+SKIP_YAY=true
 SKIP_LINK=true
 SKIP_SERVICES=true
 SKIP_MANUAL=true
 SKIP_TMUX=true
+SKIP_DCONF=true
+SKIP_DUMPINFO=true
+SKIP_XDG=true
 SKIP_PRINTER=true
 
 if [[ $# -eq 0 ]]; then
@@ -58,21 +60,23 @@ fi
 eval set -- "$OPTS"
 while true; do
   case "$1" in
-    -a | --all )      SKIP_XDG=false;
-                      SKIP_DCONF=false;
-                      SKIP_DUMPINFO=false;
+    -a | --all )      # SKIP_TERMINAL=false; skipping this because it's included in pacman/yay
                       SKIP_PACMAN=false;
                       SKIP_FONT=false;
-                      SKIP_YAY=false;
                       SKIP_LOGIOPS=false;
                       SKIP_LUNARVIM=false;
+                      SKIP_YAY=false;
                       SKIP_LINK=false;
                       SKIP_SERVICES=false;
                       SKIP_MANUAL=false;
                       SKIP_TMUX=false;
+                      SKIP_DCONF=false;
+                      SKIP_DUMPINFO=false;
+                      SKIP_XDG=false;
                       SKIP_PRINTER=false;  shift; ;;
 
     -p | --pacman )   SKIP_PACMAN=false;   shift; ;;
+    -e | --terminal ) SKIP_TERMINAL=false; shift; ;;
     -f | --font )     SKIP_FONT=false;     shift; ;;
     -g | --logiops )  SKIP_LOGIOPS=false;  shift; ;;
     -v | --lunarvim ) SKIP_LUNARVIM=false; shift; ;;
@@ -247,6 +251,27 @@ if ! $SKIP_PACMAN; then
   echo "Installing pacman packages for latex...";    sudo pacman --needed -Sq ${LATEX_PACMAN[@]}    < /dev/tty; echo
 fi
 
+# Yay packages
+if ! $SKIP_YAY; then
+  if ! command -v yay &>/dev/null; then
+    echo "Installing yay..."
+    sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
+  fi
+
+  echo "Installing yay packages for terminal..."; yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty; echo
+  echo "Installing yay packages for gnome...";    yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]}    < /dev/tty; echo
+fi
+
+# Terminal packages
+if ! $SKIP_TERMINAL; then
+  echo "Installing pacman packages for terminal..."; sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty; echo
+  if ! command -v yay &>/dev/null; then
+    echo "Installing yay..."
+    sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
+  fi
+
+  echo "Installing yay packages for terminal..."; yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty; echo
+fi
 
 # Powerlevel font installation
 if ! $SKIP_FONT; then
@@ -260,17 +285,6 @@ if ! $SKIP_FONT; then
   )
 fi
 
-
-# Yay packages
-if ! $SKIP_YAY; then
-  if ! command -v yay &>/dev/null; then
-    echo "Installing yay..."
-    sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
-  fi
-
-  echo "Installing yay packages for terminal..."; yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty; echo
-  echo "Installing yay packages for gnome...";    yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]}    < /dev/tty; echo
-fi
 
 
 # printer
