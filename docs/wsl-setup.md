@@ -1,4 +1,10 @@
 # WSL setup notes
+* Set up windows terminal
+    * [Install MesloLGS NF](https://github.com/romkatv/powerlevel10k?tab=readme-ov-file#manual-font-installation)
+    * Settings > Defaults > Appearance > Font face: set to `MesloLGS NF`
+    * Settings > Defaults > Appearance > Color scheme: set to `Dark+`
+    * Settings > Defaults > Appearance > Cursor shape: set to `filled box`
+    * Settings > Defaults > Advanced > Bell notification style: uncheck all
 * Install wsl
     * wsl --install
     * wsl --install archlinux
