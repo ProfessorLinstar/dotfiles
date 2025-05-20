@@ -16,6 +16,7 @@ alias gitu='git pull && git add -u && git commit && git push'   #
 alias tt="gio trash"                                            # move file to trash
 
 # git shortcuts
+alias gg="cd "$(git rev-parse --show-toplevel)""
 alias gs="git status"
 alias gd="git diff"
 alias gds="git diff --staged"
