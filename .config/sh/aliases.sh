@@ -18,6 +18,7 @@ alias tt="gio trash"                                            # move file to t
 # git shortcuts
 alias gg="cd "$(git rev-parse --show-toplevel)""
 alias gs="git status"
+alias gsn="git status -uno"
 alias gd="git diff"
 alias gds="git diff --staged"
 alias gr="git restore --staged"
