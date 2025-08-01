@@ -9,33 +9,38 @@
 
 usage() {
   echo "$0"
-  echo "Usage: $0 [-a|-all] [-pgvylmtdixh]"
+  echo "Usage: $0 [--option1] [--option2]"
   echo ""
   echo "dotfiles installation and configuration script for Arch Linux."
   echo "See README.md for more information."
   echo ""
-  echo "  -a, --all                        install all options"
-  echo "  -e, --terminal                   install terminal packages"
-  echo "  -p, --pacman                     install pacman packages"
-  echo "  -f, --font                       install meslo font for powerlevel10k"
-  echo "  -g, --logiops                    install and configure logitech software"
-  echo "  -v, --lunarvim                   install lunarvim (default config)"
-  echo "  -y, --yay                        install yay packages"
-  echo "  -l, --link                       creates dotfile links"
-  echo "  -s, --services                   enables and starts custom services"
-  echo "  -m, --manual                     makes manual substitutions to files in-place"
-  echo "  -t, --tmux                       installs tmux plugins"
-  echo "  -d, --dconf                      loads dconf configuration"
-  echo "  -i, --info                       provides info on manual configuartion tasks"
-  echo "  -x, --xdg                        loads default xdg configuration"
-  echo "  -r, --printer                    installs and sets up hp printer drivers"
-  echo "  -h, --help                       shows this help page"
+  echo "  --all                        install all options"
+  echo "  --terminal                   install terminal packages"
+  echo "  --pacman                     install pacman packages"
+  echo "  --font                       install meslo font for powerlevel10k"
+  echo "  --logiops                    install and configure logitech software"
+  echo "  --lunarvim                   install lunarvim (default config)"
+  echo "  --yay                        install yay packages"
+  echo "  --link                       creates dotfile links"
+  echo "  --services                   enables and starts custom services"
+  echo "  --manual                     makes manual substitutions to files in-place"
+  echo "  --tmux                       installs tmux plugins"
+  echo "  --dconf                      loads dconf configuration"
+  echo "  --gitconfig                  sets up default global git config"
+  echo "  --info                       provides info on manual configuartion tasks"
+  echo "  --xdg                        loads default xdg configuration"
+  echo "  --printer                    installs and sets up hp printer drivers"
+  echo "  --help                       shows this help page"
   echo ""
 }
 
-SHORT=aepfgvylsmtdixrh
-LONG=all,terminal,pacman,font,logiops,lunarvim,yay,link,services,manual,tmux,dconf,info,xdg,printer,help
-OPTS=$(getopt --options $SHORT --long $LONG --name $0 -- "$@")
+if [[ $# -eq 0 ]]; then
+  usage
+  exit 0
+fi
+
+LONG=all,terminal,pacman,font,logiops,lunarvim,yay,link,services,manual,tmux,dconf,gitconfig,info,xdg,printer,help
+OPTS=$(getopt --long "$LONG" --name "$0" -- "$@") || { usage; exit 1; }
 
 SKIP_TERMINAL=true
 SKIP_PACMAN=true
@@ -47,60 +52,59 @@ SKIP_LINK=true
 SKIP_SERVICES=true
 SKIP_MANUAL=true
 SKIP_TMUX=true
+SKIP_GITCONFIG=true
 SKIP_DCONF=true
-SKIP_DUMPINFO=true
+SKIP_INFO=true
 SKIP_XDG=true
 SKIP_PRINTER=true
-
-if [[ $# -eq 0 ]]; then
-  usage
-  exit 0
-fi
 
 eval set -- "$OPTS"
 while true; do
   case "$1" in
-    -a | --all )      # SKIP_TERMINAL=false; skipping this because it's included in pacman/yay
-                      SKIP_PACMAN=false;
-                      SKIP_FONT=false;
-                      SKIP_LOGIOPS=false;
-                      SKIP_LUNARVIM=false;
-                      SKIP_YAY=false;
-                      SKIP_LINK=false;
-                      SKIP_SERVICES=false;
-                      SKIP_MANUAL=false;
-                      SKIP_TMUX=false;
-                      SKIP_DCONF=false;
-                      SKIP_DUMPINFO=false;
-                      SKIP_XDG=false;
-                      SKIP_PRINTER=false;  shift; ;;
+    --all )     # SKIP_TERMINAL=false; skipping this because it's included in pacman/yay
+                  SKIP_PACMAN=false;
+                  SKIP_FONT=false;
+                  SKIP_LOGIOPS=false;
+                  SKIP_LUNARVIM=false;
+                  SKIP_YAY=false;
+                  SKIP_LINK=false;
+                  SKIP_SERVICES=false;
+                  SKIP_MANUAL=false;
+                  SKIP_TMUX=false;
+                  SKIP_GITCONFIG=false;
+                  SKIP_DCONF=false;
+                  SKIP_INFO=false;
+                  SKIP_XDG=false;
+                  SKIP_PRINTER=false;   shift; ;;
 
-    -p | --pacman )   SKIP_PACMAN=false;   shift; ;;
-    -e | --terminal ) SKIP_TERMINAL=false; shift; ;;
-    -f | --font )     SKIP_FONT=false;     shift; ;;
-    -g | --logiops )  SKIP_LOGIOPS=false;  shift; ;;
-    -v | --lunarvim ) SKIP_LUNARVIM=false; shift; ;;
-    -y | --yay )      SKIP_YAY=false;      shift; ;;
-    -l | --link )     SKIP_LINK=false;     shift; ;;
-    -s | --services ) SKIP_SERVICES=false; shift; ;;
-    -m | --manual )   SKIP_MANUAL=false;   shift; ;;
-    -t | --tmux )     SKIP_TMUX=false;     shift; ;;
-    -d | --dconf )    SKIP_DCONF=false;    shift; ;;
-    -i | --info )     SKIP_DUMPINFO=false; shift; ;;
-    -x | --xdg )      SKIP_XDG=false;      shift; ;;
-    -r | --printer )  SKIP_PRINTER=false;  shift; ;;
+    --pacman )    SKIP_PACMAN=false;    shift; ;;
+    --terminal )  SKIP_TERMINAL=false;  shift; ;;
+    --font )      SKIP_FONT=false;      shift; ;;
+    --logiops )   SKIP_LOGIOPS=false;   shift; ;;
+    --lunarvim )  SKIP_LUNARVIM=false;  shift; ;;
+    --yay )       SKIP_YAY=false;       shift; ;;
+    --link )      SKIP_LINK=false;      shift; ;;
+    --services )  SKIP_SERVICES=false;  shift; ;;
+    --manual )    SKIP_MANUAL=false;    shift; ;;
+    --tmux )      SKIP_TMUX=false;      shift; ;;
+    --gitconfig ) SKIP_GITCONFIG=false; shift; ;;
+    --dconf )     SKIP_DCONF=false;     shift; ;;
+    --info )      SKIP_INFO=false;      shift; ;;
+    --xdg )       SKIP_XDG=false;       shift; ;;
+    --printer )   SKIP_PRINTER=false;   shift; ;;
 
-    -h | --help )     usage; exit 0;              ;;
-    -- )              shift; break;               ;; # break on positional arguments
-    * )               usage; exit 1;              ;;
+    --help )      usage; exit 0;               ;;
+    "-- " )          shift; break;                ;; # break on positional arguments
+    * )           usage; exit 1;               ;;
   esac
 done
 
 
+
 # Directory setup
-DOTFILES_ROOT="$HOME/dotfiles"                                  # dotfiles root directory
-BACKUPS_ROOT="$DOTFILES_ROOT/.backup"                           # backup dotfiles root directory
-if ! ([[ -d "$DOTFILES_ROOT" ]] && cd "$DOTFILES_ROOT"); then   # Ensure that cwd is at ~/dotfiles
+DOTFILES_ROOT="$HOME/dotfiles"                                # dotfiles root directory
+BACKUPS_ROOT="$DOTFILES_ROOT/.backup"                         # backup dotfiles root directory
+if ! ([[ -d "$DOTFILES_ROOT" ]] && cd "$DOTFILES_ROOT"); then # Ensure that cwd is at ~/dotfiles
   echo "dotfiles must be at $DOTFILES_ROOT."
   exit 1
 fi
@@ -126,6 +130,7 @@ function confirmsed {
     grep -Eq "^$replace$" < "$file" || echo "Warning: Neither '$pattern' nor '$replace' were found in $file."
   fi
 }
+
 
 
 # Pacman package list
@@ -381,6 +386,18 @@ if ! $SKIP_TMUX; then
 fi
 
 
+# git config
+if ! $SKIP_GITCONFIG; then
+  if command -v git &>/dev/null; then
+    git config --global push.autoSetupRemote true
+    git config --global core.excludesFile "$(pwd)/.gitignore"
+    git config --global pull.rebase false
+    git config --global credential.helper true
+  else
+    echo "git command not found, skipping git config setup."
+  fi
+fi
+
 # dconf settings
 if ! $SKIP_DCONF; then
   DCONF_DUMP="$DOTFILES_ROOT/dump/dconf/arch.dconf"
@@ -417,7 +434,7 @@ fi
 
 
 # dump information
-if ! $SKIP_DUMPINFO; then
+if ! $SKIP_INFO; then
   echo
   echo "Providing dump info..."
   echo "'$DOTFILES_ROOT/dump' contains exported configuration files of various applications, typically those with gui's."
