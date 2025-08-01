@@ -1,2 +1,4 @@
 .backup
+.ignore
 Session.vim
+Sessionx.vim
