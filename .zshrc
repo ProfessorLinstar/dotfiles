@@ -69,3 +69,16 @@ source ~/dotfiles/.config/zsh/keybindings.zsh
 
 # opam configuration
 [[ ! -r /home/linstar/.opam/opam-init/init.zsh ]] || source /home/linstar/.opam/opam-init/init.zsh  > /dev/null 2> /dev/null
+
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - zsh)"
+
+# Claude Code
+# export ANTHROPIC_BEDROCK_BASE_URL=<base url here>
+# export ANTHROPIC_AUTH_TOKEN=<auth token here>
+export CLAUDE_CODE_USE_BEDROCK=1
+export CLAUDE_CODE_SKIP_BEDROCK_AUTH=1
+export DISABLE_TELEMETRY=1
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
