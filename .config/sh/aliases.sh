@@ -16,7 +16,6 @@ alias gitu='git pull && git add -u && git commit && git push'   #
 alias tt="gio trash"                                            # move file to trash
 
 # git shortcuts
-alias gg="cd "$(git rev-parse --show-toplevel)""
 alias gs="git status"
 alias gsn="git status -uno"
 alias gd="git diff"
@@ -28,6 +27,9 @@ alias gam="ga -u && gm"
 alias ghp="git stash push -u"
 alias ghl="git stash list"
 alias gp="git push"
+gg() {
+  cd "$(git rev-parse --show-toplevel)"
+}
 gm() {
   if [ -z "$1" ]; then
     git commit
