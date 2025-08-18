@@ -82,3 +82,7 @@ export CLAUDE_CODE_USE_BEDROCK=1
 export CLAUDE_CODE_SKIP_BEDROCK_AUTH=1
 export DISABLE_TELEMETRY=1
 export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+
+# Node/SSL Certs
+# export SSL_CERT_FILE=/path/to/certificate-bundle.crt
+# export NODE_EXTRA_CA_CERTS=/path/to/certificate-bundle.crt
