@@ -1,6 +1,7 @@
-Session.vim
 Sessionx.vim
+Session.vim
 .untracked
+.scratch-linstar
 
 .claude
 **/.claude/settings.local.json
