@@ -26,6 +26,7 @@ alias ga="git add"
 alias gam="ga -u && gm"
 alias ghp="git stash push -u"
 alias ghl="git stash list"
+alias gmb="git merge-base"
 alias gp="git push"
 gg() {
   cd "$(git rev-parse --show-toplevel)"
