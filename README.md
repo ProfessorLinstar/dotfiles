@@ -186,3 +186,6 @@ The following is a list of packages that are not included in the base installer 
  - lilypond: a CLI sheet music typesetter.
  - visual-studio-code-bin (AUR): Microsoft VSCode for Arch (supports liveshare)
  - lmms: electronic music editor
+
+#### Using LunarVim
+LunarVim has not been in development for some time. Use [Neovim v0.10.4](https://github.com/neovim/neovim/releases/tag/v0.10.4) for best results.
