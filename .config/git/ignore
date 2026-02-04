@@ -3,6 +3,5 @@ Session.vim
 .untracked
 .scratch-linstar
 
-.claude
 **/.claude/settings.local.json
 **/.claude/settings.local.json
