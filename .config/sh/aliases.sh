@@ -10,7 +10,7 @@ alias free='free -m'                                            # Show sizes in 
 # shortcuts
 alias py=python3.10                                             # Python shortcut
 alias activate=". venv/bin/activate"                            # Python virtual environment activation shortcut
-alias vi=lvim                                                   #
+alias vi=nvim                                                   #
 alias vis="source vis"                                          # Allow vis to change cwd
 alias gitu='git pull && git add -u && git commit && git push'   #
 alias tt="gio trash"                                            # move file to trash
