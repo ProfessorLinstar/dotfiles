@@ -2,7 +2,7 @@ Sessionx.vim
 Session.vim
 .untracked
 .scratch-linstar
-worktree-*
+.worktree-*
 
 **/.claude/settings.local.json
 **/.claude/settings.local.json
