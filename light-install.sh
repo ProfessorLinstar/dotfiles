@@ -30,6 +30,7 @@ Options:
   -t, --tmux        Install tmux plugin manager and plugins
   -i, --install     Install neovim and tmux to ~/.local/bin from GitHub
   -l, --link        Symlink neovim and tmux configs into ~
+  -g, --gitconfig   Set up default global git config
   -a, --all         Run all of the above
   -h, --help        Show this help message
 EOF
@@ -40,6 +41,7 @@ DO_SHELL=false
 DO_TMUX=false
 DO_INSTALL=false
 DO_LINK=false
+DO_GITCONFIG=false
 
 if [[ $# -eq 0 ]]; then
   usage
@@ -51,8 +53,9 @@ while [[ $# -gt 0 ]]; do
     -s|--shell)   DO_SHELL=true;   shift ;;
     -t|--tmux)    DO_TMUX=true;    shift ;;
     -i|--install) DO_INSTALL=true; shift ;;
-    -l|--link)    DO_LINK=true;    shift ;;
-    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK=true; shift ;;
+    -l|--link)    DO_LINK=true;      shift ;;
+    -g|--gitconfig) DO_GITCONFIG=true; shift ;;
+    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK=true; DO_GITCONFIG=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     *)            echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -174,6 +177,22 @@ link_configs() {
   done
 }
 
+# --- Git config ---
+configure_git() {
+  if ! command -v git &>/dev/null; then
+    warn "git not found, skipping git config"
+    return
+  fi
+
+  info "Configuring global git settings..."
+  git config --global push.autoSetupRemote true
+  git config --global core.excludesFile "$DOTFILES_ROOT/.gitignore"
+  git config --global pull.rebase false
+  git config --global credential.helper store
+  git config --global fetch.prune true
+  git config --global core.untrackedCache true
+}
+
 # --- Install neovim ---
 install_neovim() {
   if command -v nvim &>/dev/null; then
@@ -284,6 +303,10 @@ fi
 
 if $DO_TMUX; then
   install_tmux_plugins
+fi
+
+if $DO_GITCONFIG; then
+  configure_git
 fi
 
 info "Done."
