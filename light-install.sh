@@ -29,7 +29,8 @@ Options:
   -s, --shell       Configure shell keybindings (source aliases in shell rc)
   -t, --tmux        Install tmux plugin manager and plugins
   -i, --install     Install neovim and tmux to ~/.local/bin from GitHub
-  -l, --link        Symlink neovim and tmux configs into ~
+  -l, --link-config        Symlink neovim and tmux configs into ~
+  -b, --link-bin    Symlink executables into /usr/local/bin (requires sudo)
   -g, --gitconfig   Set up default global git config
   -a, --all         Run all of the above
   -h, --help        Show this help message
@@ -40,7 +41,8 @@ EOF
 DO_SHELL=false
 DO_TMUX=false
 DO_INSTALL=false
-DO_LINK=false
+DO_LINK_CONFIG=false
+DO_LINK_BIN=false
 DO_GITCONFIG=false
 
 if [[ $# -eq 0 ]]; then
@@ -53,9 +55,10 @@ while [[ $# -gt 0 ]]; do
     -s|--shell)   DO_SHELL=true;   shift ;;
     -t|--tmux)    DO_TMUX=true;    shift ;;
     -i|--install) DO_INSTALL=true; shift ;;
-    -l|--link)    DO_LINK=true;      shift ;;
+    -l|--link-config)      DO_LINK_CONFIG=true;      shift ;;
+    -b|--link-bin)  DO_LINK_BIN=true;  shift ;;
     -g|--gitconfig) DO_GITCONFIG=true; shift ;;
-    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK=true; DO_GITCONFIG=true; shift ;;
+    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GITCONFIG=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     *)            echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -137,43 +140,56 @@ install_tmux_plugins() {
   "$tpm_dir/bin/install_plugins"
 }
 
+# --- Symlink helper ---
+# Usage: make_symlink <src> <target> [sudo_cmd]
+# Creates a symlink at <target> pointing to <src>. Idempotent.
+# Pass "sudo" as the third argument for privileged targets.
+make_symlink() {
+  local src="$1" target="$2" sudo_cmd="${3:-}"
+
+  if [[ ! -e "$src" ]]; then
+    warn "Source does not exist, skipping: $src"
+    return
+  fi
+
+  if [[ -L "$target" ]] && [[ "$(readlink "$target")" == "$src" ]]; then
+    info "Already linked: $target"
+    return
+  fi
+
+  $sudo_cmd mkdir -p "$(dirname "$target")"
+
+  if [[ -e "$target" || -L "$target" ]]; then
+    warn "Backing up existing $target to ${target}.bak"
+    $sudo_cmd mv "$target" "${target}.bak"
+  fi
+
+  $sudo_cmd ln -sv "$src" "$target"
+  info "Linked $target -> $src"
+}
+
 # --- Link configs ---
 link_configs() {
-  # Allowlist of paths (relative to DOTFILES_ROOT) to symlink into $HOME.
-  # Entries can be files or directories.
   local paths=(
-    # tmux requirements
     .tmux.conf
     .tmux/resurrect/saferestore.sh
-
-    # neovim requirements
     .config/nvim
   )
 
   for rel in "${paths[@]}"; do
-    local src="$DOTFILES_ROOT/$rel"
-    local target="$HOME/$rel"
+    make_symlink "$DOTFILES_ROOT/$rel" "$HOME/$rel"
+  done
+}
 
-    if [[ ! -e "$src" ]]; then
-      warn "Source does not exist, skipping: $src"
-      continue
-    fi
+# --- Link executables ---
+link_bin() {
+  # Paths relative to DOTFILES_ROOT/root, linked to / (requires sudo).
+  local paths=(
+    usr/local/bin/vis
+  )
 
-    if [[ -L "$target" ]] && [[ "$(readlink "$target")" == "$src" ]]; then
-      info "Already linked: $target"
-      continue
-    fi
-
-    mkdir -p "$(dirname "$target")"
-
-    # Back up any existing file/directory that isn't already our symlink
-    if [[ -e "$target" || -L "$target" ]]; then
-      warn "Backing up existing $target to ${target}.bak"
-      mv "$target" "${target}.bak"
-    fi
-
-    ln -sv "$src" "$target"
-    info "Linked $target -> $src"
+  for rel in "${paths[@]}"; do
+    make_symlink "$DOTFILES_ROOT/root/$rel" "/$rel" sudo
   done
 }
 
@@ -293,8 +309,12 @@ if $DO_INSTALL; then
   install_tmux_binary
 fi
 
-if $DO_LINK; then
+if $DO_LINK_CONFIG; then
   link_configs
+fi
+
+if $DO_LINK_BIN; then
+  link_bin
 fi
 
 if $DO_SHELL; then
