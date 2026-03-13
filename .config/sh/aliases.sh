@@ -38,8 +38,8 @@ gm() {
     git commit -m "$1"
   fi
 } 
-gmp() { gm "$1" && git push }
-gamp() { gam "$1" && git push }
+gmp() { gm "$1" && git push; }
+gamp() { gam "$1" && git push; }
 gb() {
   rebase="$1"
   remote="$(git remote show)"
