@@ -388,7 +388,7 @@ fi
 if ! $SKIP_GITCONFIG; then
   if command -v git &>/dev/null; then
     git config --global push.autoSetupRemote true
-    git config --global core.excludesFile "$(pwd)/.gitignore"
+    git config --global core.excludesFile "$(pwd)/.config/git/ignore"
     git config --global pull.rebase false
     git config --global credential.helper true
   else
