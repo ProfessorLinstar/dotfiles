@@ -68,7 +68,7 @@ gb() {
     return 1
   fi
 
-  cmd="git fetch && git fetch . "$remote/$rebase:$rebase" && git rebase -i "$rebase""
+  cmd="git fetch "$remote" "$rebase:$rebase" && git rebase -i "$rebase""
   echo "Command to run: $cmd"
   read -n 1
   echo "Running command..."
