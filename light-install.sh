@@ -72,10 +72,18 @@ detect_os_arch() {
 }
 
 # Fetch the browser_download_url for a GitHub release asset matching a pattern.
+# Prefers `gh` CLI (authenticated, higher rate limit) and falls back to curl.
 # Usage: github_release_url <owner/repo> <grep-pattern>
 github_release_url() {
-  local repo="$1" pattern="$2"
-  curl -fsSL "https://api.github.com/repos/$repo/releases/latest" \
+  local repo="$1" pattern="$2" json
+  if command -v gh &>/dev/null && gh auth status &>/dev/null; then
+    json="$(gh api "repos/$repo/releases/latest" 2>/dev/null)" || json=""
+  fi
+  if [[ -z "${json:-}" ]]; then
+    json="$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest" 2>/dev/null)" || json=""
+  fi
+  [[ -n "$json" ]] || { warn "Failed to fetch release info for $repo"; return 1; }
+  echo "$json" \
     | grep "browser_download_url" \
     | grep -E "$pattern" \
     | head -1 \
@@ -132,27 +140,30 @@ install_neovim() {
 
   detect_os_arch
 
-  # Asset naming: nvim-linux-x86_64.tar.gz, nvim-macos-arm64.tar.gz, etc.
-  # Older releases used nvim-linux64.tar.gz — the pattern handles both.
-  local asset_pattern
+  # Use direct GitHub release URL (no API call needed, avoids rate limits).
+  # Format: https://github.com/neovim/neovim/releases/latest/download/nvim-<os>-<arch>.tar.gz
+  local asset_name
   case "${OS}-${ARCH}" in
-    linux-x86_64)  asset_pattern="nvim-linux.*(x86_64|64)\\.tar\\.gz\"" ;;
-    linux-arm64)   asset_pattern="nvim-linux.*arm64\\.tar\\.gz\"" ;;
-    macos-arm64)   asset_pattern="nvim-macos-arm64\\.tar\\.gz\"" ;;
-    macos-x86_64)  asset_pattern="nvim-macos-x86_64\\.tar\\.gz\"" ;;
+    linux-x86_64)  asset_name="nvim-linux-x86_64.tar.gz" ;;
+    linux-arm64)   asset_name="nvim-linux-arm64.tar.gz" ;;
+    macos-arm64)   asset_name="nvim-macos-arm64.tar.gz" ;;
+    macos-x86_64)  asset_name="nvim-macos-x86_64.tar.gz" ;;
     *)             error "No neovim binary available for ${OS}-${ARCH}" ;;
   esac
 
-  info "Fetching latest neovim release URL..."
-  local download_url
-  download_url="$(github_release_url neovim/neovim "$asset_pattern")"
-  [[ -n "$download_url" ]] || error "Could not find neovim release for ${OS}-${ARCH}"
+  local download_url="https://github.com/neovim/neovim/releases/latest/download/${asset_name}"
 
   local tmp
   tmp="$(mktemp -d)"
 
-  info "Downloading neovim..."
-  curl -fSL -o "$tmp/nvim.tar.gz" "$download_url"
+  info "Downloading neovim from $download_url ..."
+  if ! curl -fSL -o "$tmp/nvim.tar.gz" "$download_url"; then
+    warn "Direct download failed, trying GitHub API fallback..."
+    local api_pattern="nvim-${OS}.*(${ARCH}|64)\\.tar\\.gz\""
+    download_url="$(github_release_url neovim/neovim "$api_pattern")"
+    [[ -n "$download_url" ]] || error "Could not find neovim release for ${OS}-${ARCH}"
+    curl -fSL -o "$tmp/nvim.tar.gz" "$download_url"
+  fi
 
   info "Extracting to $LOCAL_PREFIX..."
   mkdir -p "$LOCAL_PREFIX"
