@@ -1,10 +1,6 @@
 " moll/vim-bbye: intelligent buffer deletion (overrides <Leader>dd)
 nnoremap <Leader>dd <cmd>Bdelete<CR>
 
-" ggandor/leap.nvim: Use '/M-' as the default jump keys
-noremap ' <Plug>(leap-forward-to)
-noremap <M-'> <Plug>(leap-backward-to)
-
 " tpope/vim-obsession: shortcut for editing Sessionx.vim file
 nnoremap <Leader>ax <cmd>if v:this_session != "" \| execute "e " . substitute(g:this_obsession, "Session.vim", "Sessionx.vim", "") \| endif<CR>
 
