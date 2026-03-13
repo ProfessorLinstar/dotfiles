@@ -203,7 +203,7 @@ configure_git() {
 
   info "Configuring global git settings..."
   git config --global push.autoSetupRemote true
-  git config --global core.excludesFile "$DOTFILES_ROOT/.gitignore"
+  git config --global core.excludesFile "$DOTFILES_ROOT/.config/git/ignore"
   git config --global pull.rebase false
   git config --global credential.helper store
   git config --global fetch.prune true
