@@ -136,8 +136,9 @@ install_tmux_plugins() {
     info "tpm already installed"
   fi
 
-  info "Installing tmux plugins..."
-  "$tpm_dir/bin/install_plugins"
+  if ! "$tpm_dir/bin/install_plugins" 2>/dev/null; then
+    warn "Plugin install failed. Open tmux and press 'prefix + I' to bootstrap plugins, then re-run this script."
+  fi
 }
 
 # --- Symlink helper ---
