@@ -7,7 +7,7 @@ endif
 
 call plug#begin('~/.vim/plugged')
 
-Plug 'ggandor/leap.nvim'              " vim navigation
+Plug 'catppuccin/nvim', { 'branch': 'vim', 'as': 'catppuccin' } " Color scheme
 Plug 'tpope/vim-surround'             " Provides some shortcuts for delimiter manipulation
 Plug 'tpope/vim-commentary'	          " Provides commenting
 Plug 'vim-airline/vim-airline' 	      " Provides status bars
@@ -37,3 +37,6 @@ let g:airline_powerline_fonts = 1
 " markdown-preview.nvim
 let g:mkdp_theme = 'dark'
 let g:mkdp_auto_close = 0
+
+" catppuccin setup
+colorscheme catppuccin-mocha
