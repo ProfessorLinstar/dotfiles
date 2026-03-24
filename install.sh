@@ -12,6 +12,7 @@ usage() {
   echo "Usage: $0 [--option1] [--option2]"
   echo ""
   echo "dotfiles installation and configuration script for Arch Linux."
+  echo "With no options, runs ./light-install.sh -a (lightweight install)."
   echo "See README.md for more information."
   echo ""
   echo "  --all                        install all options"
@@ -34,9 +35,9 @@ usage() {
   echo ""
 }
 
+# Default to lightweight install when no options are provided.
 if [[ $# -eq 0 ]]; then
-  usage
-  exit 0
+  exec ./light-install.sh -a
 fi
 
 LONG=all,terminal,pacman,font,logiops,lunarvim,yay,link,services,manual,tmux,dconf,gitconfig,info,xdg,printer,help
