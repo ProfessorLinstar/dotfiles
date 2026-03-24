@@ -31,6 +31,7 @@ Options:
   -i, --install     Install neovim and tmux to ~/.local/bin from GitHub
   -l, --link-config        Symlink neovim and tmux configs into ~
   -b, --link-bin    Symlink executables into /usr/local/bin (requires sudo)
+  -G, --gng         Install gng (Gradle wrapper) to ~/.local
   -g, --gitconfig   Set up default global git config
   -a, --all         Run all of the above
   -h, --help        Show this help message
@@ -43,6 +44,7 @@ DO_TMUX=false
 DO_INSTALL=false
 DO_LINK_CONFIG=false
 DO_LINK_BIN=false
+DO_GNG=false
 DO_GITCONFIG=false
 
 if [[ $# -eq 0 ]]; then
@@ -57,8 +59,9 @@ while [[ $# -gt 0 ]]; do
     -i|--install) DO_INSTALL=true; shift ;;
     -l|--link-config)      DO_LINK_CONFIG=true;      shift ;;
     -b|--link-bin)  DO_LINK_BIN=true;  shift ;;
+    -G|--gng)       DO_GNG=true;       shift ;;
     -g|--gitconfig) DO_GITCONFIG=true; shift ;;
-    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GITCONFIG=true; shift ;;
+    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GNG=true; DO_GITCONFIG=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     *)            echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -304,6 +307,28 @@ Install them first (e.g. apt install build-essential pkg-config libevent-dev ncu
   info "tmux installed to $LOCAL_BIN/tmux"
 }
 
+# --- Install gng ---
+install_gng() {
+  if command -v gw &>/dev/null; then
+    info "gng already available: $(command -v gw)"
+    return
+  fi
+
+  local gng_dir="$LOCAL_PREFIX/gng"
+
+  if [[ -d "$gng_dir" ]]; then
+    info "gng repo already cloned at $gng_dir"
+  else
+    info "Cloning gng..."
+    git clone https://github.com/gdubw/gng.git "$gng_dir"
+  fi
+
+  info "Running gng install script..."
+  sudo "$gng_dir/install.sh"
+
+  info "gng installed"
+}
+
 # --- Main ---
 if $DO_INSTALL; then
   install_neovim
@@ -324,6 +349,10 @@ fi
 
 if $DO_TMUX; then
   install_tmux_plugins
+fi
+
+if $DO_GNG; then
+  install_gng
 fi
 
 if $DO_GITCONFIG; then
