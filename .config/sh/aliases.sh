@@ -41,8 +41,8 @@ gm() {
 gmp() { gm "$1" && git push; }
 gamp() { gam "$1" && git push; }
 gb() {
-  rebase="$1"
-  remote="$(git remote show)"
+  local rebase="$1"
+  local remote="$(git remote show)"
 
   command gh >/dev/null && target="$(gh pr view --json baseRefName -q '.baseRefName')"
   if [ -z "$target" ]; then
@@ -74,5 +74,12 @@ gb() {
   echo "Running command..."
   eval "$cmd"
 }
+gu() {
+  local branch="$(git rev-parse --abbrev-ref @)"
+  local remote="$(git remote show)"
+  git fetch "$remote" "$branch"
+  git merge "$remote/$branch"
+}
 
+# miscellaneous software shortcuts
 alias dnuke='docker kill $(docker ps -aq); docker rm -fv $(docker ps -aq)'
