@@ -74,6 +74,16 @@ gb() {
   echo "Running command..."
   eval "$cmd"
 }
+gbg() {
+  local last_signed
+  last_signed="$(git log -50 --format='%H %G?' | awk '$2 ~ /^[GU]$/ {print $1; exit}')"
+  if [ -z "$last_signed" ]; then
+    echo "No signed parent commit found."
+    return 1
+  fi
+  echo "Last signed commit: $(git log --oneline -1 "$last_signed")"
+  git rebase --exec 'git commit --amend --no-edit -n -S' "$last_signed"
+}
 gu() {
   local branch="$(git rev-parse --abbrev-ref @)"
   local remote="$(git remote show)"
