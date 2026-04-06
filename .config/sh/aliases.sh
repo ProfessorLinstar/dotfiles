@@ -76,7 +76,7 @@ gb() {
 }
 gbg() {
   local last_signed
-  last_signed="$(git log -50 --format='%H %G?' | awk '$2 ~ /^[GU]$/ {print $1; exit}')"
+  last_signed="$(git log -50 --format='%H %G?' | awk '$2 ~ /^[GUEX]$/ {print $1; exit}')"
   if [ -z "$last_signed" ]; then
     echo "No signed parent commit found."
     return 1
