@@ -32,6 +32,7 @@ Options:
   -l, --link-config        Symlink neovim and tmux configs into ~
   -b, --link-bin    Symlink executables into /usr/local/bin (requires sudo)
   -G, --gng         Install gng (Gradle wrapper) to ~/.local
+  -c, --claude      Configure default global CLAUDE.md
   -g, --gitconfig   Set up default global git config
   -a, --all         Run all of the above
   -h, --help        Show this help message
@@ -45,6 +46,7 @@ DO_INSTALL=false
 DO_LINK_CONFIG=false
 DO_LINK_BIN=false
 DO_GNG=false
+DO_CLAUDE=false
 DO_GITCONFIG=false
 
 if [[ $# -eq 0 ]]; then
@@ -60,8 +62,9 @@ while [[ $# -gt 0 ]]; do
     -l|--link-config)      DO_LINK_CONFIG=true;      shift ;;
     -b|--link-bin)  DO_LINK_BIN=true;  shift ;;
     -G|--gng)       DO_GNG=true;       shift ;;
+    -c|--claude)    DO_CLAUDE=true;    shift ;;
     -g|--gitconfig) DO_GITCONFIG=true; shift ;;
-    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GNG=true; DO_GITCONFIG=true; shift ;;
+    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GNG=true; DO_CLAUDE=true; DO_GITCONFIG=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     *)            echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -329,6 +332,73 @@ install_gng() {
   info "gng installed"
 }
 
+# --- Configure CLAUDE.md ---
+configure_claude() {
+  local src="$DOTFILES_ROOT/dump/claude/CLAUDE.md"
+  local dst="$HOME/.claude/CLAUDE.md"
+  local marker_start="# Added by dotfiles"
+  local marker_end="# /Added by dotfiles"
+
+  if [[ ! -f "$src" ]]; then
+    warn "Source CLAUDE.md not found at $src"
+    return
+  fi
+
+  mkdir -p "$HOME/.claude"
+
+  local src_content
+  src_content="$(cat "$src")"
+  local block
+  block="$(printf '%s\n%s\n%s' "$marker_start" "$src_content" "$marker_end")"
+
+  # If markers already exist, check whether the content needs updating.
+  if [[ -f "$dst" ]] && grep -qF "$marker_start" "$dst"; then
+    local existing
+    existing="$(awk -v ms="$marker_start" -v me="$marker_end" '
+      $0==ms { found=1; next }
+      $0==me { found=0; next }
+      found  { print }
+    ' "$dst")"
+    if [[ "$existing" == "$src_content" ]]; then
+      info "CLAUDE.md already up to date in $dst"
+      return
+    fi
+    # Content differs — replace the existing block.
+    info "Updating dotfiles CLAUDE.md block in $dst"
+    local tmp
+    tmp="$(mktemp)"
+    awk -v block="$block" -v ms="$marker_start" -v me="$marker_end" '
+      $0 ~ ms { print block; skip=1; next }
+      skip && $0 ~ me { skip=0; next }
+      !skip { print }
+    ' "$dst" > "$tmp"
+    mv "$tmp" "$dst"
+    return
+  fi
+
+  # Fresh insert — no markers present yet.
+  if [[ -f "$dst" ]] && grep -q '</system-prompt>' "$dst"; then
+    info "Inserting dotfiles CLAUDE.md before </system-prompt> in $dst"
+    local tmp
+    tmp="$(mktemp)"
+    awk -v block="$block" '
+      !inserted && /<\/system-prompt>/ {
+        print block
+        print ""
+        inserted=1
+      }
+      { print }
+    ' "$dst" > "$tmp"
+    mv "$tmp" "$dst"
+  elif [[ -f "$dst" ]]; then
+    info "Appending dotfiles CLAUDE.md to $dst"
+    printf '\n%s\n' "$block" >> "$dst"
+  else
+    info "Creating $dst"
+    printf '%s\n' "$block" > "$dst"
+  fi
+}
+
 # --- Main ---
 if $DO_INSTALL; then
   install_neovim
@@ -353,6 +423,10 @@ fi
 
 if $DO_GNG; then
   install_gng
+fi
+
+if $DO_CLAUDE; then
+  configure_claude
 fi
 
 if $DO_GITCONFIG; then

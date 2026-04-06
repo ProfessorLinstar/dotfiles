@@ -239,6 +239,7 @@ EXCLUDE_PATHS=(
   "./dump/"                                                     # manually loaded configuration files
   "./.gitignore"                                                #
   "./install.sh"                                                # this script!
+  "./light-install.sh"                                          # a lighter version of this script!
   "./README.md"                                                 # dotfiles readme
   "./.backup"                                                   # temporary backup file of modified files
   "./Sessionx.vim"                                              # vim Obsession session file
