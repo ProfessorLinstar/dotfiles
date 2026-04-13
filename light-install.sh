@@ -32,7 +32,7 @@ Options:
   -l, --link-config        Symlink neovim and tmux configs into ~
   -b, --link-bin    Symlink executables into /usr/local/bin (requires sudo)
   -G, --gng         Install gng (Gradle wrapper) to ~/.local
-  -c, --claude      Configure default global CLAUDE.md
+  -c, --claude      Configure CLAUDE.md, hooks, scripts, and commands
   -g, --gitconfig   Set up default global git config
   -a, --all         Run all of the above
   -h, --help        Show this help message
@@ -334,6 +334,7 @@ install_gng() {
 
 # --- Link Claude scripts/commands directories ---
 configure_claude_dirs() {
+  # Symlink directories
   local dirs=(scripts commands)
   for dir in "${dirs[@]}"; do
     local src="$DOTFILES_ROOT/.claude/$dir"
@@ -342,66 +343,76 @@ configure_claude_dirs() {
       make_symlink "$src" "$dst"
     fi
   done
+
+  # Symlink individual files
+  local files=(settings.local.json)
+  for file in "${files[@]}"; do
+    local src="$DOTFILES_ROOT/.claude/$file"
+    local dst="$HOME/.claude/$file"
+    if [[ -f "$src" ]]; then
+      make_symlink "$src" "$dst"
+    fi
+  done
 }
 
-# --- Merge hooks into ~/.claude/settings.json ---
-configure_claude_hooks() {
-  local hooks_src="$DOTFILES_ROOT/dump/claude/settings.json"
-  local settings_dst="$HOME/.claude/settings.json"
+# --- Merge hooks and permissions into ~/.claude/settings.json ---
+configure_claude_settings() {
+  local src="$DOTFILES_ROOT/dump/claude/settings.json"
+  local dst="$HOME/.claude/settings.json"
 
-  if [[ ! -f "$hooks_src" ]]; then
-    warn "Hooks source not found at $hooks_src"
+  if [[ ! -f "$src" ]]; then
+    warn "Settings source not found at $src"
     return
   fi
 
   if ! command -v python3 &>/dev/null; then
-    warn "python3 not found, skipping hooks merge"
+    warn "python3 not found, skipping settings merge"
     return
   fi
 
   mkdir -p "$HOME/.claude"
 
-  if [[ ! -f "$settings_dst" ]]; then
-    info "Creating $settings_dst with hooks from dotfiles"
-    cp "$hooks_src" "$settings_dst"
+  if [[ ! -f "$dst" ]]; then
+    info "Creating $dst from dotfiles"
+    cp "$src" "$dst"
     return
   fi
 
-  # Use python3 to deep-merge hooks into existing settings.json
-  info "Merging hooks into $settings_dst"
+  # Back up before merging in case something goes wrong
+  cp "$dst" "${dst}.bak"
+
+  info "Merging settings from dotfiles into $dst"
   python3 -c "
-import json, sys
+import json
 
-with open('$settings_dst') as f:
+def deep_merge(src, dst):
+    \"\"\"Recursively merge src into dst. Lists are merged by appending unique entries.\"\"\"
+    for key, val in src.items():
+        if key not in dst:
+            dst[key] = val
+        elif isinstance(val, dict) and isinstance(dst[key], dict):
+            deep_merge(val, dst[key])
+        elif isinstance(val, list) and isinstance(dst[key], list):
+            for item in val:
+                if item not in dst[key]:
+                    dst[key].append(item)
+        # Scalar conflicts: keep existing value (don't overwrite user settings)
+
+with open('$dst') as f:
     settings = json.load(f)
+with open('$src') as f:
+    source = json.load(f)
 
-with open('$hooks_src') as f:
-    hooks_config = json.load(f)
+deep_merge(source, settings)
 
-# Deep-merge: for each hook event type, append entries that aren't already present
-src_hooks = hooks_config.get('hooks', {})
-dst_hooks = settings.setdefault('hooks', {})
-
-for event, entries in src_hooks.items():
-    existing = dst_hooks.setdefault(event, [])
-    for entry in entries:
-        # Check if an identical matcher+hooks combo already exists
-        already = any(
-            e.get('matcher') == entry.get('matcher')
-            and e.get('hooks') == entry.get('hooks')
-            for e in existing
-        )
-        if not already:
-            existing.append(entry)
-
-with open('$settings_dst', 'w') as f:
+with open('$dst', 'w') as f:
     json.dump(settings, f, indent=2)
     f.write('\n')
-" && info "Hooks merged successfully" || warn "Failed to merge hooks"
+" && info "Settings merged successfully" || warn "Failed to merge settings"
 }
 
-# --- Configure CLAUDE.md ---
-configure_claude() {
+# --- Merge CLAUDE.md block ---
+configure_claude_md() {
   local src="$DOTFILES_ROOT/dump/claude/CLAUDE.md"
   local dst="$HOME/.claude/CLAUDE.md"
   local marker_start="# Added by dotfiles"
@@ -465,12 +476,13 @@ configure_claude() {
     info "Creating $dst"
     printf '%s\n' "$block" > "$dst"
   fi
+}
 
-  # Symlink scripts and commands directories
+# --- Configure Claude Code (orchestrator) ---
+configure_claude() {
+  configure_claude_md
   configure_claude_dirs
-
-  # Merge hooks into settings.json
-  configure_claude_hooks
+  configure_claude_settings
 }
 
 # --- Main ---

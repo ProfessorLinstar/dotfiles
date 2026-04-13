@@ -24,7 +24,7 @@ Extract and store:
 
 ## Step 2: Poll until checks complete
 
-Run this polling loop. Poll every 90 seconds, timeout after 30 minutes (20 iterations max).
+Run this polling loop. Poll every 5 minutes, timeout after 60 minutes (12 iterations max).
 
 For each poll iteration, check **both** endpoints:
 
@@ -61,6 +61,8 @@ Print a brief status update each poll cycle (e.g., "Poll 3/20: 4/7 checks comple
 ## Step 3: Analyze failures
 
 Once all checks complete, identify failures:
+
+**Ignore:** GPG Key Verification failures — these are not actionable and can be skipped.
 
 ### GitHub App Check Failures
 ```bash

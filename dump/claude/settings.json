@@ -1,8 +1,13 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(rm /tmp/claude-ci-state/*)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|mcp__github__create_pull_request",
         "hooks": [
           {
             "type": "command",
