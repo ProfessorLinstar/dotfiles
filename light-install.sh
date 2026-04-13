@@ -332,6 +332,74 @@ install_gng() {
   info "gng installed"
 }
 
+# --- Link Claude scripts/commands directories ---
+configure_claude_dirs() {
+  local dirs=(scripts commands)
+  for dir in "${dirs[@]}"; do
+    local src="$DOTFILES_ROOT/.claude/$dir"
+    local dst="$HOME/.claude/$dir"
+    if [[ -d "$src" ]]; then
+      make_symlink "$src" "$dst"
+    fi
+  done
+}
+
+# --- Merge hooks into ~/.claude/settings.json ---
+configure_claude_hooks() {
+  local hooks_src="$DOTFILES_ROOT/dump/claude/settings.json"
+  local settings_dst="$HOME/.claude/settings.json"
+
+  if [[ ! -f "$hooks_src" ]]; then
+    warn "Hooks source not found at $hooks_src"
+    return
+  fi
+
+  if ! command -v python3 &>/dev/null; then
+    warn "python3 not found, skipping hooks merge"
+    return
+  fi
+
+  mkdir -p "$HOME/.claude"
+
+  if [[ ! -f "$settings_dst" ]]; then
+    info "Creating $settings_dst with hooks from dotfiles"
+    cp "$hooks_src" "$settings_dst"
+    return
+  fi
+
+  # Use python3 to deep-merge hooks into existing settings.json
+  info "Merging hooks into $settings_dst"
+  python3 -c "
+import json, sys
+
+with open('$settings_dst') as f:
+    settings = json.load(f)
+
+with open('$hooks_src') as f:
+    hooks_config = json.load(f)
+
+# Deep-merge: for each hook event type, append entries that aren't already present
+src_hooks = hooks_config.get('hooks', {})
+dst_hooks = settings.setdefault('hooks', {})
+
+for event, entries in src_hooks.items():
+    existing = dst_hooks.setdefault(event, [])
+    for entry in entries:
+        # Check if an identical matcher+hooks combo already exists
+        already = any(
+            e.get('matcher') == entry.get('matcher')
+            and e.get('hooks') == entry.get('hooks')
+            for e in existing
+        )
+        if not already:
+            existing.append(entry)
+
+with open('$settings_dst', 'w') as f:
+    json.dump(settings, f, indent=2)
+    f.write('\n')
+" && info "Hooks merged successfully" || warn "Failed to merge hooks"
+}
+
 # --- Configure CLAUDE.md ---
 configure_claude() {
   local src="$DOTFILES_ROOT/dump/claude/CLAUDE.md"
@@ -397,6 +465,12 @@ configure_claude() {
     info "Creating $dst"
     printf '%s\n' "$block" > "$dst"
   fi
+
+  # Symlink scripts and commands directories
+  configure_claude_dirs
+
+  # Merge hooks into settings.json
+  configure_claude_hooks
 }
 
 # --- Main ---
