@@ -1,7 +1,7 @@
 #!/bin/bash
-# PostToolUse hook: detect git push and trigger CI monitoring
-# Reads tool call JSON from stdin, checks if it was a git push,
-# and outputs a systemMessage to trigger /babysit-ci
+# PostToolUse hook: detect git push and persist a flag for the Stop hook.
+# The Stop hook will block Claude from stopping until it spawns /babysit-ci.
+# Uses session_id to scope flags so multiple Claude sessions don't collide.
 
 input=$(cat)
 
@@ -13,9 +13,10 @@ if ! echo "$cmd" | grep -qE '^\s*git\s+push'; then
   exit 0
 fi
 
-# Get the current working directory from the hook input
+# Get session ID and working directory
+session_id=$(echo "$input" | jq -r '.session_id // empty')
 cwd=$(echo "$input" | jq -r '.cwd // empty')
-if [ -z "$cwd" ]; then
+if [ -z "$cwd" ] || [ -z "$session_id" ]; then
   exit 0
 fi
 
@@ -26,20 +27,10 @@ if [ $? -ne 0 ] || [ -z "$pr_info" ]; then
   exit 0
 fi
 
-pr_number=$(echo "$pr_info" | jq -r '.number')
 pr_url=$(echo "$pr_info" | jq -r '.url')
-head_sha=$(echo "$pr_info" | jq -r '.headRefOid')
 
-# Extract owner/repo from the PR URL
-# URL format: https://github.palantir.build/owner/repo/pull/123
-# or: https://github.com/owner/repo/pull/123
-repo_info=$(echo "$pr_url" | sed -E 's|https?://[^/]+/([^/]+)/([^/]+)/pull/[0-9]+|\1/\2|')
-owner=$(echo "$repo_info" | cut -d'/' -f1)
-repo=$(echo "$repo_info" | cut -d'/' -f2)
+# Write session-scoped flag file for the Stop hook to pick up
+mkdir -p ~/.claude/state
+echo "$pr_url" > ~/.claude/state/ci-pending-push-"$session_id"
 
-# Extract hostname for GHE support
-hostname=$(echo "$pr_url" | sed -E 's|https?://([^/]+)/.*|\1|')
-
-cat <<EOF
-{"systemMessage": "A git push was just completed for PR #${pr_number} (${pr_url}). You should now spawn a background agent to monitor CI status for this PR. Use /babysit-ci ${pr_url} or invoke the babysit-ci command to start polling. The agent should run in the background so the user can continue working."}
-EOF
+exit 0
