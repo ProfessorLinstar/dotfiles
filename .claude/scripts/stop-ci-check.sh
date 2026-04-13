@@ -1,16 +1,17 @@
 #!/bin/bash
 # Stop hook: block Claude from stopping if a git push was made without
-# spawning a /babysit-ci agent. Uses session-scoped flag files so
-# multiple Claude sessions don't interfere with each other.
+# spawning a /babysit-ci agent. Uses transcript_path hash for session scoping.
 
 input=$(cat)
-session_id=$(echo "$input" | jq -r '.session_id // empty')
 
-if [ -z "$session_id" ]; then
+# Derive the same session key as the PostToolUse hook
+transcript=$(echo "$input" | jq -r '.transcript_path // .session_id // empty')
+if [ -z "$transcript" ]; then
   exit 0
 fi
+session_key=$(echo -n "$transcript" | md5sum | cut -d' ' -f1)
 
-FLAG_FILE="$HOME/.claude/state/ci-pending-push-${session_id}"
+FLAG_FILE="/tmp/claude-ci-state/ci-pending-push-${session_key}"
 
 if [ ! -f "$FLAG_FILE" ]; then
   exit 0

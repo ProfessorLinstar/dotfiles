@@ -1,5 +1,5 @@
 ## Git
-- Use commit.gpgsign=false when making commits in git
+- Use `git -c commit.gpgsign=false ...` when making commits
 - When making branches, name then "andywang/..." where ... is the intended change
 - Do not push commits / add comments in github / make new PRs unless explicitly told to do so.
   - You can and should make commits to the local branch without explicit permission
