@@ -42,7 +42,7 @@ end
 
 require("which-key").setup { win = {height = 8} }
 require("bufferline").setup {}
-require("nvim-tree").setup { on_attach = nvimTreeOnAttach }
+require("nvim-tree").setup { on_attach = nvimTreeOnAttach, git = { enable = false } }
 EOF
 
 " vim-airline & vim-airline-themes
