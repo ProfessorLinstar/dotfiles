@@ -82,7 +82,7 @@ gbg() {
     return 1
   fi
   echo "Last signed commit: $(git log --oneline -1 "$last_signed")"
-  git rebase --exec 'git commit --amend --no-edit -n -S' "$last_signed"
+  git rebase --exec 'git commit --amend --no-edit -n -S --allow-empty' "$last_signed"
 }
 gu() {
   local branch="$(git rev-parse --abbrev-ref @)"
