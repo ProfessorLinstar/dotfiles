@@ -44,17 +44,15 @@ Parse: `.statuses` — group by `.context`, take the latest per group (sort by `
 ```bash
 CURRENT_SHA=$(gh pr view <url> --json headRefOid -q .headRefOid)
 ```
-If `CURRENT_SHA != HEAD_SHA`, the PR has been updated with a new push. **Terminate immediately** with a message like: "New push detected (SHA changed from {HEAD_SHA:.7} to {CURRENT_SHA:.7}). Stopping CI monitoring — a new babysit-ci run will be triggered for the updated commit."
+If `CURRENT_SHA != HEAD_SHA`, the PR has been updated with a new push. **Reset the polling loop**: update `HEAD_SHA` to `CURRENT_SHA`, reset the iteration counter and timeout, discard any previously reported failures (they're stale now), and print a message like: "New push detected (SHA changed from {old:.7} to {new:.7}). Resetting CI monitor for new commit." Then continue polling with the new SHA.
 
 **Early failure reporting:** As soon as ANY non-ignored check has failed, immediately report those failures (run Step 3 for the failed checks). Then continue polling for remaining pending checks. This lets the main agent start fixing issues while other checks are still running.
 
 **Continue polling while:**
-- HEAD SHA has not changed, AND
 - Any non-ignored check run has `status != "completed"`, OR
 - Any non-ignored deduplicated status has `state == "pending"`
 
 **Stop polling when:**
-- HEAD SHA changed (new push detected) → terminate early, no failure analysis needed, OR
 - All non-ignored checks are completed (success, failure, or other terminal state), OR
 - Timeout reached (report whatever state we have, including any still-pending checks)
 
@@ -67,6 +65,7 @@ Once all checks complete, identify failures:
 **Ignore these checks entirely** — they are not actionable and should be excluded from both polling and failure analysis:
 - GPG Key Verification
 - policy-bot
+- Any check with "changelog" in its name
 
 When determining if polling is complete, do NOT wait for ignored checks. Report results as soon as all non-ignored checks have completed.
 
