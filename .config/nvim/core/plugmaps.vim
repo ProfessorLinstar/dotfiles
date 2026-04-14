@@ -26,3 +26,6 @@ nnoremap <Leader>aM <cmd>MarkdownPreviewStop<CR>
 nnoremap <Leader>bl <cmd>BufferLineCloseLeft<CR>
 nnoremap <Leader>br <cmd>BufferLineCloseRight<CR>
 nnoremap <Leader>bo <cmd>BufferLineCloseOthers<CR><C-w>o
+
+" nvim-tree/nvim-tree.lua
+nnoremap <Leader>e <cmd>NvimTreeOpen<CR>
