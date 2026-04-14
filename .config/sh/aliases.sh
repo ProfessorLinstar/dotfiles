@@ -75,14 +75,18 @@ gb() {
   eval "$cmd"
 }
 gbg() {
-  local last_signed
-  last_signed="$(git log -50 --format='%H %G?' | awk '$2 ~ /^[GUEX]$/ {print $1; exit}')"
-  if [ -z "$last_signed" ]; then
+  local base
+  if [ -n "$1" ]; then
+    base="$(git merge-base HEAD "$1")"
+  else
+    base="$(git log -50 --format='%H %G?' | awk '$2 ~ /^[GUEX]$/ {print $1; exit}')"
+  fi
+  if [ -z "$base" ]; then
     echo "No signed parent commit found."
     return 1
   fi
-  echo "Last signed commit: $(git log --oneline -1 "$last_signed")"
-  git rebase --exec 'git commit --amend --no-edit -n -S --allow-empty' "$last_signed"
+  echo "Rebasing onto: $(git log --oneline -1 "$base")"
+  git rebase --exec 'git commit --amend --no-edit -n -S --allow-empty' "$base"
 }
 gu() {
   local branch="$(git rev-parse --abbrev-ref @)"
