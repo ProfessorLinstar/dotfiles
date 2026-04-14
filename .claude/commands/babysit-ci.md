@@ -46,23 +46,29 @@ CURRENT_SHA=$(gh pr view <url> --json headRefOid -q .headRefOid)
 ```
 If `CURRENT_SHA != HEAD_SHA`, the PR has been updated with a new push. **Terminate immediately** with a message like: "New push detected (SHA changed from {HEAD_SHA:.7} to {CURRENT_SHA:.7}). Stopping CI monitoring — a new babysit-ci run will be triggered for the updated commit."
 
+**Early failure reporting:** As soon as ANY non-ignored check has failed, immediately report those failures (run Step 3 for the failed checks). Then continue polling for remaining pending checks. This lets the main agent start fixing issues while other checks are still running.
+
 **Continue polling while:**
 - HEAD SHA has not changed, AND
-- Any check run has `status != "completed"`, OR
-- Any deduplicated status has `state == "pending"`
+- Any non-ignored check run has `status != "completed"`, OR
+- Any non-ignored deduplicated status has `state == "pending"`
 
 **Stop polling when:**
 - HEAD SHA changed (new push detected) → terminate early, no failure analysis needed, OR
-- All checks are completed (success, failure, or other terminal state), OR
-- Timeout reached (report whatever state we have)
+- All non-ignored checks are completed (success, failure, or other terminal state), OR
+- Timeout reached (report whatever state we have, including any still-pending checks)
 
-Print a brief status update each poll cycle (e.g., "Poll 3/20: 4/7 checks complete, 2 pending...")
+Print a brief status update each poll cycle (e.g., "Poll 3/12: 4/7 checks complete, 2 pending, 1 failed (reported)...")
 
 ## Step 3: Analyze failures
 
 Once all checks complete, identify failures:
 
-**Ignore:** GPG Key Verification failures — these are not actionable and can be skipped.
+**Ignore these checks entirely** — they are not actionable and should be excluded from both polling and failure analysis:
+- GPG Key Verification
+- policy-bot
+
+When determining if polling is complete, do NOT wait for ignored checks. Report results as soon as all non-ignored checks have completed.
 
 ### GitHub App Check Failures
 ```bash
