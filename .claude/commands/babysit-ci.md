@@ -122,14 +122,16 @@ Fetch each failed step's `output_url` to get the actual log content. The respons
 
 ## Step 4: Report results
 
+Always include the full PR URL in the report header.
+
 ### If all checks passed:
-Report: "All CI checks passed for PR #NUMBER" — no further action needed.
+Report: "All CI checks passed for PR #NUMBER (PR_URL)" — no further action needed.
 
 ### If there are failures:
 Provide a structured report:
 
 ```
-## CI Failures for PR #NUMBER
+## CI Failures for PR #NUMBER (PR_URL)
 
 ### [Check Name 1] - FAILED
 **Source:** GitHub Check / CircleCI
