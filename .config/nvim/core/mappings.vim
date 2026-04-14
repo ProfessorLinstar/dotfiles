@@ -27,7 +27,6 @@ nnoremap <Leader>st <cmd>Scratch<CR>:%! grep -IHEnr "" . --exclude-dir={.git,} -
 nnoremap <Leader>sf <cmd>Scratch<CR>:%! find . -not -regex ".*/\.git/.*" -type f -regex ".*/.*.*"<C-f>F.i
 
 nnoremap <Leader>G ggVG
-nnoremap <Leader>e <cmd>Lexplore<CR>
 nnoremap <Leader>r <cmd>noh<CR>
 nnoremap <Leader>w <cmd>w<CR>
 nnoremap <Leader>c <cmd>CdToFile<CR>

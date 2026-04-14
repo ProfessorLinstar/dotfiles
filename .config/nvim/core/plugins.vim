@@ -1,3 +1,7 @@
+" Disable netrw
+let g:loaded_netrw = 1
+let g:loaded_netrwPlugin = 1
+
 " Setup plugin manager
 let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
 if empty(glob(data_dir . '/autoload/plug.vim'))
@@ -7,25 +11,38 @@ endif
 
 call plug#begin('~/.vim/plugged')
 
-Plug 'catppuccin/nvim', { 'branch': 'vim', 'as': 'catppuccin' } " Color scheme
-Plug 'tpope/vim-surround'             " Provides some shortcuts for delimiter manipulation
-Plug 'tpope/vim-commentary'	          " Provides commenting
-Plug 'vim-airline/vim-airline' 	      " Provides status bars
-Plug 'vim-airline/vim-airline-themes' " Airline themes
-Plug 'tpope/vim-obsession'            " Improve vim sessions functionality
-Plug 'moll/vim-bbye'                  " More intelligent buffer deletion
-Plug 'tpope/vim-fugitive'             " Git-integration for vim
+Plug 'catppuccin/nvim', { 'branch': 'vim', 'as': 'catppuccin' }         " Color scheme
+Plug 'tpope/vim-surround'                                               " Provides some shortcuts for delimiter manipulation
+Plug 'tpope/vim-commentary'	                                            " Provides commenting
+Plug 'vim-airline/vim-airline' 	                                        " Provides status bars
+Plug 'vim-airline/vim-airline-themes'                                   " Airline themes
+Plug 'tpope/vim-obsession'                                              " Improve vim sessions functionality
+Plug 'moll/vim-bbye'                                                    " More intelligent buffer deletion
+Plug 'tpope/vim-fugitive'                                               " Git-integration for vim
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install' } " Markdown integration for neovim (requires yarn)
-Plug 'folke/which-key.nvim'           " Keybinding hints
-Plug 'akinsho/bufferline.nvim', { 'tag': '*' } " Buffer management
-Plug 'kyazdani42/nvim-web-devicons'   " for coloured icons
+Plug 'folke/which-key.nvim'                                             " Keybinding hints
+Plug 'akinsho/bufferline.nvim', { 'tag': '*' }                          " Buffer management
+Plug 'kyazdani42/nvim-web-devicons'                                     " for coloured icons
+Plug 'nvim-tree/nvim-tree.lua'                                          " file explorer
 
 call plug#end()
 
 " lua plugin setup
 lua << EOF
+local function nvimTreeOnAttach(bufnr)
+  local api = require "nvim-tree.api"
+
+  -- default mappings
+  api.map.on_attach.default(bufnr)
+
+  vim.keymap.set("n", "<esc>", "<C-w>w", { buffer = bufnr })
+  vim.keymap.set("n", "<Leader>e", "<cmd>NvimTreeClose<CR>", { buffer = bufnr })
+end
+
+
 require("which-key").setup { win = {height = 8} }
-  require("bufferline").setup {}
+require("bufferline").setup {}
+require("nvim-tree").setup { on_attach = nvimTreeOnAttach }
 EOF
 
 " vim-airline & vim-airline-themes
@@ -40,3 +57,6 @@ let g:mkdp_auto_close = 0
 
 " catppuccin setup
 colorscheme catppuccin-mocha
+
+" nvim-tree setup
+let g:nvim_tree_respect_buf_cwd = 1
