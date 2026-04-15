@@ -4,6 +4,10 @@
       "Bash(rm /tmp/claude-ci-state/*)"
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/scripts/statusline.sh"
+  },
   "hooks": {
     "PostToolUse": [
       {

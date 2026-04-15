@@ -378,25 +378,31 @@ configure_claude_settings() {
     return
   fi
 
-  # Back up before merging in case something goes wrong
-  cp "$dst" "${dst}.bak"
-
   info "Merging settings from dotfiles into $dst"
   python3 -c "
-import json
+import json, sys
 
-def deep_merge(src, dst):
-    \"\"\"Recursively merge src into dst. Lists are merged by appending unique entries.\"\"\"
+changed = False
+
+def deep_merge(src, dst, path=''):
+    \"\"\"Recursively merge src into dst. Dotfiles values win on conflict.\"\"\"
+    global changed
     for key, val in src.items():
+        current = path + '.' + key if path else key
         if key not in dst:
             dst[key] = val
+            changed = True
         elif isinstance(val, dict) and isinstance(dst[key], dict):
-            deep_merge(val, dst[key])
+            deep_merge(val, dst[key], current)
         elif isinstance(val, list) and isinstance(dst[key], list):
             for item in val:
                 if item not in dst[key]:
                     dst[key].append(item)
-        # Scalar conflicts: keep existing value (don't overwrite user settings)
+                    changed = True
+        elif dst[key] != val:
+            print(f'[warn] {current}: overwriting with dotfiles value', file=sys.stderr)
+            dst[key] = val
+            changed = True
 
 with open('$dst') as f:
     settings = json.load(f)
@@ -405,9 +411,15 @@ with open('$src') as f:
 
 deep_merge(source, settings)
 
-with open('$dst', 'w') as f:
-    json.dump(settings, f, indent=2)
-    f.write('\n')
+if changed:
+    import shutil
+    shutil.copy2('$dst', '${dst}.bak')
+    print('[info] Backed up existing settings to ${dst}.bak', file=sys.stderr)
+    with open('$dst', 'w') as f:
+        json.dump(settings, f, indent=2)
+        f.write('\n')
+else:
+    print('[info] Settings already up to date', file=sys.stderr)
 " && info "Settings merged successfully" || warn "Failed to merge settings"
 }
 

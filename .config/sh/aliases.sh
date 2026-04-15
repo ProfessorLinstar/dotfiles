@@ -77,7 +77,7 @@ gb() {
 gbg() {
   local base
   if [ -n "$1" ]; then
-    base="$(git merge-base HEAD "$1")"
+    base="$1"
   else
     base="$(git log -50 --format='%H %G?' | awk '$2 ~ /^[GUEX]$/ {print $1; exit}')"
   fi
