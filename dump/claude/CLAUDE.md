@@ -8,6 +8,6 @@
   - e.g. when the user says "Address this comment", make and commit the changes locally.
 
 ### Github PRs
-- When making a new PR, respect the repository's PR description template
+- When making a new PR, respect the repository's PR description template (usually at `.github/PULL_REQUEST_TEMPLATE.md`)
 - When editing a PR description, always check the previous state to make sure that you're not dropping important context.
 - List resolved issues / related PRs at the top of the description
