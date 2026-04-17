@@ -334,14 +334,38 @@ install_gng() {
 
 # --- Link Claude scripts/commands directories ---
 configure_claude_dirs() {
-  # Symlink directories
+  # Symlink individual files within scripts/ and commands/ so that
+  # environment-specific files in ~/.claude/{scripts,commands} are preserved.
   local dirs=(scripts commands)
   for dir in "${dirs[@]}"; do
-    local src="$DOTFILES_ROOT/.claude/$dir"
-    local dst="$HOME/.claude/$dir"
-    if [[ -d "$src" ]]; then
-      make_symlink "$src" "$dst"
+    local src_dir="$DOTFILES_ROOT/.claude/$dir"
+    local dst_dir="$HOME/.claude/$dir"
+    [[ -d "$src_dir" ]] || continue
+
+    # Migrate from old directory-level symlink to per-file symlinks
+    if [[ -L "$dst_dir" ]]; then
+      info "Replacing directory symlink $dst_dir with real directory"
+      rm "$dst_dir"
     fi
+    mkdir -p "$dst_dir"
+
+    for src_file in "$src_dir"/*; do
+      [[ -e "$src_file" ]] || continue
+      local filename
+      filename="$(basename "$src_file")"
+      make_symlink "$src_file" "$dst_dir/$filename"
+    done
+
+    # Clean up broken symlinks that point into dotfiles (e.g. deleted commands)
+    for link in "$dst_dir"/*; do
+      [[ -L "$link" ]] || continue
+      local target
+      target="$(readlink "$link")"
+      if [[ "$target" == "$src_dir"/* ]] && [[ ! -e "$link" ]]; then
+        info "Removing stale symlink: $link -> $target"
+        rm "$link"
+      fi
+    done
   done
 
   # Symlink individual files
