@@ -480,13 +480,21 @@ configure_claude_md() {
     fi
     # Content differs — replace the existing block.
     info "Updating dotfiles CLAUDE.md block in $dst"
-    local tmp
+    local tmp block_file
     tmp="$(mktemp)"
-    awk -v block="$block" -v ms="$marker_start" -v me="$marker_end" '
-      $0 ~ ms { print block; skip=1; next }
-      skip && $0 ~ me { skip=0; next }
+    block_file="$(mktemp)"
+    printf '%s\n' "$block" > "$block_file"
+    awk -v ms="$marker_start" -v me="$marker_end" -v bf="$block_file" '
+      $0 == ms {
+        while ((getline line < bf) > 0) print line
+        close(bf)
+        skip = 1
+        next
+      }
+      skip && $0 == me { skip = 0; next }
       !skip { print }
     ' "$dst" > "$tmp"
+    rm "$block_file"
     mv "$tmp" "$dst"
     return
   fi
