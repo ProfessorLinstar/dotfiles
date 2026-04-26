@@ -61,4 +61,9 @@ fi
 mkdir -p /tmp/claude-ci-state
 echo "$pr_url" > /tmp/claude-ci-state/ci-pending-push-"$session_key"
 
+# Cache PR URL per-repo for the statusline (separate dir so babysit-ci cleanup won't affect it)
+repo_key=$(echo -n "$cwd" | md5sum | cut -d' ' -f1)
+mkdir -p /tmp/claude-pr-cache
+echo "$pr_url" > /tmp/claude-pr-cache/"$repo_key"
+
 exit 0
