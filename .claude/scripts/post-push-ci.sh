@@ -15,6 +15,12 @@ if [ "$tool_name" = "Bash" ]; then
     is_push=true
   elif echo "$cmd" | grep -qE '(^|\s|&&|\||\;)gh\s+pr\s+create(\s|$)'; then
     is_push=true
+  elif echo "$cmd" | grep -qE 'gh\s+api' \
+    && echo "$cmd" | grep -q '/pulls' \
+    && echo "$cmd" | grep -qE '-X\s+POST'; then
+    # gh api ... -X POST .../pulls — PR creation via REST API (used on GHE
+    # instances where `gh pr create`'s GraphQL path isn't authed).
+    is_push=true
   fi
 elif [ "$tool_name" = "mcp__github__create_pull_request" ]; then
   is_push=true
