@@ -39,15 +39,16 @@ bold='\033[1m'
 reset='\033[0m'
 
 session_key=""
+STATE_DIR="$HOME/.local/state/claude/pr-state"
 state_file=""
 if [ -n "$transcript" ]; then
   session_key=$(echo -n "$transcript" | md5sum | cut -d' ' -f1)
-  state_file="/tmp/claude-pr-state/$session_key"
+  state_file="$STATE_DIR/$session_key"
   # Workspace -> session pointer (lets slash commands find this state file)
   if [ -n "$full_cwd" ]; then
-    mkdir -p /tmp/claude-pr-state/_by_workspace 2>/dev/null
+    mkdir -p "$STATE_DIR/_by_workspace" 2>/dev/null
     ws_key=$(echo -n "$full_cwd" | md5sum | cut -d' ' -f1)
-    echo "$session_key" > "/tmp/claude-pr-state/_by_workspace/$ws_key" 2>/dev/null
+    echo "$session_key" > "$STATE_DIR/_by_workspace/$ws_key" 2>/dev/null
   fi
 fi
 
@@ -111,7 +112,7 @@ if [ -n "$state_file" ] && [ -s "$state_file" ]; then
   if [ "$shown_current" -eq 0 ] && [ -n "$cur_repo" ]; then
     # Try to find a PR URL for the current branch via the per-repo cache
     # (lazy-populated on first miss).
-    PR_CACHE_DIR="/tmp/claude-pr-cache"
+    PR_CACHE_DIR="$HOME/.local/state/claude/pr-cache"
     cur_repo_key=$(echo -n "$cur_repo" | md5sum | cut -d' ' -f1)
     cur_cache_file="${PR_CACHE_DIR}/${cur_repo_key}"
     cur_checked_file="${PR_CACHE_DIR}/${cur_repo_key}.checked"
@@ -154,7 +155,7 @@ if [ -n "$state_file" ] && [ -s "$state_file" ]; then
 else
   # Fallback: single-line legacy behavior. Lazy-cache PR URL per repo.
   cwd_short=$(basename "$full_cwd")
-  PR_CACHE_DIR="/tmp/claude-pr-cache"
+  PR_CACHE_DIR="$HOME/.local/state/claude/pr-cache"
   repo_key=$(echo -n "$full_cwd" | md5sum | cut -d' ' -f1)
   cache_file="${PR_CACHE_DIR}/${repo_key}"
   checked_file="${PR_CACHE_DIR}/${repo_key}.checked"

@@ -6,15 +6,18 @@
 # checked-out branch are still tracked. Falls back to the current branch
 # for plain `git push`.
 #
+# State lives under ~/.local/state/claude/ so it persists across /tmp
+# wipes (container restarts, reboots) and survives `claude --resume`.
+#
 # Side effects:
-# 1. Writes /tmp/claude-ci-state/push-pending-<session_key> — the Stop hook
-#    uses this to nudge Claude into spawning /babysit-ci and running
-#    /refresh-pr-state before ending the turn.
-# 2. Appends/updates rows in /tmp/claude-pr-state/<session_key> recording
-#    (repo_root, branch, pr_url, base_branch, number, updated_at). The
-#    statusline reads this to show every PR the session is tracking.
-# 3. Caches PR URL per-repo at /tmp/claude-pr-cache/<repo_key> for the
-#    statusline's single-line fallback when no session state exists.
+# 1. Writes ~/.local/state/claude/ci-state/push-pending-<session_key> — the
+#    Stop hook uses this to nudge Claude into spawning /babysit-ci and
+#    running /refresh-pr-state before ending the turn.
+# 2. Appends/updates rows in ~/.local/state/claude/pr-state/<session_key>
+#    recording (repo_root, branch, pr_url, base_branch, number, updated_at).
+#    The statusline reads this to show every PR the session is tracking.
+# 3. Caches PR URL per-repo at ~/.local/state/claude/pr-cache/<repo_key>
+#    for the statusline's single-line fallback when no session state exists.
 
 input=$(cat)
 
@@ -84,8 +87,11 @@ if [ -z "$heads" ]; then
   exit 0
 fi
 
-mkdir -p /tmp/claude-pr-state /tmp/claude-ci-state /tmp/claude-pr-cache
-state_file="/tmp/claude-pr-state/$session_key"
+STATE_DIR="$HOME/.local/state/claude/pr-state"
+CI_DIR="$HOME/.local/state/claude/ci-state"
+CACHE_DIR="$HOME/.local/state/claude/pr-cache"
+mkdir -p "$STATE_DIR" "$STATE_DIR/_by_workspace" "$CI_DIR" "$CACHE_DIR"
+state_file="$STATE_DIR/$session_key"
 ts=$(date +%s)
 last_pr_url=""
 repo_key=$(echo -n "$repo_root" | md5sum | cut -d' ' -f1)
@@ -125,8 +131,8 @@ while IFS= read -r head_branch; do
 done <<< "$heads"
 
 if [ -n "$last_pr_url" ]; then
-  echo "$last_pr_url" > /tmp/claude-ci-state/push-pending-"$session_key"
-  echo "$last_pr_url" > /tmp/claude-pr-cache/"$repo_key"
+  echo "$last_pr_url" > "$CI_DIR/push-pending-$session_key"
+  echo "$last_pr_url" > "$CACHE_DIR/$repo_key"
 fi
 
 exit 0

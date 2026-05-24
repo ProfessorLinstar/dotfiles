@@ -243,6 +243,8 @@ EXCLUDE_PATHS=(
   "./README.md"                                                 # dotfiles readme
   "./.backup"                                                   # temporary backup file of modified files
   "./Sessionx.vim"                                              # vim Obsession session file
+  "./.claude/settings.local.json"                               # needs to be merged with user settings, rather than replacing it
+  "./.claude/CLAUDE.md"                                         # needs to be merged with user CLAUDE.md, rather than replacing it
   "docs"                                                        # dotfile docs
 )
 

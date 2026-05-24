@@ -4,9 +4,7 @@
   },
   "permissions": {
     "allow": [
-      "Bash(rm /tmp/claude-ci-state/*)",
-      "Bash(rm /tmp/claude-pr-state/*)",
-      "Bash(rm /tmp/claude-pr-state/_by_workspace/*)"
+      "Bash(bash ~/.claude/scripts/pr-state.sh:*)"
     ]
   },
   "statusLine": {
