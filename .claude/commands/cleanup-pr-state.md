@@ -1,20 +1,21 @@
 ---
 name: cleanup-pr-state
-description: Walk every session's PR tracking state in /tmp/claude-pr-state and drop entries whose PRs have been merged or closed. Removes session files that end up empty. Use to clear out stale state from long-running sessions or across reboots.
+description: Walk every session's PR tracking state and drop entries whose PRs have been merged or closed. Removes session files that end up empty. Use to clear out stale state from long-running sessions or across reboots.
 allowed-tools: Bash
 ---
 
 # Cleanup PR state
 
-Walk `/tmp/claude-pr-state/` across all sessions and remove tracked entries whose PRs are no longer open. Unlike `/refresh-pr-state` (which only touches the current session), this command operates globally.
+Walk the global PR state directory and remove tracked entries whose PRs are no longer open. Unlike `/refresh-pr-state` (current session only), this command operates across every session.
 
 ## Step 1: Enumerate state files
 
 ```bash
-ls -1 /tmp/claude-pr-state/ 2>/dev/null | grep -vE '^_'
+STATE_DIR=$(bash ~/.claude/scripts/pr-state.sh state-dir)
+ls -1 "$STATE_DIR" 2>/dev/null | grep -vE '^_'
 ```
 
-Skip entries that start with `_` — those are pointer/index files maintained by the statusline, not session state.
+The `_by_workspace` pointer directory is skipped — those aren't session state.
 
 ## Step 2: For each state file, filter rows
 
@@ -34,22 +35,22 @@ Run PR queries in parallel where possible — across all sessions there may be m
 
 ## Step 3: Rewrite or delete
 
-For each state file:
-- If any rows survive, rewrite the file atomically with just those rows.
-- If no rows survive, delete the file.
+For each state file at path `$STATE_DIR/<session>`:
+- If any rows survive, rewrite atomically via the helper:
+  ```bash
+  printf '%s\n' "$row1" "$row2" ... | bash ~/.claude/scripts/pr-state.sh write-rows "$STATE_DIR/<session>"
+  ```
+- If no rows survive, delete the file:
+  ```bash
+  bash ~/.claude/scripts/pr-state.sh drop-state "$STATE_DIR/<session>"
+  ```
 
 ## Step 4: Tidy up pointers
 
-After processing all session files, prune dangling workspace pointers:
+After processing all session files, prune dangling `_by_workspace` pointers:
 
 ```bash
-for ptr in /tmp/claude-pr-state/_by_workspace/*; do
-  [ -f "$ptr" ] || continue
-  target_key=$(cat "$ptr")
-  if [ ! -f "/tmp/claude-pr-state/$target_key" ]; then
-    rm -f "$ptr"
-  fi
-done
+bash ~/.claude/scripts/pr-state.sh prune-pointers
 ```
 
 ## Step 5: Report

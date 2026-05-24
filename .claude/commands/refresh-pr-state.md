@@ -12,22 +12,11 @@ This command re-validates what's already tracked AND adds PRs you know about fro
 
 ## Step 1: Locate the state file
 
-The session_key is the MD5 of this session's transcript_path. You don't have that path directly, so resolve it via the workspace pointer the statusline maintains:
-
 ```bash
-WS_KEY=$(echo -n "$PWD" | md5sum | cut -d' ' -f1)
-SESSION_KEY=$(cat "/tmp/claude-pr-state/_by_workspace/$WS_KEY" 2>/dev/null)
-STATE_FILE="/tmp/claude-pr-state/$SESSION_KEY"
+STATE_FILE=$(bash ~/.claude/scripts/pr-state.sh state-file)
 ```
 
-If `$SESSION_KEY` is empty or `$STATE_FILE` doesn't exist, fall back to the most recently modified state file:
-
-```bash
-STATE_FILE=$(ls -t /tmp/claude-pr-state/ 2>/dev/null | grep -vE '^_' | head -1)
-[ -n "$STATE_FILE" ] && STATE_FILE="/tmp/claude-pr-state/$STATE_FILE"
-```
-
-If still nothing, there's nothing to refresh — report "no tracked PRs" and stop.
+The helper resolves the state file via a `_by_workspace/<md5($PWD)>` pointer the statusline maintains, falling back to the most-recently-modified session file. If `$STATE_FILE` is empty, there's nothing to refresh — report "no tracked PRs" and stop.
 
 ## Step 2: Re-query each PR
 
@@ -62,11 +51,13 @@ For each session-relevant PR not already in the state file:
 
 ## Step 4: Write back and clear the flag
 
-Atomically rewrite the state file with the surviving rows (TSV, same column order). Then delete the push-pending flag for this session:
+Rewrite the state file with the surviving rows (TSV, same column order) via the helper, then clear the push-pending flag:
 
 ```bash
-TRANSCRIPT_HASH=$(basename "$STATE_FILE")
-rm -f "/tmp/claude-ci-state/push-pending-$TRANSCRIPT_HASH"
+printf '%s\n' "$row1" "$row2" ... | bash ~/.claude/scripts/pr-state.sh write-rows "$STATE_FILE"
+
+SESSION_KEY=$(basename "$STATE_FILE")
+bash ~/.claude/scripts/pr-state.sh clear-flag "$SESSION_KEY"
 ```
 
 The statusline will re-render with the refreshed list on its next tick — no reload needed.

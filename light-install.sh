@@ -449,8 +449,8 @@ else:
 
 # --- Merge CLAUDE.md block ---
 configure_claude_md() {
-  local src="$DOTFILES_ROOT/dump/claude/CLAUDE.md"
-  local dst="$HOME/.claude/CLAUDE.md"
+  local src="$DOTFILES_ROOT/.claude/CLAUDE.md"
+  local dst="$HOME/git/.claude/CLAUDE.md"
   local marker_start="# Added by dotfiles"
   local marker_end="# /Added by dotfiles"
 
@@ -459,12 +459,28 @@ configure_claude_md() {
     return
   fi
 
-  mkdir -p "$HOME/.claude"
+  mkdir -p "$(dirname "$dst")"
 
-  local src_content
-  src_content="$(cat "$src")"
+  # Extract just the marked block from the dotfiles CLAUDE.md (inclusive of markers).
   local block
-  block="$(printf '%s\n%s\n%s' "$marker_start" "$src_content" "$marker_end")"
+  block="$(awk -v ms="$marker_start" -v me="$marker_end" '
+    $0==ms { found=1 }
+    found  { print }
+    $0==me { found=0 }
+  ' "$src")"
+
+  if [[ -z "$block" ]]; then
+    warn "No '$marker_start' ... '$marker_end' block found in $src"
+    return
+  fi
+
+  # Content between the markers (without the markers themselves), for comparison.
+  local src_content
+  src_content="$(awk -v ms="$marker_start" -v me="$marker_end" '
+    $0==me { found=0 }
+    found  { print }
+    $0==ms { found=1 }
+  ' "$src")"
 
   # If markers already exist, check whether the content needs updating.
   if [[ -f "$dst" ]] && grep -qF "$marker_start" "$dst"; then

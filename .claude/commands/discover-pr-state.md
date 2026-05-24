@@ -11,17 +11,10 @@ Walk the base/head chain from each tracked PR to find related open PRs on the re
 ## Step 1: Locate the state file
 
 ```bash
-WS_KEY=$(echo -n "$PWD" | md5sum | cut -d' ' -f1)
-SESSION_KEY=$(cat "/tmp/claude-pr-state/_by_workspace/$WS_KEY" 2>/dev/null)
-STATE_FILE="/tmp/claude-pr-state/$SESSION_KEY"
+STATE_FILE=$(bash ~/.claude/scripts/pr-state.sh state-file)
 ```
 
-Fall back to the most recently modified non-pointer file in `/tmp/claude-pr-state/` if the lookup fails:
-
-```bash
-STATE_FILE=$(ls -t /tmp/claude-pr-state/ 2>/dev/null | grep -vE '^_' | head -1)
-[ -n "$STATE_FILE" ] && STATE_FILE="/tmp/claude-pr-state/$STATE_FILE"
-```
+The helper resolves via the `_by_workspace/<md5($PWD)>` pointer the statusline maintains, falling back to the most recently modified session file. If `$STATE_FILE` is empty, the state directory is empty.
 
 ## Step 1.5: Pick discovery seeds (in priority order)
 
@@ -65,7 +58,11 @@ This command does NOT re-validate or drop existing rows — that's `/refresh-pr-
 
 ## Step 3: Write back
 
-Atomically rewrite the state file with the union of original rows and discovered rows. Keep the TSV column order.
+Rewrite the state file with the union of original rows and discovered rows via the helper (keeps the TSV column order):
+
+```bash
+printf '%s\n' "$row1" "$row2" ... | bash ~/.claude/scripts/pr-state.sh write-rows "$STATE_FILE"
+```
 
 ## Step 4: Report
 
