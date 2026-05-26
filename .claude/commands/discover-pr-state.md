@@ -14,7 +14,7 @@ Walk the base/head chain from each tracked PR to find related open PRs on the re
 STATE_FILE=$(bash ~/.claude/scripts/pr-state.sh state-file)
 ```
 
-The helper resolves via the `_by_workspace/<md5($PWD)>` pointer the statusline maintains, falling back to the most recently modified session file. If `$STATE_FILE` is empty, the state directory is empty.
+The helper resolves THIS workspace's session state file via the `_by_workspace/<md5($PWD)>` pointer. The file may not exist yet. If `$STATE_FILE` is empty, the statusline hasn't rendered in this workspace yet — ask the user to wait a tick and retry, rather than touching another session's state.
 
 ## Step 1.5: Pick discovery seeds (in priority order)
 
