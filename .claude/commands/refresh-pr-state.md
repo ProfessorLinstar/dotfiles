@@ -6,7 +6,7 @@ allowed-tools: Bash
 
 # Refresh PR state
 
-You maintain a per-session PR tracking file at `/tmp/claude-pr-state/<session_key>` that the statusline reads to display every PR the session is working on. Run this command after pushing, switching branches, or whenever the statusline stack order looks stale.
+You maintain a per-session PR tracking file at `~/.local/state/claude/pr-state/<session_key>` that the statusline reads to display every PR the session is working on. Run this command after pushing, switching branches, or whenever the statusline stack order looks stale.
 
 This command re-validates what's already tracked AND adds PRs you know about from this conversation but the hook may have missed (e.g. PRs opened via `cd /repo && gh pr create ...` where the hook's cwd didn't match the actual repo). It does NOT search the remote for unknown PRs — for that, follow up with `/discover-pr-state`.
 
@@ -16,7 +16,7 @@ This command re-validates what's already tracked AND adds PRs you know about fro
 STATE_FILE=$(bash ~/.claude/scripts/pr-state.sh state-file)
 ```
 
-The helper resolves the state file via a `_by_workspace/<md5($PWD)>` pointer the statusline maintains, falling back to the most-recently-modified session file. If `$STATE_FILE` is empty, there's nothing to refresh — report "no tracked PRs" and stop.
+The helper resolves THIS workspace's session state file via the `_by_workspace/<md5($PWD)>` pointer the statusline maintains. The file may not exist yet (first refresh in a new session writes it). If `$STATE_FILE` is empty, the statusline hasn't rendered in this workspace yet — ask the user to wait for a render tick and try again, rather than guessing at another session's file.
 
 ## Step 2: Re-query each PR
 

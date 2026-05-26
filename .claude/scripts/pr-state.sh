@@ -8,7 +8,10 @@
 #
 # Usage:
 #   pr-state.sh state-file           Print path of the current workspace's
-#                                    state file ("" if not yet resolved).
+#                                    session state file (may not exist yet
+#                                    — caller writes to it). Empty output
+#                                    if no _by_workspace pointer is set
+#                                    (statusline hasn't rendered here yet).
 #   pr-state.sh state-dir            Print the state directory.
 #   pr-state.sh ci-dir               Print the ci-state (push-pending) dir.
 #   pr-state.sh write-rows <target>  Read TSV from stdin, atomically replace
@@ -39,19 +42,21 @@ case "$1" in
     printf '%s\n' "$CI_DIR"
     ;;
   state-file)
+    # Returns the path of THIS workspace's session state file. The file may
+    # not exist yet — callers writing for the first time will create it.
+    # Never falls back to another session's file: cross-session writes
+    # silently corrupt data, so refuse rather than guess.
     ws=$(echo -n "$PWD" | md5sum | cut -d' ' -f1)
     pointer="$STATE_DIR/_by_workspace/$ws"
     if [ -f "$pointer" ]; then
       session=$(cat "$pointer")
-      if [ -f "$STATE_DIR/$session" ]; then
-        printf '%s\n' "$STATE_DIR/$session"
-        exit 0
-      fi
+      case "$session" in
+        */*|*..*|"") ;;  # malformed pointer, ignore
+        *) printf '%s\n' "$STATE_DIR/$session" ;;
+      esac
     fi
-    latest=$(ls -t "$STATE_DIR" 2>/dev/null | grep -vE '^_' | head -1 || true)
-    if [ -n "$latest" ] && [ -f "$STATE_DIR/$latest" ]; then
-      printf '%s\n' "$STATE_DIR/$latest"
-    fi
+    # No pointer → empty output. Caller should ensure the statusline has
+    # rendered at least once for this workspace (which writes the pointer).
     ;;
   write-rows)
     target="$2"

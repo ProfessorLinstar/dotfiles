@@ -4,7 +4,7 @@
 # currently-checked-out (repo, branch) highlighted. Falls back to a
 # single-line cwd/branch/pr view when no session state exists.
 #
-# Also maintains /tmp/claude-pr-state/_by_workspace/<md5(workspace)> as
+# Also maintains ~/.local/state/claude/pr-state/_by_workspace/<md5(workspace)> as
 # a pointer to the active session_key so /refresh-pr-state and other
 # slash commands can find this session's state file.
 
