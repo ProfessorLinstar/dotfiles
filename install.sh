@@ -245,6 +245,7 @@ EXCLUDE_PATHS=(
   "./Sessionx.vim"                                              # vim Obsession session file
   "./.claude/settings.local.json"                               # needs to be merged with user settings, rather than replacing it
   "./.claude/CLAUDE.md"                                         # needs to be merged with user CLAUDE.md, rather than replacing it
+  "./tests/"                                                    # dotfiles tests
   "docs"                                                        # dotfile docs
 )
 
