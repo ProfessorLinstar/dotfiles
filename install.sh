@@ -7,132 +7,196 @@
 # Location: ~/dotfiles/install.sh
 ################################################################################
 
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_ROOT="$HOME/dotfiles"
+BACKUPS_ROOT="$DOTFILES_ROOT/.backup"
+
+# --- Output helpers ---
+info()  { printf '\033[32m[info]\033[0m %s\n' "$*"; }
+warn()  { printf '\033[33m[warn]\033[0m %s\n' "$*" >&2; }
+error() { printf '\033[31m[error]\033[0m %s\n' "$*" >&2; exit 1; }
+
 usage() {
-  echo "$0"
-  echo "Usage: $0 [--option1] [--option2]"
-  echo ""
-  echo "dotfiles installation and configuration script for Arch Linux."
-  echo "With no options, runs ./light-install.sh -a (lightweight install)."
-  echo "See README.md for more information."
-  echo ""
-  echo "  --all                        install all options"
-  echo "  --terminal                   install terminal packages"
-  echo "  --pacman                     install pacman packages"
-  echo "  --font                       install meslo font for powerlevel10k"
-  echo "  --logiops                    install and configure logitech software"
-  echo "  --lunarvim                   install lunarvim (default config)"
-  echo "  --yay                        install yay packages"
-  echo "  --link                       creates dotfile links"
-  echo "  --services                   enables and starts custom services"
-  echo "  --manual                     makes manual substitutions to files in-place"
-  echo "  --tmux                       installs tmux plugins"
-  echo "  --dconf                      loads dconf configuration"
-  echo "  --gitconfig                  sets up default global git config"
-  echo "  --info                       provides info on manual configuartion tasks"
-  echo "  --xdg                        loads default xdg configuration"
-  echo "  --printer                    installs and sets up hp printer drivers"
-  echo "  --help                       shows this help page"
-  echo ""
+  cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+dotfiles installation and configuration script for Arch Linux.
+With no options, runs ./light-install.sh -a (lightweight install).
+See README.md for more information.
+
+  --all          install all options
+  --terminal     install terminal packages
+  --pacman       install pacman packages
+  --font         install meslo font for powerlevel10k
+  --logiops      install and configure logitech software
+  --lunarvim     install lunarvim (default config)
+  --yay          install yay packages
+  --link         create dotfile links
+  --services     enable and start custom services
+  --manual       make manual substitutions to files in-place
+  --tmux         install tmux plugins
+  --dconf        load dconf configuration
+  --gitconfig    set up default global git config
+  --info         provide info on manual configuration tasks
+  --xdg          load default xdg configuration
+  --printer      install and set up HP printer drivers
+  --dry-run      print what would happen without making changes
+  --help         show this help page
+EOF
 }
+
+# --- Flag parsing ---
+# Order here determines run order below.
+FEATURES=(pacman yay terminal font printer logiops lunarvim link services manual tmux gitconfig dconf xdg info)
+declare -A SKIP
+for k in "${FEATURES[@]}"; do SKIP[$k]=true; done
+DRY_RUN=false
 
 # Default to lightweight install when no options are provided.
 if [[ $# -eq 0 ]]; then
-  exec ./light-install.sh -a
+  exec "$SCRIPT_DIR/light-install.sh" -a
 fi
 
-LONG=all,terminal,pacman,font,logiops,lunarvim,yay,link,services,manual,tmux,dconf,gitconfig,info,xdg,printer,help
-OPTS=$(getopt --long "$LONG" --name "$0" -- "$@") || { usage; exit 1; }
-
-SKIP_TERMINAL=true
-SKIP_PACMAN=true
-SKIP_FONT=true
-SKIP_LOGIOPS=true
-SKIP_LUNARVIM=true
-SKIP_YAY=true
-SKIP_LINK=true
-SKIP_SERVICES=true
-SKIP_MANUAL=true
-SKIP_TMUX=true
-SKIP_GITCONFIG=true
-SKIP_DCONF=true
-SKIP_INFO=true
-SKIP_XDG=true
-SKIP_PRINTER=true
-
+LONG="all,dry-run,help,$(IFS=,; printf '%s' "${FEATURES[*]}")"
+OPTS="$(getopt -o '' --long "$LONG" --name "$(basename "$0")" -- "$@")" || { usage; exit 1; }
 eval set -- "$OPTS"
+
 while true; do
   case "$1" in
-    --all )     # SKIP_TERMINAL=false; skipping this because it's included in pacman/yay
-                  SKIP_PACMAN=false;
-                  SKIP_FONT=false;
-                  SKIP_LOGIOPS=false;
-                  SKIP_LUNARVIM=false;
-                  SKIP_YAY=false;
-                  SKIP_LINK=false;
-                  SKIP_SERVICES=false;
-                  SKIP_MANUAL=false;
-                  SKIP_TMUX=false;
-                  SKIP_GITCONFIG=false;
-                  SKIP_DCONF=false;
-                  SKIP_INFO=false;
-                  SKIP_XDG=false;
-                  SKIP_PRINTER=false;   shift; ;;
-
-    --pacman )    SKIP_PACMAN=false;    shift; ;;
-    --terminal )  SKIP_TERMINAL=false;  shift; ;;
-    --font )      SKIP_FONT=false;      shift; ;;
-    --logiops )   SKIP_LOGIOPS=false;   shift; ;;
-    --lunarvim )  SKIP_LUNARVIM=false;  shift; ;;
-    --yay )       SKIP_YAY=false;       shift; ;;
-    --link )      SKIP_LINK=false;      shift; ;;
-    --services )  SKIP_SERVICES=false;  shift; ;;
-    --manual )    SKIP_MANUAL=false;    shift; ;;
-    --tmux )      SKIP_TMUX=false;      shift; ;;
-    --gitconfig ) SKIP_GITCONFIG=false; shift; ;;
-    --dconf )     SKIP_DCONF=false;     shift; ;;
-    --info )      SKIP_INFO=false;      shift; ;;
-    --xdg )       SKIP_XDG=false;       shift; ;;
-    --printer )   SKIP_PRINTER=false;   shift; ;;
-
-    --help )      usage; exit 0;               ;;
-    "-- " )          shift; break;                ;; # break on positional arguments
-    * )           usage; exit 1;               ;;
+    --all)
+      # 'terminal' is intentionally left skipped: pacman + yay together cover
+      # all packages the --terminal flag would install.
+      for k in "${FEATURES[@]}"; do
+        if [[ "$k" != "terminal" ]]; then
+          SKIP[$k]=false
+        fi
+      done
+      shift
+      ;;
+    --dry-run) DRY_RUN=true; shift ;;
+    --help)    usage; exit 0 ;;
+    --)        shift; break ;;
+    --*)
+      key="${1#--}"
+      if [[ -z "${SKIP[$key]+x}" ]]; then
+        warn "Unknown option: $1"
+        usage
+        exit 1
+      fi
+      SKIP[$key]=false
+      shift
+      ;;
+    *) usage; exit 1 ;;
   esac
 done
 
+# Ensure dotfiles dir exists and switch to it (no subshell, so cwd persists).
+[[ -d "$DOTFILES_ROOT" ]] || error "dotfiles must be at $DOTFILES_ROOT."
+cd "$DOTFILES_ROOT"
 
+# --- Helpers ---
 
-# Directory setup
-DOTFILES_ROOT="$HOME/dotfiles"                                # dotfiles root directory
-BACKUPS_ROOT="$DOTFILES_ROOT/.backup"                         # backup dotfiles root directory
-if ! ([[ -d "$DOTFILES_ROOT" ]] && cd "$DOTFILES_ROOT"); then # Ensure that cwd is at ~/dotfiles
-  echo "dotfiles must be at $DOTFILES_ROOT."
-  exit 1
+# Detect whether a controlling terminal is actually usable (open succeeds).
+# `[[ -r /dev/tty ]]` is unreliable: the file exists in non-interactive
+# environments but fails to open with ENXIO.
+if (: < /dev/tty) 2>/dev/null; then
+  HAS_TTY=true
+else
+  HAS_TTY=false
 fi
 
-# Get user confirmation.
-function confirm {
-  read -p "$1 [Y/n] " -r
-  [[ $REPLY =~ ^[Yy]$ ]] && return 0 || return 1
-}
-
-# Tries to $pattern in $replace in $file if it exists, and backs up original in ./.backup.
-function confirmsed {
-  local file="$1"; local pattern="$2"; local replace="$3"; local user="$4"
-
-  if [[ ! -f "$file" ]]; then
-    echo "Warning: $file does not exist." 
-
-  elif grep -Eq "^$pattern$" < "$file" && confirm "Edit $file to replace '$pattern' with '$replace'?"; then
-    mkdir -pv "$(dirname $BACKUPS_ROOT$file)" && cp -nvi "$file" "$BACKUPS_ROOT$file" < /dev/tty
-    $user sed -Ei "s@^$pattern\$@$replace@" "$file"
-
+# Execute a command, or just announce it under --dry-run.
+run() {
+  if $DRY_RUN; then
+    printf '\033[36m[dry-run]\033[0m %s\n' "$*"
   else
-    grep -Eq "^$replace$" < "$file" || echo "Warning: Neither '$pattern' nor '$replace' were found in $file."
+    "$@"
   fi
 }
 
+# Like run, but routes stdin from the controlling terminal when one exists.
+# Used for commands like `pacman` that may prompt for confirmation; falls
+# back to inherited stdin in non-interactive contexts (CI, nested scripts).
+run_tty() {
+  if $HAS_TTY; then
+    run "$@" < /dev/tty
+  else
+    run "$@"
+  fi
+}
 
+# Prompt the user for a yes/no answer (reads from the controlling terminal so
+# it works even when stdin is redirected).
+confirm() {
+  local reply
+  read -p "$1 [Y/n] " -r reply < /dev/tty
+  [[ "$reply" =~ ^[Yy]$ ]]
+}
+
+# Replace ^pattern$ with replace in file (with backup) after user confirmation.
+# Fourth arg is an optional sudo-style prefix for the sed call.
+confirmsed() {
+  local file="$1" pattern="$2" replace="$3" user="${4:-}"
+
+  if [[ ! -f "$file" ]]; then
+    warn "$file does not exist."
+    return
+  fi
+
+  if grep -Eq "^${pattern}\$" "$file"; then
+    if $DRY_RUN; then
+      info "[dry-run] would replace '$pattern' with '$replace' in $file"
+      return
+    fi
+    if confirm "Edit $file to replace '$pattern' with '$replace'?"; then
+      mkdir -pv "$(dirname "$BACKUPS_ROOT$file")"
+      cp -nvi "$file" "$BACKUPS_ROOT$file" < /dev/tty
+      $user sed -Ei "s@^${pattern}\$@${replace}@" "$file"
+    fi
+  elif ! grep -Eq "^${replace}\$" "$file"; then
+    warn "Neither '$pattern' nor '$replace' were found in $file."
+  fi
+}
+
+# Create a symlink at $target pointing to $src, backing up any existing file
+# or stale symlink. Third arg is an optional sudo-style prefix.
+make_symlink() {
+  local src="$1" target="$2" sudo_cmd="${3:-}"
+
+  if [[ ! -e "$src" ]]; then
+    warn "Source does not exist, skipping: $src"
+    return
+  fi
+
+  # Already pointing where we want — nothing to do.
+  if [[ -L "$target" ]] && [[ "$(readlink "$target")" == "$src" ]]; then
+    return
+  fi
+
+  run $sudo_cmd mkdir -pv "$(dirname "$target")"
+
+  # Back up anything in the way (regular file OR symlink pointing elsewhere).
+  if [[ -e "$target" || -L "$target" ]]; then
+    run mkdir -pv "$(dirname "$BACKUPS_ROOT$target")"
+    run_tty $sudo_cmd mv -vi "$target" "$BACKUPS_ROOT$target"
+  fi
+
+  run $sudo_cmd ln -snfv "$src" "$target"
+}
+
+# Return 0 if the given find path matches any entry in EXCLUDE_PATHS, either
+# exactly or as a directory prefix.
+should_exclude() {
+  local path="$1" ex
+  for ex in "${EXCLUDE_PATHS[@]}"; do
+    [[ "$path" == "$ex" || "$path" == "$ex"/* ]] && return 0
+  done
+  return 1
+}
+
+# --- Package lists ---
 
 # Pacman package list
 TERMINAL_PACMAN=(
@@ -217,14 +281,6 @@ TERMINAL_YAY=(
   "zsh-theme-powerlevel10k"                                     # zsh powerlevel10k theme
 )
 
-# Meslo font installation
-MESLO_FONT_URLS=(
-  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Regular.ttf"
-  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold.ttf"
-  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Italic.ttf"
-  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold%20Italic.ttf"
-)
-
 GNOME_YAY=(
   "adw-gtk-theme"                                               # dark gtk theme
   "xcursor-breeze"                                              # cursor theme
@@ -233,222 +289,284 @@ GNOME_YAY=(
   "zoom"                                                        # video conferencing platform
 )
 
-# Exclude paths beginning with these prefixes when linking
-EXCLUDE_PATHS=(
-  "./.git/"                                                     # dotfiles git repository information
-  "./dump/"                                                     # manually loaded configuration files
-  "./.gitignore"                                                #
-  "./install.sh"                                                # this script!
-  "./light-install.sh"                                          # a lighter version of this script!
-  "./README.md"                                                 # dotfiles readme
-  "./.backup"                                                   # temporary backup file of modified files
-  "./Sessionx.vim"                                              # vim Obsession session file
-  "./.claude/settings.local.json"                               # needs to be merged with user settings, rather than replacing it
-  "./.claude/CLAUDE.md"                                         # needs to be merged with user CLAUDE.md, rather than replacing it
-  "./tests/"                                                    # dotfiles tests
-  "docs"                                                        # dotfile docs
+# Meslo font installation
+MESLO_FONT_URLS=(
+  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Regular.ttf"
+  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold.ttf"
+  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Italic.ttf"
+  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold%20Italic.ttf"
 )
 
+# Exclude paths beginning with these prefixes when linking.
+# Each entry is matched against `find` output exactly, or as a directory prefix.
+EXCLUDE_PATHS=(
+  "./.git"                          # dotfiles git repository information
+  "./dump"                          # manually loaded configuration files
+  "./.gitignore"
+  "./install.sh"                    # this script!
+  "./light-install.sh"              # a lighter version of this script!
+  "./README.md"                     # dotfiles readme
+  "./.backup"                       # temporary backup file of modified files
+  "./Sessionx.vim"                  # vim Obsession session file
+  "./.claude/settings.local.json"   # needs to be merged with user settings, rather than replacing it
+  "./.claude/CLAUDE.md"             # needs to be merged with user CLAUDE.md, rather than replacing it
+  "./tests"                         # dotfiles tests
+  "./docs"                          # dotfile docs
+)
 
-# Installation begins
-echo "Beginning dotfiles installation..."
+# --- Section functions ---
 
-
-# Pacman packages
-if ! $SKIP_PACMAN; then
-  echo "Installing pacman packages for terminal..."; sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty; echo
-  echo "Installing pacman packages for gnome...";    sudo pacman --needed -Sq ${GNOME_PACMAN[@]}    < /dev/tty; echo
-  echo "Installing pacman packages for latex...";    sudo pacman --needed -Sq ${LATEX_PACMAN[@]}    < /dev/tty; echo
-fi
-
-# Yay packages
-if ! $SKIP_YAY; then
-  if ! command -v yay &>/dev/null; then
-    echo "Installing yay..."
-    sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
+# Install yay if it's not already on the system.
+ensure_yay() {
+  if command -v yay &>/dev/null; then
+    return
   fi
-
-  echo "Installing yay packages for terminal..."; yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty; echo
-  echo "Installing yay packages for gnome...";    yay --answerclean None --answerdiff None --needed -Sq ${GNOME_YAY[@]}    < /dev/tty; echo
-fi
-
-# Terminal packages
-if ! $SKIP_TERMINAL; then
-  echo "Installing pacman packages for terminal..."; sudo pacman --needed -Sq ${TERMINAL_PACMAN[@]} < /dev/tty; echo
-  if ! command -v yay &>/dev/null; then
-    echo "Installing yay..."
-    sudo pacman --needed -S git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si && cd .. && rm -rf yay
+  info "Installing yay..."
+  run sudo pacman --needed -S git base-devel
+  if $DRY_RUN; then
+    info "[dry-run] would clone and build yay from AUR"
+    return
   fi
-
-  echo "Installing yay packages for terminal..."; yay --answerclean None --answerdiff None --needed -Sq ${TERMINAL_YAY[@]} < /dev/tty; echo
-fi
-
-# Powerlevel font installation
-if ! $SKIP_FONT; then
   (
-    mkdir -p "$HOME/.local/share/fonts" && \
-    cd "$HOME/.local/share/fonts" && \
+    cd /tmp
+    rm -rf yay
+    git clone https://aur.archlinux.org/yay.git
+    cd yay
+    makepkg -si
+  )
+  rm -rf /tmp/yay
+}
+
+install_pacman() {
+  info "Installing pacman packages for terminal..."
+  run_tty sudo pacman --needed -Sq "${TERMINAL_PACMAN[@]}"
+  info "Installing pacman packages for gnome..."
+  run_tty sudo pacman --needed -Sq "${GNOME_PACMAN[@]}"
+  info "Installing pacman packages for latex..."
+  run_tty sudo pacman --needed -Sq "${LATEX_PACMAN[@]}"
+}
+
+install_yay() {
+  ensure_yay
+  info "Installing yay packages for terminal..."
+  run_tty yay --answerclean None --answerdiff None --needed -Sq "${TERMINAL_YAY[@]}"
+  info "Installing yay packages for gnome..."
+  run_tty yay --answerclean None --answerdiff None --needed -Sq "${GNOME_YAY[@]}"
+}
+
+# Install only the terminal subset of packages. Skips work already covered by
+# install_pacman / install_yay when those flags were also given.
+install_terminal() {
+  if ${SKIP[pacman]}; then
+    info "Installing pacman packages for terminal..."
+    run_tty sudo pacman --needed -Sq "${TERMINAL_PACMAN[@]}"
+  fi
+  if ${SKIP[yay]}; then
+    ensure_yay
+    info "Installing yay packages for terminal..."
+    run_tty yay --answerclean None --answerdiff None --needed -Sq "${TERMINAL_YAY[@]}"
+  fi
+}
+
+install_font() {
+  if $DRY_RUN; then
+    info "[dry-run] would download ${#MESLO_FONT_URLS[@]} Meslo fonts to ~/.local/share/fonts"
+    return
+  fi
+  mkdir -p "$HOME/.local/share/fonts"
+  (
+    cd "$HOME/.local/share/fonts"
+    local url fname
     for url in "${MESLO_FONT_URLS[@]}"; do
-      fname="$(sed "s/%20/ /g" <<< "${url##*/}")"
+      fname="${url##*/}"
+      fname="${fname//%20/ }"
       curl -L -o "$fname" "$url"
     done
   )
-fi
+}
 
+install_printer() {
+  info "Installing pacman packages for printer..."
+  run_tty sudo pacman --needed -Sq "${PRINTER_PACMAN[@]}"
+  run sudo systemctl enable --now cups
+  info "Note: to install HP printer drivers, use 'hp-setup -i'."
+}
 
-
-# printer
-if ! $SKIP_PRINTER; then
-  echo "Installing pacman packages for printer..."; sudo pacman --needed -Sq ${PRINTER_PACMAN[@]} < /dev/tty; echo
-  sudo systemctl enable --now cups
-  echo "Note: to install HP printer drivers, use 'hp-setup -i'."
-fi
-
-
-# logiops
-if ! $SKIP_LOGIOPS; then
+install_logiops() {
   if ! systemctl list-unit-files | grep -q "logid.service"; then
-    echo "Installing PixlOne/logiops..."
-    sudo pacman --needed -S cmake libevdev libconfig pkgconf  # Logiops dependencies
-    git clone https://github.com/PixlOne/logiops
-    cd logiops
-
-    mkdir build
-    cd build
-    cmake ..
-    make
-    sudo make install
-
-    cd ../..
-    rm -rf logiops
+    info "Installing PixlOne/logiops..."
+    run sudo pacman --needed -S cmake libevdev libconfig pkgconf
+    if $DRY_RUN; then
+      info "[dry-run] would build and install PixlOne/logiops from source"
+    else
+      (
+        cd /tmp
+        rm -rf logiops
+        git clone https://github.com/PixlOne/logiops
+        cd logiops
+        mkdir -p build
+        cd build
+        cmake ..
+        make
+        sudo make install
+      )
+      rm -rf /tmp/logiops
+    fi
   fi
 
-  if [[ $(systemctl is-active logid.service) != "active" ]]; then
-    echo "Enabling logid.service..."
-    sudo systemctl enable --now logid.service
+  if [[ "$(systemctl is-active logid.service 2>/dev/null || true)" != "active" ]]; then
+    info "Enabling logid.service..."
+    run sudo systemctl enable --now logid.service
   fi
-fi
+}
 
-
-# Lunarvim
-if ! $SKIP_LUNARVIM; then
-  if [[ $(npm config get prefix) != "$HOME/.local" ]]; then
-    echo "Resolving npm EACCES permissions..."
-    npm config set prefix "$HOME/.local"                        # install global npm packages to local directory without sudo
+install_lunarvim() {
+  if [[ "$(npm config get prefix 2>/dev/null || true)" != "$HOME/.local" ]]; then
+    info "Resolving npm EACCES permissions..."
+    run npm config set prefix "$HOME/.local"
   fi
 
   if ! command -v lvim &>/dev/null; then
-    echo "Installing Lunarvim..."
-    sudo pacman --needed -S git make python npm cargo           # Lunarvim dependencies
-    mv ~/.config/lvim/config.lua ~/.config/lvim/config.lua.old  # Prevent installation from overwriting existing config
-    LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
-  fi
-fi
-
-
-# dotfile links
-if ! $SKIP_LINK; then
-  while read dotfile; do
-
-    if [[ -n $(grep -E "^\./root" <<< $dotfile) ]]; then
-      target=$(sed "s@^\./root\(.*\)@\1@" <<< $dotfile)
-      user="sudo"
+    info "Installing Lunarvim..."
+    run sudo pacman --needed -S git make python npm cargo
+    if [[ -f "$HOME/.config/lvim/config.lua" ]]; then
+      run mv "$HOME/.config/lvim/config.lua" "$HOME/.config/lvim/config.lua.old"
+    fi
+    if $DRY_RUN; then
+      info "[dry-run] would run Lunarvim installer"
     else
-      target=$(sed "s@^\.\(.*\)@$HOME\1@" <<< $dotfile)
-      user=""
+      LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
+    fi
+  fi
+}
+
+link_dotfiles() {
+  local dotfile rel target user src
+  while IFS= read -r -d '' dotfile; do
+    if should_exclude "$dotfile"; then
+      continue
     fi
 
-    [[ -d $(dirname $target) ]] || $user mkdir -pv $(dirname $target)
-    [[ -f $target ]] && [[ ! -L $target ]] && mkdir -pv $(dirname "$BACKUPS_ROOT$target") && $user mv -vi $target "$BACKUPS_ROOT$target" < /dev/tty
-    [[ -L $target ]] || $user ln -sv $(sed "s@^\.\(.*\)@"$(pwd)"\1@" <<< $dotfile) $target
+    rel="${dotfile#./}"
+    if [[ "$rel" == root/* ]]; then
+      target="/${rel#root/}"
+      user="sudo"
+    else
+      target="$HOME/$rel"
+      user=""
+    fi
+    src="$DOTFILES_ROOT/$rel"
+    make_symlink "$src" "$target" "$user"
+  done < <(find . -type f -print0)
+}
 
-  done <<< $(find . -type f -print | grep -Ev $(tr " " "|" <<< ${EXCLUDE_PATHS[@]}) )
-fi
+enable_services() {
+  run systemctl enable --now auto-suspend.timer
+}
 
-# custom services
-if ! $SKIP_SERVICES; then
-  systemctl enable --now auto-suspend.timer
-fi
-
-# Manual modifications
-if ! $SKIP_MANUAL; then
+apply_manual_patches() {
   confirmsed /etc/bluetooth/main.conf "#AutoEnable=false" "AutoEnable=true" sudo
-  confirmsed ~/.local/share/lunarvim/site/pack/packer/start/vimtex/autoload/vimtex/syntax/core.vim "  syntax iskeyword 48-57,a-z,A-Z,192-255" "  syntax iskeyword a-z,A-Z,192-255"
-  confirmsed ~/.local/share/lunarvim/lvim/lua/lvim/core/dap.lua '  lvim.builtin.which_key.mappings\["d"\] = \{' '  lvim.builtin.which_key.mappings\["u"\] = \{'
-  confirmsed ~/.local/share/lunarvim/site/pack/packer/start/onedark.nvim/lua/onedark/highlights.lua '    IndentBlanklineChar = \{ fg = c.bg1, gui = "nocombine" \},' '    IndentBlanklineChar = \{ fg = c.grey, gui = "nocombine" \},'
-fi
+  confirmsed "$HOME/.local/share/lunarvim/site/pack/packer/start/vimtex/autoload/vimtex/syntax/core.vim" \
+    "  syntax iskeyword 48-57,a-z,A-Z,192-255" \
+    "  syntax iskeyword a-z,A-Z,192-255"
+  confirmsed "$HOME/.local/share/lunarvim/lvim/lua/lvim/core/dap.lua" \
+    '  lvim.builtin.which_key.mappings\["d"\] = \{' \
+    '  lvim.builtin.which_key.mappings\["u"\] = \{'
+  confirmsed "$HOME/.local/share/lunarvim/site/pack/packer/start/onedark.nvim/lua/onedark/highlights.lua" \
+    '    IndentBlanklineChar = \{ fg = c.bg1, gui = "nocombine" \},' \
+    '    IndentBlanklineChar = \{ fg = c.grey, gui = "nocombine" \},'
+}
 
-
-# tmux plugins
-if ! $SKIP_TMUX; then
-  if [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
-    echo "Installing tpm..."
-    git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-    echo "tpm installation complete."
+install_tmux_plugins() {
+  local tpm_dir="$HOME/.tmux/plugins/tpm"
+  if [[ ! -d "$tpm_dir" ]]; then
+    info "Installing tpm..."
+    run git clone https://github.com/tmux-plugins/tpm "$tpm_dir"
+    info "tpm installation complete."
   fi
-fi
+}
 
-
-# git config
-if ! $SKIP_GITCONFIG; then
-  if command -v git &>/dev/null; then
-    git config --global push.autoSetupRemote true
-    git config --global core.excludesFile "$(pwd)/.config/git/ignore"
-    git config --global pull.rebase false
-    git config --global credential.helper true
-  else
-    echo "git command not found, skipping git config setup."
+configure_git() {
+  if ! command -v git &>/dev/null; then
+    warn "git command not found, skipping git config setup."
+    return
   fi
-fi
+  run git config --global push.autoSetupRemote true
+  run git config --global core.excludesFile "$DOTFILES_ROOT/.config/git/ignore"
+  run git config --global pull.rebase false
+  run git config --global credential.helper true
+}
 
-# dconf settings
-if ! $SKIP_DCONF; then
-  DCONF_DUMP="$DOTFILES_ROOT/dump/dconf/arch.dconf"
+load_dconf() {
+  local dump_file="$DOTFILES_ROOT/dump/dconf/arch.dconf"
+
+  info "Backing up current dconf configuration..."
+  run mkdir -pv "$(dirname "$BACKUPS_ROOT$dump_file")"
+  if $DRY_RUN; then
+    info "[dry-run] would dump dconf to $BACKUPS_ROOT$dump_file"
+    info "[dry-run] would load dconf from $dump_file"
+    return
+  fi
+
+  local tmp
   tmp="$(mktemp)"
+  trap 'rm -f "$tmp"' RETURN
+  dconf dump / > "$tmp"
+  cp -vi "$tmp" "$BACKUPS_ROOT$dump_file"
 
-  echo "Backing up current dconf configuration..."
-  mkdir -pv "$(dirname $BACKUPS_ROOT$DCONF_DUMP)"
-  dconf dump / > $tmp
-  cp -vi $tmp "$BACKUPS_ROOT$DCONF_DUMP"
-  rm $tmp
+  dconf load / < "$dump_file"
+  info "dconf configuration loaded."
+}
 
-  dconf load / < $DCONF_DUMP
-  echo "dconf configuration loaded."
-fi
+configure_xdg() {
+  info "Running xdg-user-dirs-update..."
+  run xdg-user-dirs-update
 
+  info "Setting default applications with xdg-mime..."
+  run xdg-mime default okularApplication_pdf.desktop application/pdf
+  run xdg-mime default org.gnome.gThumb.desktop      image/gif
+  run xdg-mime default org.gnome.gThumb.desktop      image/jpeg
+  run xdg-mime default org.gnome.gThumb.desktop      image/png
+  run xdg-mime default org.gnome.gThumb.desktop      image/webp
+  run xdg-mime default org.gnome.Totem.desktop       audio/mpeg
+  run xdg-mime default org.gnome.Totem.desktop       audio/mp4
+  run xdg-mime default nvim.desktop                  text/plain
 
-# xdg settings
-if ! $SKIP_XDG; then
-  echo "Running xdg-user-dirs-update..."
-  xdg-user-dirs-update
+  info "xdg update complete."
+}
 
-  echo "Setting default applications with xdg-mime..."
-  xdg-mime default okularApplication_pdf.desktop application/pdf
-  xdg-mime default org.gnome.gThumb.desktop      image/gif
-  xdg-mime default org.gnome.gThumb.desktop      image/jpeg
-  xdg-mime default org.gnome.gThumb.desktop      image/png
-  xdg-mime default org.gnome.gThumb.desktop      image/webp
-  xdg-mime default org.gnome.Totem.desktop       audio/mpeg
-  xdg-mime default org.gnome.Totem.desktop       audio/mp4
-  xdg-mime default nvim.desktop                  text/plain
+print_info() {
+  cat <<EOF
 
-  echo "xdg update complete."
-fi
+Providing dump info...
+'$DOTFILES_ROOT/dump' contains exported configuration files of various applications, typically those with guis.
+dconf settings can be loaded automatically by using this installer with '--dconf'. Most settings need to be imported manually.
 
+Configurations that must be loaded manually include:
+ - Insync ignorerules: Account Settings > Ignore Rules (paste ignorerules text)
+ - Okular shortcuts: Settings > Configure Keyboard Shortcuts > Manage Schemes > More Actions > Import Scheme (select default.shortcuts)
+Files are available in $DOTFILES_ROOT/dump/<application>
 
-# dump information
-if ! $SKIP_INFO; then
-  echo
-  echo "Providing dump info..."
-  echo "'$DOTFILES_ROOT/dump' contains exported configuration files of various applications, typically those with gui's."
-  echo "dconf settings can be loaded automatically by using this installer with '--load-dconf'. Most settings need to be imported"
-  echo "manually."
-  echo
-  echo "Configurations that must be loaded manually include:"
-  echo " - Insync ignorerules: Account Settings > Ignore Rules (paste ignorerules text)"
-  echo " - Okular shortcuts: Settings > Configure Keyboard Shortcuts > Manage Schemes > More Actions > Import Scheme (select default.shortcuts)"
-  echo "Files are available in $DOTFILES_ROOT/dump/<application>"
-  echo
-fi
+EOF
+}
 
-echo "dotfiles installation complete."
+# --- Main ---
+info "Beginning dotfiles installation..."
+
+${SKIP[pacman]}    || install_pacman
+${SKIP[yay]}       || install_yay
+${SKIP[terminal]}  || install_terminal
+${SKIP[font]}      || install_font
+${SKIP[printer]}   || install_printer
+${SKIP[logiops]}   || install_logiops
+${SKIP[lunarvim]}  || install_lunarvim
+${SKIP[link]}      || link_dotfiles
+${SKIP[services]}  || enable_services
+${SKIP[manual]}    || apply_manual_patches
+${SKIP[tmux]}      || install_tmux_plugins
+${SKIP[gitconfig]} || configure_git
+${SKIP[dconf]}     || load_dconf
+${SKIP[xdg]}       || configure_xdg
+${SKIP[info]}      || print_info
+
+info "dotfiles installation complete."
