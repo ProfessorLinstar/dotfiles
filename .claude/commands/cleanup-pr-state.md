@@ -6,59 +6,21 @@ allowed-tools: Bash
 
 # Cleanup PR state
 
-Walk the global PR state directory and remove tracked entries whose PRs are no longer open. Unlike `/refresh-pr-state` (current session only), this command operates across every session.
+Walks the global PR state directory and removes tracked entries whose PRs are no longer open. Unlike `/refresh-pr-state` (current session only), this operates across every session.
 
-## Step 1: Enumerate state files
-
-```bash
-STATE_DIR=$(bash ~/.claude/scripts/pr-state.sh state-dir)
-ls -1 "$STATE_DIR" 2>/dev/null | grep -vE '^_'
-```
-
-The `_by_workspace` pointer directory is skipped — those aren't session state.
-
-## Step 2: For each state file, filter rows
-
-The state file is TSV with columns: `repo_root`, `branch`, `pr_url`, `base_branch`, `number`, `updated_at`.
-
-For each row, query the PR's state:
+## Run
 
 ```bash
-gh pr view "$PR_URL" --json state 2>/dev/null | jq -r '.state // empty'
+bash ~/.claude/scripts/cleanup-pr-state-core.sh
 ```
 
-- Drop rows whose state is `MERGED` or `CLOSED`.
-- Drop rows where the `gh pr view` call fails outright (PR deleted, no auth, etc.) — they can be re-added by `/refresh-pr-state` if still relevant.
-- Keep rows whose state is `OPEN` or `DRAFT`.
+The core script:
 
-Run PR queries in parallel where possible — across all sessions there may be many.
+- Walks every file in `~/.local/state/claude/pr-state/` (skipping the `_by_workspace` pointer dir).
+- For each row, queries the PR's state. Keeps `OPEN`/`DRAFT`. Drops `MERGED`/`CLOSED`/unreachable.
+- Atomically rewrites each session file. Deletes any that end up empty.
+- Prunes dangling `_by_workspace` pointers at the end.
 
-## Step 3: Rewrite or delete
+## Report
 
-For each state file at path `$STATE_DIR/<session>`:
-- If any rows survive, rewrite atomically via the helper:
-  ```bash
-  printf '%s\n' "$row1" "$row2" ... | bash ~/.claude/scripts/pr-state.sh write-rows "$STATE_DIR/<session>"
-  ```
-- If no rows survive, delete the file:
-  ```bash
-  bash ~/.claude/scripts/pr-state.sh drop-state "$STATE_DIR/<session>"
-  ```
-
-## Step 4: Tidy up pointers
-
-After processing all session files, prune dangling `_by_workspace` pointers:
-
-```bash
-bash ~/.claude/scripts/pr-state.sh prune-pointers
-```
-
-## Step 5: Report
-
-Print a short summary:
-
-- Sessions scanned
-- Rows dropped, grouped by reason (merged/closed/unreachable)
-- Session files deleted entirely (now empty)
-
-Keep the report under 8 lines.
+The script prints a one-line summary (`scanned= merged= closed= unreachable= files_deleted=`). Surface that to the user. Keep the report under 4 lines.

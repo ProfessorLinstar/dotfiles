@@ -6,7 +6,9 @@ allowed-tools: Bash
 
 # Discover PR stack
 
-Walk the base/head chain from each tracked PR to find related open PRs on the remote and add them to the session's state file. This is the heavier counterpart to `/refresh-pr-state`: it issues `gh pr list` calls and only makes sense when you suspect missing siblings.
+Walk the base/head chain from each tracked PR to find related open PRs on the remote and add them to the session's state file. Heavier than `/refresh-pr-state` because it issues `gh pr list` calls.
+
+The deterministic walk lives in `~/.claude/scripts/discover-pr-state-core.sh`. Your job is to pick the right seed rows.
 
 ## Step 1: Locate the state file
 
@@ -14,62 +16,37 @@ Walk the base/head chain from each tracked PR to find related open PRs on the re
 STATE_FILE=$(bash ~/.claude/scripts/pr-state.sh state-file)
 ```
 
-The helper resolves THIS workspace's session state file via the `_by_workspace/<md5($PWD)>` pointer. The file may not exist yet. If `$STATE_FILE` is empty, the statusline hasn't rendered in this workspace yet — ask the user to wait a tick and retry, rather than touching another session's state.
+If `$STATE_FILE` is empty the statusline hasn't rendered in this workspace yet — ask the user to wait one render tick.
 
-## Step 1.5: Pick discovery seeds (in priority order)
+## Step 2: Pick discovery seeds (in priority order)
 
-The currently checked-out branch may be unrelated to what the session is tracking. **Prioritize session context over current branch.**
+The currently-checked-out branch may be unrelated to session focus. **Prioritize conversation context over current branch.**
 
-1. **Conversation context (primary).** Walk back through recent tool calls and identify the PRs THIS session has been working on (created, pushed to, edited, monitored). Use those PR URLs as the discovery seeds. For each, run `gh pr view <url> --json url,baseRefName,headRefName,number,state 2>/dev/null` and add a row to the working set if `state` is `OPEN` or `DRAFT` and it's not already tracked. Strip a trailing `-cached` from the resulting `baseRefName`.
-2. **Existing state rows (secondary).** Any rows already in the state file.
-3. **Current branch (last resort).** ONLY if (1) and (2) are both empty: if the current branch has an open PR, use it as the sole seed. Do NOT add it otherwise — the statusline will show it separately below the tracked stack.
+1. **Conversation context (primary).** Walk back through recent tool calls and identify the PRs THIS session has been working on. Use those as seeds.
+2. **Existing state rows (secondary).** The core script automatically uses every row already in the state file as a seed, so you don't need to repeat them on stdin.
+3. **Current branch (last resort).** ONLY if (1) is empty AND the state file is empty: if the current branch has an open PR, use it as the sole seed.
 
-If after these steps the seed set is empty, report "no seeds — nothing to discover from" and stop.
+If after these steps you have no seeds AND the state file is empty, report "no seeds — nothing to discover from" and stop.
 
-## Step 2: Walk the stack from each seed row
-
-The state file is TSV with columns: `repo_root`, `branch`, `pr_url`, `base_branch`, `number`, `updated_at`. Maintain an in-memory set of `(repo_root, branch)` already known so a PR is never added twice.
-
-For each row in the working set, run from its `repo_root`:
-
-**Walk up (parents)** — find a PR whose head is this row's `base_branch`:
+## Step 3: Hand seeds to the core script
 
 ```bash
-gh pr list --head "$BASE_BRANCH" --state open --json url,baseRefName,headRefName,number 2>/dev/null
+printf '%s\n' \
+  "$REPO	feat-x	https://example.com/pr/100	develop	100	$(date +%s)" \
+  ... \
+  | bash ~/.claude/scripts/discover-pr-state-core.sh "$STATE_FILE"
 ```
 
-If exactly one PR is returned and it's not already tracked, add it. Recurse with the new row's `baseRefName`. Stop when:
-- the lookup returns zero or multiple results, or
-- `base_branch` is a main-line branch (`main`, `master`, `develop`, `trunk`).
+Each stdin line is a full TSV row: `repo_root\tbranch\tpr_url\tbase_branch\tnumber\tupdated_at` (TABs, not spaces). The core script:
 
-**Walk down (children)** — find PRs whose base is this row's `branch`:
+- Walks up from each row's `base_branch` via `gh pr list --head <base>`. Single match = parent found; multi-match = bail.
+- Walks down from each row's `branch` via `gh pr list --base <branch>`. Multi-match is fine; recurses on each.
+- Stops at main-line branches (`main`/`master`/`develop`/`trunk`).
+- Strips `-cached` suffix on any newly-added `base_branch`.
+- Caps at 20 new PRs per repo.
 
-```bash
-gh pr list --base "$BRANCH" --state open --json url,baseRefName,headRefName,number 2>/dev/null
-```
-
-For each open PR returned that's not already tracked, add it. Recurse on each.
-
-Cap total discovery at 20 newly-added PRs per repo to bound runtime. For each added row, `repo_root` is the seed row's `repo_root`, `branch` is the discovered PR's `headRefName`, `pr_url` is its `url`, `base_branch` is its `baseRefName` with any trailing `-cached` suffix stripped (Spr/restack-style stack tools target a cached mirror branch like `develop-cached`), `number` is its `number`, `updated_at` is now.
-
-When walking up via `$BASE_BRANCH`, also strip a trailing `-cached` from the source row's `base_branch` before looking up, so the walk targets the real parent branch.
-
-This command does NOT re-validate or drop existing rows — that's `/refresh-pr-state`'s job. Run that first if rows might be stale.
-
-## Step 3: Write back
-
-Rewrite the state file with the union of original rows and discovered rows via the helper (keeps the TSV column order):
-
-```bash
-printf '%s\n' "$row1" "$row2" ... | bash ~/.claude/scripts/pr-state.sh write-rows "$STATE_FILE"
-```
+Pass an empty stdin (`printf '' | bash ...`) to walk from existing rows only.
 
 ## Step 4: Report
 
-Print a short summary:
-
-- Seed rows considered
-- New PRs discovered (with their numbers and reason: walked up via base, walked down via head)
-- Any walks that bailed (multiple matches for a head — these are ambiguous on purpose)
-
-Keep the report under 6 lines.
+The core prints a one-line summary (`added=N`) and any bail reasons. Surface them. Keep the report under 6 lines.

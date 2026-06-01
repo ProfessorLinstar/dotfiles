@@ -6,9 +6,9 @@ allowed-tools: Bash
 
 # Refresh PR state
 
-You maintain a per-session PR tracking file at `~/.local/state/claude/pr-state/<session_key>` that the statusline reads to display every PR the session is working on. Run this command after pushing, switching branches, or whenever the statusline stack order looks stale.
+The session tracks PRs in `~/.local/state/claude/pr-state/<session_key>` for the statusline to render. This command re-validates what's tracked and adds session-relevant PRs the hook may have missed (e.g. PRs opened via `cd /repo && gh pr create ...` where the hook's cwd didn't match). It does NOT search the remote for unknown PRs — for that, follow up with `/discover-pr-state`.
 
-This command re-validates what's already tracked AND adds PRs you know about from this conversation but the hook may have missed (e.g. PRs opened via `cd /repo && gh pr create ...` where the hook's cwd didn't match the actual repo). It does NOT search the remote for unknown PRs — for that, follow up with `/discover-pr-state`.
+The deterministic file I/O lives in `~/.claude/scripts/refresh-pr-state-core.sh`. Your job is to gather the right PR set from this conversation and feed it in.
 
 ## Step 1: Locate the state file
 
@@ -16,58 +16,31 @@ This command re-validates what's already tracked AND adds PRs you know about fro
 STATE_FILE=$(bash ~/.claude/scripts/pr-state.sh state-file)
 ```
 
-The helper resolves THIS workspace's session state file via the `_by_workspace/<md5($PWD)>` pointer the statusline maintains. The file may not exist yet (first refresh in a new session writes it). If `$STATE_FILE` is empty, the statusline hasn't rendered in this workspace yet — ask the user to wait for a render tick and try again, rather than guessing at another session's file.
+If `$STATE_FILE` is empty the statusline hasn't rendered in this workspace yet — ask the user to wait one render tick and retry, rather than guessing at another session's file.
 
-## Step 2: Re-query each PR
+## Step 2: Identify PRs THIS conversation has been working on
 
-The state file is TSV with columns: `repo_root`, `branch`, `pr_url`, `base_branch`, `number`, `updated_at`.
+Walk back through recent tool calls and results. Collect the URLs of PRs the session has been operating on — created (`gh pr create`, `mcp__github__create_pull_request`, `gh api .../pulls -X POST`), pushed to, edited descriptions on, monitored CI for, reviewed, etc.
 
-For each row, query the PR's current state and base branch:
+For each such PR, also note the `repo_root` it lives in — typically the `cwd` of the command, or the `cd <path>` immediately preceding the `gh` call.
 
-```bash
-gh pr view "$PR_URL" --json state,baseRefName,headRefName,number 2>/dev/null
-```
+**Do NOT auto-add the current branch's PR.** The currently-checked-out branch may be unrelated to session focus (e.g. a quick exploration branch). Only include it if it shows up in the conversation as session work. The statusline already renders the current branch as a separate block when it's outside the tracked stack.
 
-- Drop the row if `state` is `MERGED` or `CLOSED`.
-- Otherwise update `base_branch` to the fresh `baseRefName`. Strip a trailing `-cached` suffix if present (Spr/restack-style stack tools target a cached mirror branch like `develop-cached` instead of the real base).
-- Keep `repo_root` and `branch` (which is the local checkout key) unchanged.
-- Bump `updated_at` to the current Unix timestamp.
-
-Run the per-PR queries in parallel where possible (e.g. via xargs -P or a background-job loop) — there can be many tracked PRs.
-
-## Step 3: Reconcile with what THIS conversation has been working on
-
-The state file should reflect the PRs the session is actually focused on, not whatever branch happens to be checked out. You have the conversation context — use it as the source of truth.
-
-Walk back through recent tool calls and results in this conversation. Build the set of PRs the session has been working on: ones you've created (`gh pr create`, `mcp__github__create_pull_request`, `gh api .../pulls -X POST`), pushed to (`git push` after opening a PR for that branch), edited descriptions on, monitored CI for, etc.
-
-For each session-relevant PR not already in the state file:
-
-1. Run `gh pr view <pr_url> --json url,baseRefName,headRefName,number,state 2>/dev/null` to fetch fresh metadata. (The URL contains the hostname, so this works for GHE too.)
-2. If `state` is `OPEN` or `DRAFT`, append a new row. (`MERGED`/`CLOSED` PRs get dropped per Step 2.)
-3. For `repo_root`, use the working directory the command was run in (e.g. the `cd <path>` immediately preceding the `gh` command, or your cwd at the time). For `branch`, use the PR's `headRefName`. For `base_branch`, use `baseRefName` with any trailing `-cached` suffix stripped.
-
-**Do NOT auto-add the current branch's PR.** The currently checked-out branch may be unrelated to what the session is tracking (e.g. a test/exploration branch you switched to for a quick check). Only add it if it's already part of your session work per the conversation. The statusline will display the current branch separately below the tracked stack when it isn't part of it.
-
-## Step 4: Write back and clear the flag
-
-Rewrite the state file with the surviving rows (TSV, same column order) via the helper, then clear the push-pending flag:
+## Step 3: Hand the list to the core script
 
 ```bash
-printf '%s\n' "$row1" "$row2" ... | bash ~/.claude/scripts/pr-state.sh write-rows "$STATE_FILE"
-
-SESSION_KEY=$(basename "$STATE_FILE")
-bash ~/.claude/scripts/pr-state.sh clear-flag "$SESSION_KEY"
+printf '%s\n' "<pr_url_1>	<repo_root_1>" "<pr_url_2>	<repo_root_2>" ... \
+  | bash ~/.claude/scripts/refresh-pr-state-core.sh "$STATE_FILE"
 ```
 
-The statusline will re-render with the refreshed list on its next tick — no reload needed.
+Each stdin line is `<pr_url>\t<repo_root>` (a real TAB). The core script:
 
-## Step 5: Report
+- Re-queries every existing row by its `pr_url`. Drops MERGED/CLOSED. Refreshes `base_branch` (strips `-cached`).
+- Adds each stdin PR if it's OPEN/DRAFT and not already tracked.
+- Atomically rewrites the state file and clears the push-pending flag.
 
-Print a short summary:
+Pass an empty stdin (`printf '' | bash ...`) when you only need to re-validate.
 
-- Number of PRs kept
-- Number of PRs dropped (with their URLs and reason: merged/closed)
-- The current branch's PR if newly added
+## Step 4: Report
 
-Keep the report under 5 lines.
+The core script prints a one-line summary (`kept= added= dropped=`). Surface that to the user along with any dropped URLs. Keep the report under 5 lines.
