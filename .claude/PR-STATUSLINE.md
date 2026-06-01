@@ -223,25 +223,59 @@ Cross-session cleanup. Walks every file in `pr-state/`, queries each PR, drops M
 
 ## Known sharp edges / improvement opportunities
 
-- **Stack rendering is single-line per row.** Long PR URLs overflow narrow terminals. Width-aware truncation (`#num` instead of URL, etc.) hasn't been implemented. See the conversation in the design discussion for sketched-but-not-built approaches.
-- **Vertical-space cap missing.** Sessions tracking many PRs produce many statusline rows. No mechanism yet to cap height with a "+N more" indicator that always preserves the current row.
 - **Stack walking is per-repo only.** No cross-repo stack relationships even when PRs reference each other.
 - **`gh pr view` is sequential in the hook.** For batched creates, the loop runs N synchronous `gh` calls. Parallelizing would speed things up but introduce locking concerns on the state file write path.
-- **Stale `pr-cache/` entries.** Legacy lazy-lookup cache never invalidates after a branch switch. Pre-existing bug; fallback path only.
 - **`_by_workspace` pointer collisions.** Two Claude sessions in the same workspace will fight over the same pointer; last-render wins. Rare but possible.
 - **`-cached` suffix is hardcoded.** Other stack-tool conventions (e.g. SPR's `spr/` prefix branches) aren't recognized. Add another normalization rule if needed.
 - **Helper guard accepts any path under `state-dir`, including `_by_workspace/<key>`.** A malicious caller could write nonsense pointer data, though attack surface is limited to the local user.
 
+Previously documented edges, now fixed:
+- Long PR URLs (kept full intentionally — no truncation).
+- Vertical-space cap (`CLAUDE_STATUSLINE_MAX_ROWS`, default 10, current row always visible).
+- Hook command parsing (shlex tokenizer handles `--head=`, `-Hvalue`, quoted args, leading `cd /other-repo &&`).
+- Hook ignoring tool failures (`tool_response.success == false` short-circuits).
+- `pr-cache/` branch invalidation (cache key is now `<md5(repo)>_<branch>`).
+- `%b` data injection (all data fields render via `%s`; ANSI is pre-built).
+- Dangling pointer accumulation (statusline opportunistically prunes ~once per 20 renders).
+
 ## Testing
 
-- **Syntax:** `bash -n` on each script.
-- **Statusline rendering:** pipe a mock JSON to `statusline.sh` and ANSI-strip the output:
-  ```bash
-  echo '{"workspace":{"current_dir":"..."},"context_window":{"used_percentage":42.0},"transcript_path":"..."}' \
-    | bash ~/.claude/scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g'
-  ```
-- **Helper:** the file under `dotfiles/.claude/scripts/pr-state.sh` has self-contained subcommands; spot-check each (`state-dir`, `state-file`, `write-rows`, `clear-flag`, `drop-state`, `prune-pointers`).
-- **Hook:** the `gh pr view` integration requires real GitHub auth. Unit-testable parts are the head parsing (`-H/--head`, `-f head=`) and the cwd → repo_root canonicalization.
+Run the suite:
+
+```bash
+bash ~/dotfiles/tests/claude-pr-statusline/run.sh
+```
+
+Lives outside `.claude/` so `light-install.sh` doesn't symlink it. Each case runs in an isolated `$HOME`, mocks `gh` via a fixture file, and uses real `git` against a throwaway repo. Use `KEEP_SANDBOX=1` to preserve the sandbox on failure; `UPDATE_SNAPSHOTS=1` to refresh expected outputs; or filter by case-name fragment (e.g. `run.sh 03 hook` runs case 03 and any whose name contains "hook").
+
+Helpers / mocks:
+
+- `tests/claude-pr-statusline/lib/sandbox.sh` — sandbox setup, JSON payload builders.
+- `tests/claude-pr-statusline/lib/assert.sh` — `assert_equal`, `assert_contains`, `diff_snapshot`.
+- `tests/claude-pr-statusline/mocks/{gh,git}` — fixture-driven `gh`, no-op `git push`.
+
+Coverage matrix (19 cases):
+
+| # | Targets | Notes |
+|---|---|---|
+| 01 | `pr-state.sh` | All subcommands, guard rails |
+| 02 | `post-push-ci.sh` | `-H`, `--head`, MCP, fallback, dedup |
+| 03 | `post-push-ci.sh` | `--head=`, `-Hvalue`, `cd-prefix`, quoted, false positives, tool failure |
+| 04 | `post-push-ci.sh` | TSV shape, `-cached` strip, MERGED skip, branch-aware cache |
+| 05 | `post-push-ci.sh` | Non-push commands, missing transcript, empty `gh pr view` |
+| 06 | `statusline.sh` | Legacy single-line fallback |
+| 07 | `statusline.sh` | Stack sort (depth-first within repo) |
+| 08 | `statusline.sh` | Current branch outside tracked stack → separate block |
+| 10 | `statusline.sh` | `CLAUDE_STATUSLINE_MAX_ROWS` cap with current row preservation |
+| 11 | `statusline.sh` | Detached HEAD renders short SHA |
+| 12 | `statusline.sh` | `shorten()` empty-HOME guard |
+| 13 | `statusline.sh` | `%s` (not `%b`) for data fields |
+| 14 | helper + statusline | Pointer pruning, opportunistic statusline cleanup |
+| 15 | `refresh-pr-state-core.sh` | Re-query, drop MERGED, add stdin, `-cached` strip, clear flag |
+| 16 | `discover-pr-state-core.sh` | Walk up (single match), walk down (multi), `-cached`, stdin seeds, ambiguous bail |
+| 17 | `cleanup-pr-state-core.sh` | All-session sweep, empty file delete, pointer prune |
+| 18 | end-to-end | hook → row → statusline → Stop nudge → refresh-clear → silent Stop |
+| 19 | resume | Same transcript_path = same session_key = state survives; cross-workspace pointers |
 
 ## File map
 
@@ -251,8 +285,12 @@ Cross-session cleanup. Walks every file in `pr-state/`, queries each PR, drops M
 | `dotfiles/.claude/scripts/stop-ci-check.sh` | Stop hook |
 | `dotfiles/.claude/scripts/statusline.sh` | statusLine command |
 | `dotfiles/.claude/scripts/pr-state.sh` | Mutation helper |
-| `dotfiles/.claude/commands/refresh-pr-state.md` | Default refresh skill |
-| `dotfiles/.claude/commands/discover-pr-state.md` | Stack discovery skill |
-| `dotfiles/.claude/commands/cleanup-pr-state.md` | Global cleanup skill |
+| `dotfiles/.claude/scripts/refresh-pr-state-core.sh` | Deterministic core for `/refresh-pr-state` |
+| `dotfiles/.claude/scripts/discover-pr-state-core.sh` | Deterministic core for `/discover-pr-state` |
+| `dotfiles/.claude/scripts/cleanup-pr-state-core.sh` | Deterministic core for `/cleanup-pr-state` |
+| `dotfiles/.claude/commands/refresh-pr-state.md` | Slash command (Claude curates inputs, calls core) |
+| `dotfiles/.claude/commands/discover-pr-state.md` | Slash command |
+| `dotfiles/.claude/commands/cleanup-pr-state.md` | Slash command |
+| `dotfiles/tests/claude-pr-statusline/` | Test harness (lives outside `.claude/`) |
 | `dotfiles/dump/claude/settings.json` | Hook + statusline + permission config (deep-merged on install) |
 | `dotfiles/light-install.sh` | Symlinks scripts/commands into `~/.claude/`, merges settings |

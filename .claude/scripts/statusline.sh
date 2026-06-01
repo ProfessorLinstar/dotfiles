@@ -10,7 +10,6 @@
 #
 # Tunables (env vars):
 #   CLAUDE_STATUSLINE_MAX_ROWS  Max tracked rows before "+N more" cap. (10)
-#   COLUMNS                     Width hint for URL truncation. (tput cols)
 
 input=$(cat)
 
@@ -43,12 +42,6 @@ purple="${ESC}[35m"
 dim="${ESC}[2m"
 bold="${ESC}[1m"
 reset="${ESC}[0m"
-
-# Terminal width — used for URL truncation in the tracked-stack view.
-term_width="${COLUMNS:-}"
-if [ -z "$term_width" ]; then
-  term_width=$(tput cols 2>/dev/null || echo 120)
-fi
 
 MAX_ROWS="${CLAUDE_STATUSLINE_MAX_ROWS:-10}"
 
@@ -195,22 +188,13 @@ if [ -n "$state_file" ] && [ -s "$state_file" ]; then
     r="${rows_repo[$vi]}"
     br_="${rows_branch[$vi]}"
     pr_="${rows_url[$vi]}"
-    num_="${rows_num[$vi]}"
     short_r=$(shorten "$r")
-
-    # Width-aware URL truncation: if the rendered line would overflow the
-    # terminal, replace pr_url with "#<number>".
-    plain_len=$(( ${#short_r} + ${#br_} + ${#pr_} + 6 ))
-    display_url="$pr_"
-    if [ -n "$num_" ] && [ "$plain_len" -gt "$term_width" ]; then
-      display_url="#$num_"
-    fi
 
     if [ "$r" = "$cur_repo" ] && [ "$br_" = "$cur_branch" ]; then
       shown_current=1
-      line="${bold}${blue}▶ ${short_r}${reset}  ${green}${br_}${reset}  ${purple}${display_url}${reset}"
+      line="${bold}${blue}▶ ${short_r}${reset}  ${green}${br_}${reset}  ${purple}${pr_}${reset}"
     else
-      line="${dim}  ${short_r}  ${br_}  ${display_url}${reset}"
+      line="${dim}  ${short_r}  ${br_}  ${pr_}${reset}"
     fi
     out="${out}${line}"$'\n'
   done
