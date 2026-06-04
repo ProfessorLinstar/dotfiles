@@ -14,8 +14,9 @@
 - When editing a PR description, always check the previous state to make sure that you're not dropping important context.
 - List resolved issues / related PRs at the top of the description
 - When a PR fixes an issue, add `fixes <issue-url>` to the start of the description
-- When updating a PR description for a stacked PR, add the stack to the start of the description, with 👈 marking the current PR:
+- When updating a PR description for a stacked PR, add the stack to the start of the description, with 👈 marking the current PR (always use #xxxxx for PRs in the same repo; for PRs outside of the repo, provide the full URL. Do not include any other text or explanation.):
   ```
+  PR stack:
   - #xxxxx
   - #xxxxx 👈
   - #xxxxx

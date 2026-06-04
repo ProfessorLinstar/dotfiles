@@ -35,20 +35,24 @@ assert_contains "$out" "feat-resume" "row visible after 'resume'"
 rows_after=$(cat "$HOME/.local/state/claude/pr-state/$sk")
 assert_equal "$rows_after" "$rows_before" "state file unchanged across resume"
 
-# --- Workspace pointer survives a new cwd switch back to the original
+# --- Workspace marker survives a new cwd switch back to the original
+# Modern layout: _by_workspace/<ws_key> is a DIRECTORY containing one
+# touched marker per session that has rendered here.
 ws_key=$(md5 "$REPO")
-assert_file_exists "$HOME/.local/state/claude/pr-state/_by_workspace/$ws_key"
-assert_file_contents "$HOME/.local/state/claude/pr-state/_by_workspace/$ws_key" "$sk"
+ws_dir="$HOME/.local/state/claude/pr-state/_by_workspace/$ws_key"
+[ -d "$ws_dir" ] || _fail "ws_dir missing or not a directory: $ws_dir"
+assert_file_exists "$ws_dir/$sk"
 
-# --- Render from a totally different cwd → pointer for THAT cwd gets written,
-#     original pointer is untouched.
+# --- Render from a totally different cwd → new ws_dir + marker, original untouched
 OTHER="$SBX/elsewhere"
 mkdir -p "$OTHER"
 (cd "$OTHER" && git init -q -b main && git config user.email t@t && git config user.name t && git -c commit.gpgsign=false commit -q --allow-empty -m init)
 statusline_input "$OTHER" "$tx" | bash "$SL" > /dev/null
 other_key=$(md5 "$OTHER")
-assert_file_exists "$HOME/.local/state/claude/pr-state/_by_workspace/$other_key"
-# Original still points to the same session
-assert_file_contents "$HOME/.local/state/claude/pr-state/_by_workspace/$ws_key" "$sk"
+other_dir="$HOME/.local/state/claude/pr-state/_by_workspace/$other_key"
+[ -d "$other_dir" ] || _fail "other_dir missing or not a directory"
+assert_file_exists "$other_dir/$sk"
+# Original still has its marker
+assert_file_exists "$ws_dir/$sk"
 
-echo "resume + cross-workspace pointer ok"
+echo "resume + cross-workspace marker ok"

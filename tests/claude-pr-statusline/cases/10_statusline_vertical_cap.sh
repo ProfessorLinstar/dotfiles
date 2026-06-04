@@ -26,16 +26,18 @@ sk=$(session_key_of "$tx")
 # Default cap is 10
 out=$(CLAUDE_STATUSLINE_MAX_ROWS=10 statusline_input "$REPO" "$tx" | CLAUDE_STATUSLINE_MAX_ROWS=10 bash "$SL" | strip_ansi)
 
-# feat-12 (current) must appear
-assert_contains "$out" "feat-12" "current row preserved"
-# "+N more" line shows remaining count
-assert_contains "$out" "more" "+N more line present"
+# feat-12 (current) must appear, column-bounded
+assert_contains "$out" "  feat-12  " "current row preserved"
+# "+N more" line shows remaining count (digit before "more")
+if ! printf '%s\n' "$out" | grep -qE '\+[0-9]+ more'; then
+  _fail "expected '+<digits> more' line"
+fi
 # Should not exceed cap rows + ctx line
 line_count=$(printf '%s\n' "$out" | wc -l)
 [ "$line_count" -le 12 ] || _fail "too many lines: $line_count"
 
 # Smaller cap
 out=$(CLAUDE_STATUSLINE_MAX_ROWS=3 statusline_input "$REPO" "$tx" | CLAUDE_STATUSLINE_MAX_ROWS=3 bash "$SL" | strip_ansi)
-assert_contains "$out" "feat-12" "current row preserved at small cap"
+assert_contains "$out" "  feat-12  " "current row preserved at small cap"
 
 echo "vertical cap ok"

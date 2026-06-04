@@ -52,20 +52,64 @@ if [ -n "$transcript" ]; then
   session_key=$(printf '%s' "$transcript" | md5sum | cut -d' ' -f1)
   state_file="$STATE_DIR/$session_key"
   if [ -n "$full_cwd" ] && [ -n "$HOME" ]; then
-    mkdir -p "$STATE_DIR/_by_workspace" 2>/dev/null
     ws_key=$(printf '%s' "$full_cwd" | md5sum | cut -d' ' -f1)
-    echo "$session_key" > "$STATE_DIR/_by_workspace/$ws_key" 2>/dev/null
+    ws_dir="$STATE_DIR/_by_workspace/$ws_key"
+    # Modern layout: workspace is a directory of touched session markers.
+    # `touch` updates mtime, so `ls -t` returns the most-recent renderer
+    # first. Two concurrent sessions in the same PWD no longer overwrite
+    # each other.
+    if mkdir -p "$ws_dir" 2>/dev/null; then
+      touch "$ws_dir/$session_key" 2>/dev/null || true
+    elif [ -f "$ws_dir" ]; then
+      # Legacy single-file pointer here: migrate by replacing with the dir.
+      # `rm` + `mkdir` is racy across two sessions; whichever wins gets to
+      # do the migration, the other's touch may fail silently — acceptable
+      # because the loser's session_key just doesn't get marked this tick.
+      rm -f "$ws_dir" 2>/dev/null && mkdir -p "$ws_dir" 2>/dev/null \
+        && touch "$ws_dir/$session_key" 2>/dev/null || true
+    fi
 
-    # Opportunistically prune dangling pointers (roughly once per 20 renders).
-    if [ $((RANDOM % 20)) -eq 0 ]; then
-      for ptr in "$STATE_DIR/_by_workspace"/*; do
-        [ -f "$ptr" ] || continue
-        sk=$(cat "$ptr" 2>/dev/null)
-        case "$sk" in
-          */*|*..*|"") rm -f "$ptr" ;;
-          *) [ -f "$STATE_DIR/$sk" ] || rm -f "$ptr" ;;
-        esac
+    # Opportunistically prune dangling pointers (roughly once per 20 renders;
+    # CLAUDE_STATUSLINE_FORCE_PRUNE=1 forces on every render — used by tests).
+    #
+    # New-layout markers get a grace period: a brand-new session has a
+    # marker but no state file yet, and we mustn't yank its marker on the
+    # render *immediately after* the first one. Markers older than
+    # CLAUDE_STATUSLINE_MARKER_GRACE (default 300s) with no state file
+    # are considered dead and dropped.
+    if [ "${CLAUDE_STATUSLINE_FORCE_PRUNE:-0}" = "1" ] || [ $((RANDOM % 20)) -eq 0 ]; then
+      grace="${CLAUDE_STATUSLINE_MARKER_GRACE:-300}"
+      now=$(date +%s)
+      shopt -s nullglob
+      for entry in "$STATE_DIR/_by_workspace"/*; do
+        if [ -d "$entry" ]; then
+          for marker in "$entry"/*; do
+            [ -f "$marker" ] || continue
+            mname=$(basename "$marker")
+            case "$mname" in
+              */*|*..*|"") rm -f "$marker"; continue ;;
+            esac
+            if [ -f "$STATE_DIR/$mname" ]; then
+              continue  # session is alive (has a state file)
+            fi
+            # No state file. Apply grace.
+            mtime=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null || echo "$now")
+            if [ $((now - mtime)) -gt "$grace" ]; then
+              rm -f "$marker"
+            fi
+          done
+          rmdir "$entry" 2>/dev/null || true
+        elif [ -f "$entry" ]; then
+          # Legacy single-file pointers — no grace; they always pointed at
+          # a real state file by construction.
+          sk=$(cat "$entry" 2>/dev/null || true)
+          case "$sk" in
+            */*|*..*|"") rm -f "$entry" ;;
+            *) [ -f "$STATE_DIR/$sk" ] || rm -f "$entry" ;;
+          esac
+        fi
       done
+      shopt -u nullglob
     fi
   fi
 fi
@@ -233,6 +277,32 @@ else
   cwd_short=$(basename "$full_cwd")
   pr_cache_fill "$cur_repo" "$cur_branch"
   pr_url=$(pr_cache_lookup "$cur_repo" "$cur_branch")
+
+  # Auto-seed: if there's a session and we found a PR for the current
+  # (repo, branch), promote it into the state file so the next render
+  # uses the multi-line view. Disable with CLAUDE_PR_STATUSLINE_AUTOSEED=0.
+  # Only seeds when no state exists yet (this is the first render in the
+  # session's life — or the first render for a new branch with a PR).
+  if [ "${CLAUDE_PR_STATUSLINE_AUTOSEED:-1}" = "1" ] \
+     && [ -n "$state_file" ] \
+     && [ -n "$pr_url" ] \
+     && [ -n "$cur_branch" ] \
+     && [ -n "$cur_repo" ]; then
+    # Look up full PR metadata. Best-effort — failures stay silent.
+    if seed_json=$(cd "$cur_repo" && gh pr view "$cur_branch" --json url,baseRefName,headRefName,number,state 2>/dev/null); then
+      state_=$(printf '%s' "$seed_json" | jq -r '.state // empty' 2>/dev/null || true)
+      if [ "$state_" = "OPEN" ] || [ "$state_" = "DRAFT" ]; then
+        base=$(printf '%s' "$seed_json" | jq -r '.baseRefName // empty')
+        base="${base%-cached}"
+        head=$(printf '%s' "$seed_json" | jq -r '.headRefName // empty')
+        number=$(printf '%s' "$seed_json" | jq -r '.number // empty')
+        [ -z "$head" ] && head="$cur_branch"
+        ts=$(date +%s)
+        printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+          "$cur_repo" "$head" "$pr_url" "$base" "$number" "$ts" >> "$state_file"
+      fi
+    fi
+  fi
 
   git_info=""
   if [ -n "$cur_branch" ]; then

@@ -46,6 +46,12 @@ if printf 'evil\n' | bash "$HELPER" write-rows "/tmp/evil-state" 2>/dev/null; th
 fi
 [ ! -f /tmp/evil-state ] || { _fail "evil file written"; rm -f /tmp/evil-state; }
 
+# --- write-rows refuses paths with `..` even under state-dir
+if printf 'evil\n' | bash "$HELPER" write-rows "$STATE_DIR/../etc/escape" 2>/dev/null; then
+  _fail "write-rows must refuse .. paths"
+fi
+[ ! -f "$HOME/.local/state/claude/etc/escape" ] || { _fail "escape file written"; rm -f "$HOME/.local/state/claude/etc/escape"; }
+
 # --- drop-state removes file under state-dir
 bash "$HELPER" drop-state "$target"
 assert_file_missing "$target"
