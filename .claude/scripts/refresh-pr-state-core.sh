@@ -32,6 +32,7 @@ fi
 HELPER="$(dirname "$0")/pr-state.sh"
 STATE_DIR=$(bash "$HELPER" state-dir)
 CI_DIR=$(bash "$HELPER" ci-dir)
+LOG_DIR="$HOME/.local/state/claude/pr-log"
 case "$STATE_FILE" in
   "$STATE_DIR"/*) : ;;
   *) echo "refresh-pr-state-core: refusing path outside $STATE_DIR" >&2; exit 1 ;;
@@ -57,11 +58,31 @@ emit_row() {
   printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$1" "$2" "$3" "$4" "$5" "$6"
 }
 
-# Re-query each existing row.
+# Re-query each existing row. Distinguish transport/auth failure (`gh` exits
+# non-zero — preserve the row) from "PR not found / merged / closed" (`gh`
+# exits 0 with a definite state — drop). A network blip should never wipe
+# state.
+preserved_count=0
 while IFS=$'\t' read -r r br_ pr_ base_ num_ old_ts; do
   [ -z "$r" ] && continue
-  json=$(gh pr view "$pr_" --json url,baseRefName,headRefName,number,state 2>/dev/null || true)
+  # Use `if` so `set -e` doesn't kill the script when gh exits non-zero
+  # (transport / auth failure) — we want to capture that and preserve the row.
+  if json=$(gh pr view "$pr_" --json url,baseRefName,headRefName,number,state 2>/dev/null); then
+    rc=0
+  else
+    rc=$?
+  fi
+  if [ "$rc" -ne 0 ]; then
+    # Transport / auth failure — keep the existing row verbatim and move on.
+    row=$(emit_row "$r" "$br_" "$pr_" "$base_" "$num_" "$old_ts")
+    new_rows="${new_rows}${row}"$'\n'
+    tracked_urls="$tracked_urls $pr_"
+    preserved_count=$((preserved_count + 1))
+    kept=$((kept + 1))
+    continue
+  fi
   if [ -z "$json" ]; then
+    # gh exited 0 with empty stdout — odd, but treat as "definitely gone".
     dropped_urls="$dropped_urls $pr_(unreachable)"
     continue
   fi
@@ -85,7 +106,32 @@ while IFS=$'\t' read -r r br_ pr_ base_ num_ old_ts; do
   esac
 done <<< "$existing"
 
-# Add stdin rows not already tracked.
+# Pull seeds from the PR log too (hook-observed PRs survive compaction).
+log_seeds=""
+session_key=$(basename "$STATE_FILE")
+log_file="$LOG_DIR/$session_key"
+if [ -f "$log_file" ]; then
+  # Each line: ts \t pr_url \t repo_root \t head \t source. Keep latest per URL.
+  log_seeds=$(awk -F'\t' '
+    { latest[$2]=$0 }
+    END { for (k in latest) print latest[k] }
+  ' "$log_file")
+fi
+
+# Combine: explicit stdin from caller takes precedence over the log
+# (caller may have repo_root info we don't).
+combined_input=""
+if [ -n "$stdin_input" ]; then
+  combined_input="$stdin_input"
+fi
+if [ -n "$log_seeds" ]; then
+  while IFS=$'\t' read -r _ts log_url log_repo _log_head _src; do
+    [ -z "$log_url" ] && continue
+    combined_input="${combined_input}${log_url}"$'\t'"${log_repo}"$'\n'
+  done <<< "$log_seeds"
+fi
+
+# Add combined rows not already tracked.
 while IFS=$'\t' read -r in_url in_repo; do
   [ -z "$in_url" ] && continue
   [ -z "$in_repo" ] && continue
@@ -108,7 +154,7 @@ while IFS=$'\t' read -r in_url in_repo; do
       added_urls="$added_urls $in_url"
       ;;
   esac
-done <<< "$stdin_input"
+done <<< "$combined_input"
 
 # Write back.
 printf '%s' "$new_rows" | bash "$HELPER" write-rows "$STATE_FILE"
@@ -122,6 +168,7 @@ for _ in $added_urls; do added_count=$((added_count + 1)); done
 dropped_count=0
 for _ in $dropped_urls; do dropped_count=$((dropped_count + 1)); done
 
-echo "refresh: kept=$kept added=$added_count dropped=$dropped_count"
+echo "refresh: kept=$kept added=$added_count dropped=$dropped_count preserved=$preserved_count"
 if [ -n "$dropped_urls" ]; then echo "  dropped:$dropped_urls"; fi
 if [ -n "$added_urls" ]; then echo "  added:$added_urls"; fi
+if [ "$preserved_count" -gt 0 ]; then echo "  preserved (gh transport failure — row kept as-is)"; fi

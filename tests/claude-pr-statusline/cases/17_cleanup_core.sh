@@ -61,4 +61,16 @@ assert_contains "$out" "closed=1" "closed count"
 assert_contains "$out" "unreachable=1" "unreachable count"
 assert_contains "$out" "files_deleted=1" "files deleted count"
 
+# --- Transport failure preserves rows across the whole sweep
+cat > "$STATE_DIR/sess-c" <<EOF
+$REPO	keep-net	https://example.com/pr/100	develop	100	100
+EOF
+# Exit 4 for that PR → transport failure → preserve
+cat > "$GH_MOCK_FIXTURE" <<'JSON'
+{"pr view https://example.com/pr/100 --json state": {"stdout": "", "exit_code": 4}}
+JSON
+bash "$CORE" > /dev/null
+assert_file_exists "$STATE_DIR/sess-c"
+assert_contains "$(cat "$STATE_DIR/sess-c")" "keep-net" "preserved on transport failure"
+
 echo "cleanup-pr-state-core ok"

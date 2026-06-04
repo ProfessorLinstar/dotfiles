@@ -33,16 +33,33 @@ assert_file_missing "$STATE_DIR/_by_workspace/bbb"
 # DOES drop them. Test the helper's contract first.
 # (Add a stronger helper guard or rely on statusline cleanup.)
 
-# Now the statusline's opportunistic prune. Force the RNG to hit by
-# running many times.
+# The statusline's opportunistic prune normally fires ~1/20 renders via
+# $RANDOM. Use CLAUDE_STATUSLINE_FORCE_PRUNE=1 for deterministic test runs.
 echo "ghost-also" > "$STATE_DIR/_by_workspace/eee"
 tx=$(mk_session prune)
-for _ in $(seq 1 100); do
-  statusline_input "$REPO" "$tx" | bash "$SL" > /dev/null
-done
+CLAUDE_STATUSLINE_FORCE_PRUNE=1 statusline_input "$REPO" "$tx" \
+  | CLAUDE_STATUSLINE_FORCE_PRUNE=1 bash "$SL" > /dev/null
+# Legacy single-file dangling pointer (no state file for "ghost-also") → dropped
 assert_file_missing "$STATE_DIR/_by_workspace/eee"
-# Statusline also drops malformed pointers
+# Statusline also drops malformed pointers (legacy file format)
 [ ! -f "$STATE_DIR/_by_workspace/ccc" ] || _fail "malformed pointer ccc not dropped"
 [ ! -f "$STATE_DIR/_by_workspace/ddd" ] || _fail "empty pointer ddd not dropped"
+
+# --- New layout: stale marker (no state file, mtime > grace) gets pruned
+mkdir -p "$STATE_DIR/_by_workspace/wsX"
+touch "$STATE_DIR/_by_workspace/wsX/stale-session"
+touch -d "1 hour ago" "$STATE_DIR/_by_workspace/wsX/stale-session"
+CLAUDE_STATUSLINE_FORCE_PRUNE=1 CLAUDE_STATUSLINE_MARKER_GRACE=300 \
+  statusline_input "$REPO" "$tx" \
+  | CLAUDE_STATUSLINE_FORCE_PRUNE=1 CLAUDE_STATUSLINE_MARKER_GRACE=300 bash "$SL" > /dev/null
+[ ! -f "$STATE_DIR/_by_workspace/wsX/stale-session" ] || _fail "stale marker not pruned"
+
+# --- New layout: fresh marker (no state file, mtime < grace) is kept
+mkdir -p "$STATE_DIR/_by_workspace/wsY"
+touch "$STATE_DIR/_by_workspace/wsY/fresh-session"
+CLAUDE_STATUSLINE_FORCE_PRUNE=1 CLAUDE_STATUSLINE_MARKER_GRACE=300 \
+  statusline_input "$REPO" "$tx" \
+  | CLAUDE_STATUSLINE_FORCE_PRUNE=1 CLAUDE_STATUSLINE_MARKER_GRACE=300 bash "$SL" > /dev/null
+[ -f "$STATE_DIR/_by_workspace/wsY/fresh-session" ] || _fail "fresh marker incorrectly pruned"
 
 echo "pointer prune ok"

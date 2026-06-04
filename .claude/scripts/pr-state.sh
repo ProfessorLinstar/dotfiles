@@ -10,8 +10,14 @@
 #   pr-state.sh state-file           Print path of the current workspace's
 #                                    session state file (may not exist yet
 #                                    — caller writes to it). Empty output
-#                                    if no _by_workspace pointer is set
-#                                    (statusline hasn't rendered here yet).
+#                                    if no _by_workspace marker exists yet.
+#                                    Modern layout: _by_workspace/<md5(PWD)>
+#                                    is a DIRECTORY of `touch`ed markers,
+#                                    one per session. `ls -t` picks the
+#                                    most-recently-touched session — the
+#                                    one whose statusline just rendered
+#                                    here. Legacy: <md5(PWD)> as a single
+#                                    file is still recognized.
 #   pr-state.sh state-dir            Print the state directory.
 #   pr-state.sh ci-dir               Print the ci-state (push-pending) dir.
 #   pr-state.sh write-rows <target>  Read TSV from stdin, atomically replace
@@ -28,6 +34,11 @@ CI_DIR="$HOME/.local/state/claude/ci-state"
 mkdir -p "$STATE_DIR" "$STATE_DIR/_by_workspace" "$CI_DIR"
 
 guard_state_path() {
+  # Reject `..` segments anywhere in the path before they can escape via the
+  # prefix match (e.g. "$STATE_DIR/../etc/foo" passes a naive prefix check).
+  case "$1" in
+    *..*) echo "pr-state.sh: refusing path containing '..': $1" >&2; exit 1 ;;
+  esac
   case "$1" in
     "$STATE_DIR"/*) : ;;
     *) echo "pr-state.sh: refusing to touch path outside $STATE_DIR: $1" >&2; exit 1 ;;
@@ -44,19 +55,28 @@ case "$1" in
   state-file)
     # Returns the path of THIS workspace's session state file. The file may
     # not exist yet — callers writing for the first time will create it.
-    # Never falls back to another session's file: cross-session writes
-    # silently corrupt data, so refuse rather than guess.
+    # Never falls back to a session whose state file is missing — bail
+    # rather than silently corrupt.
     ws=$(echo -n "$PWD" | md5sum | cut -d' ' -f1)
-    pointer="$STATE_DIR/_by_workspace/$ws"
-    if [ -f "$pointer" ]; then
-      session=$(cat "$pointer")
+    target="$STATE_DIR/_by_workspace/$ws"
+    if [ -d "$target" ]; then
+      # Modern layout: directory of touched markers. `ls -t` returns names
+      # newest-first; the most-recent statusline render in this PWD wins.
+      # The state file itself may not exist yet — the marker is the proof
+      # of session presence; the caller may be about to write the file.
+      newest=$(ls -t "$target" 2>/dev/null | head -1)
+      case "$newest" in
+        */*|*..*|"") ;;
+        *) printf '%s\n' "$STATE_DIR/$newest" ;;
+      esac
+    elif [ -f "$target" ]; then
+      # Legacy single-file pointer.
+      session=$(cat "$target")
       case "$session" in
-        */*|*..*|"") ;;  # malformed pointer, ignore
+        */*|*..*|"") ;;
         *) printf '%s\n' "$STATE_DIR/$session" ;;
       esac
     fi
-    # No pointer → empty output. Caller should ensure the statusline has
-    # rendered at least once for this workspace (which writes the pointer).
     ;;
   write-rows)
     target="$2"
@@ -81,11 +101,30 @@ case "$1" in
     rm -f "$target"
     ;;
   prune-pointers)
-    for ptr in "$STATE_DIR/_by_workspace"/*; do
-      [ -f "$ptr" ] || continue
-      sk=$(cat "$ptr")
-      [ -f "$STATE_DIR/$sk" ] || rm -f "$ptr"
+    shopt -s nullglob
+    for entry in "$STATE_DIR/_by_workspace"/*; do
+      if [ -d "$entry" ]; then
+        # Modern: directory of session markers. Drop markers whose target
+        # session file is gone; rmdir the workspace dir if it ends up empty.
+        for marker in "$entry"/*; do
+          [ -f "$marker" ] || continue
+          mname=$(basename "$marker")
+          case "$mname" in
+            */*|*..*|"") rm -f "$marker" ;;
+            *) [ -f "$STATE_DIR/$mname" ] || rm -f "$marker" ;;
+          esac
+        done
+        rmdir "$entry" 2>/dev/null || true
+      elif [ -f "$entry" ]; then
+        # Legacy single-file pointer.
+        sk=$(cat "$entry" 2>/dev/null || true)
+        case "$sk" in
+          */*|*..*|"") rm -f "$entry" ;;
+          *) [ -f "$STATE_DIR/$sk" ] || rm -f "$entry" ;;
+        esac
+      fi
     done
+    shopt -u nullglob
     ;;
   *)
     echo "usage: $0 {state-dir|ci-dir|state-file|write-rows <target>|clear-flag <key>|drop-state <target>|prune-pointers}" >&2

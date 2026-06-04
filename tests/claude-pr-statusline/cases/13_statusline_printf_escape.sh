@@ -28,4 +28,10 @@ out=$(statusline_input "$REPO" "$tx" | bash "$SL" | strip_ansi)
 # The two characters \ and n must appear literally somewhere
 assert_contains "$out" 'feat\nfoo' "branch with literal backslash-n preserved"
 
+# A real %b bug would have INJECTED a newline mid-line, splitting the row.
+# With one tracked PR + the "current branch unrelated" block + ctx line,
+# expect exactly 4 lines: tracked row, blank separator, current block, ctx%.
+line_count=$(printf '%s\n' "$out" | wc -l)
+[ "$line_count" -le 4 ] || _fail "spurious newline injected — got $line_count lines"
+
 echo "printf escape ok"

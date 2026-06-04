@@ -29,9 +29,9 @@ lines=$(printf '%s\n' "$out" | grep -E '(feat-)')
 first=$(printf '%s\n' "$lines" | sed -n '1p')
 second=$(printf '%s\n' "$lines" | sed -n '2p')
 third=$(printf '%s\n' "$lines" | sed -n '3p')
-assert_contains "$first" "feat-1" "first row is feat-1"
-assert_contains "$second" "feat-2" "second row is feat-2"
-assert_contains "$third" "feat-3" "third row is feat-3"
+assert_contains "$first" "  feat-1  " "first row is feat-1 (column-bounded)"
+assert_contains "$second" "  feat-2  " "second row is feat-2 (column-bounded)"
+assert_contains "$third" "  feat-3  " "third row is feat-3 (column-bounded)"
 
 # Current marker on feat-2
 assert_contains "$second" "▶" "feat-2 marked as current"

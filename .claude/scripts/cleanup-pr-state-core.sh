@@ -28,7 +28,17 @@ for f in "$STATE_DIR"/*; do
   new_rows=""
   while IFS=$'\t' read -r r br_ pr_ base_ num_ old_ts; do
     [ -z "$r" ] && continue
-    json=$(gh pr view "$pr_" --json state 2>/dev/null || true)
+    if json=$(gh pr view "$pr_" --json state 2>/dev/null); then
+      rc=0
+    else
+      rc=$?
+    fi
+    if [ "$rc" -ne 0 ]; then
+      # Transport / auth failure — preserve the row to avoid a network blip
+      # wiping cross-session state. /refresh-pr-state will retry per session.
+      new_rows="${new_rows}${r}"$'\t'"${br_}"$'\t'"${pr_}"$'\t'"${base_}"$'\t'"${num_}"$'\t'"${old_ts}"$'\n'
+      continue
+    fi
     if [ -z "$json" ]; then
       dropped_unreachable=$((dropped_unreachable + 1))
       continue

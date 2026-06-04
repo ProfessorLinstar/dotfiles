@@ -52,10 +52,13 @@ if [ "$tool_name" = "mcp__github__create_pull_request" ]; then
 elif [ "$tool_name" = "Bash" ]; then
   cmd=$(echo "$input" | jq -r '.tool_input.command // empty')
   [ -z "$cmd" ] && exit 0
-  pairs=$(python3 - "$cmd" <<'PY'
-import shlex, sys
+  # Pass the command via env rather than argv: argv hits ARG_MAX on huge
+  # pasted commands; env shares the same budget but keeps the python source
+  # tidy (no need to escape inside `python3 -c "$(...)"`).
+  pairs=$(CMD="$cmd" python3 <<'PY'
+import shlex, os, sys
 
-cmd = sys.argv[1]
+cmd = os.environ.get('CMD', '')
 try:
     tokens = shlex.split(cmd, posix=True, comments=False)
 except ValueError:
@@ -157,7 +160,9 @@ fi
 STATE_DIR="$HOME/.local/state/claude/pr-state"
 CI_DIR="$HOME/.local/state/claude/ci-state"
 CACHE_DIR="$HOME/.local/state/claude/pr-cache"
-mkdir -p "$STATE_DIR" "$STATE_DIR/_by_workspace" "$CI_DIR" "$CACHE_DIR"
+LOG_DIR="$HOME/.local/state/claude/pr-log"
+mkdir -p "$STATE_DIR" "$STATE_DIR/_by_workspace" "$CI_DIR" "$CACHE_DIR" "$LOG_DIR"
+log_file="$LOG_DIR/$session_key"
 state_file="$STATE_DIR/$session_key"
 ts=$(date +%s)
 last_pr_url=""
@@ -199,11 +204,17 @@ while IFS= read -r line; do
   new_row=$(printf '%s\t%s\t%s\t%s\t%s\t%s' "$repo_root" "$pr_head" "$pr_url" "$base_branch" "$number" "$ts")
 
   if [ -f "$state_file" ]; then
-    tmp=$(mktemp)
+    # mktemp in STATE_DIR so the rename is same-filesystem → atomic.
+    tmp=$(mktemp "$STATE_DIR/.tmp.XXXXXX")
     awk -F'\t' -v r="$repo_root" -v b="$pr_head" '$1==r && $2==b {next} {print}' "$state_file" > "$tmp"
     mv "$tmp" "$state_file"
   fi
   printf '%s\n' "$new_row" >> "$state_file"
+
+  # Append-only PR log: durable record of every PR this session has touched,
+  # used by /refresh-pr-state as a seed source resilient to conversation
+  # compaction. TSV: ts, pr_url, repo_root, head, source.
+  printf '%s\t%s\t%s\t%s\thook\n' "$ts" "$pr_url" "$repo_root" "$pr_head" >> "$log_file"
 
   last_pr_url="$pr_url"
   last_repo_root="$repo_root"

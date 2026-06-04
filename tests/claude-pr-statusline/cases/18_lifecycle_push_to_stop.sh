@@ -37,14 +37,23 @@ assert_contains "$out" "feat-life" "row rendered"
 assert_contains "$out" "https://example.com/pr/100" "URL rendered"
 assert_contains "$out" "▶" "current row marked"
 
-# --- Step 3: stop hook nudges (exit 2)
+# --- Step 3: stop hook nudges (soft mode = exit 0 + stderr)
 set +e
 nudge_out=$(printf '{"transcript_path":"%s"}\n' "$tx" | bash "$STOP" 2>&1)
 nudge_rc=$?
 set -e
-assert_equal "$nudge_rc" "2" "stop hook blocks with exit 2"
-assert_contains "$nudge_out" "babysit-ci" "nudge mentions babysit-ci"
+assert_equal "$nudge_rc" "0" "stop hook is non-blocking by default (soft)"
 assert_contains "$nudge_out" "https://example.com/pr/100" "nudge includes PR URL"
+assert_contains "$nudge_out" "/babysit-ci" "nudge mentions /babysit-ci"
+
+# Strict mode reverts to exit 2 + full spec
+set +e
+nudge_out=$(printf '{"transcript_path":"%s"}\n' "$tx" | CLAUDE_PR_STATUSLINE_STRICT=1 bash "$STOP" 2>&1)
+nudge_rc=$?
+set -e
+assert_equal "$nudge_rc" "2" "strict mode blocks with exit 2"
+assert_contains "$nudge_out" "MUST" "strict nudge demands action"
+assert_contains "$nudge_out" "clear-flag" "strict nudge includes clear-flag step"
 
 # --- Step 4: refresh-core clears the flag
 printf '' | bash "$REFRESH" "$STATE_DIR/$sk" > /dev/null

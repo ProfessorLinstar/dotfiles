@@ -72,11 +72,12 @@ When no state exists for the session, a legacy single-line view (`<cwd> <branch>
                   ┌───────────────────────┼──────────────────────┐
                   │                       │                      │
        /refresh-pr-state         /discover-pr-state       /cleanup-pr-state
+       (refresh-pr-state-core.sh)(discover-pr-state-core.sh)(cleanup-pr-state-core.sh)
        Reconcile state with      Walk gh pr list from     Walk every session's
        conversation context.     existing seeds (head/    state, drop closed/
        Drop MERGED/CLOSED.       base chain). Heavy.      merged PRs globally.
-       Add PRs Claude knows
-       about from this session.
+       Add PRs Claude knows      Each slash command's .md is a thin Claude-facing
+       about from this session.  wrapper; the *-core.sh does the deterministic I/O.
 ```
 
 ---
@@ -97,12 +98,15 @@ All under `~/.local/state/claude/` (persistent across `/tmp` wipes and `--resume
   6. `updated_at` — Unix timestamp
 - Dedup key: `(repo_root, branch)`. Pushing the same branch repeatedly updates; switching branches in the same workdir adds new rows.
 
-### `pr-state/_by_workspace/<md5($PWD)>` — workspace pointer
+### `pr-state/_by_workspace/<md5($PWD)>/<session_key>` — workspace markers
 
-- Contents: a single `session_key` line.
-- Written by the statusline on every render.
-- Read by slash commands to find "which session's state file should I touch for this workspace?"
-- Critical: do NOT fall back to "most recent state file" when the pointer is missing or stale — silent cross-session corruption is worse than refusing. Helper returns empty in that case.
+Modern layout: `<md5($PWD)>` is a **directory** of zero-byte `touch`ed markers, one per session that has rendered in that workspace. The mtime is what carries the "most recently active here" signal.
+
+- Touched by the statusline on every render.
+- `pr-state.sh state-file` resolves the workspace dir via `ls -t` and prints the most-recently-touched session's state file path — even if the state file doesn't exist yet (the caller may be about to write it).
+- Two concurrent sessions in the same workspace each leave their own marker — neither overwrites the other.
+- Stale markers (no corresponding state file, mtime older than `CLAUDE_STATUSLINE_MARKER_GRACE`, default 300s) get pruned on the next opportunistic render.
+- Legacy: `<md5($PWD)>` as a regular file containing a single session_key is still recognized (old sessions). Statusline migrates them to dir form on next render.
 
 ### `ci-state/push-pending-<session_key>` — Stop nudge flag
 
@@ -111,10 +115,15 @@ All under `~/.local/state/claude/` (persistent across `/tmp` wipes and `--resume
 - Read by the Stop hook to block Claude from stopping until it spawns `/babysit-ci` and runs `/refresh-pr-state`.
 - Cleared via `pr-state.sh clear-flag <session_key>`.
 
-### `pr-cache/<md5(repo_root)>` — legacy fallback cache
+### `pr-cache/<md5(repo_root)>_<branch>` — fallback cache + auto-seed substrate
 
-- Used only by the statusline's single-line fallback when no session state exists.
-- Lazy-populated via `gh pr view` per repo on first render.
+- Branch-aware: switching branches invalidates the previous lookup.
+- Used by the statusline's single-line fallback when no session state exists, and by the auto-seed path that promotes the legacy view into the multi-line state on first render.
+- Lazy-populated via `gh pr view <branch> --json url` per `(repo, branch)` on first miss; a `.checked` sentinel prevents repeat misses for branches with no PR.
+
+### `pr-log/<session_key>` — append-only PR observation log
+
+TSV (`ts \t pr_url \t repo_root \t head \t source`) of every PR the hook has seen this session. Survives conversation compaction. Read by `/refresh-pr-state` as a durable seed source alongside conversation context.
 
 ---
 
@@ -138,14 +147,16 @@ For each captured head, runs `gh pr view <head> --json url,baseRefName,headRefNa
 
 ### `stop-ci-check.sh` — Stop hook
 
-If `push-pending-<session_key>` exists, exits 2 with stderr telling Claude to:
-1. Spawn a background `/babysit-ci <pr_url>` agent.
-2. Run `/refresh-pr-state`.
-3. Clear the flag via the helper.
+If `push-pending-<session_key>` exists and hasn't expired (`CLAUDE_PR_STATUSLINE_FLAG_TTL`, default 7200s):
+
+- Soft (default): emits a single stderr reminder line and exits 0. Claude can stop. The next `/refresh-pr-state` clears the flag.
+- Strict (`CLAUDE_PR_STATUSLINE_STRICT=1`): exits 2 with the full three-step recovery (`/babysit-ci`, `/refresh-pr-state`, `clear-flag`).
+
+Stale flags (older than TTL) are silently deleted, so an abandoned task can't haunt the next session.
 
 ### `statusline.sh` — statusLine command
 
-Reads JSON from stdin (Claude Code contract: `workspace.current_dir`, `context_window.used_percentage`, `transcript_path`). Always writes the `_by_workspace/<md5($PWD)>` pointer.
+Reads JSON from stdin (Claude Code contract: `workspace.current_dir`, `context_window.used_percentage`, `transcript_path`, falling back to `session_id`). Writes the `_by_workspace/<md5($PWD)>` pointer when transcript, cwd, and `$HOME` are all non-empty.
 
 If session state file exists and non-empty:
 - Stack-sorts within each repo via an embedded awk routine (BFS via `base_branch` parent walk; insertion sort by `(repo, depth)`).
@@ -154,7 +165,7 @@ If session state file exists and non-empty:
 
 Otherwise renders single-line legacy view.
 
-ANSI escape sequences are hardcoded; if you change colors, also update the comment-block convention.
+ANSI escape sequences are pre-built into shell variables (`blue`, `green`, …) and concatenated into rendered lines as plain strings; data fields go through `%s`, never `%b`, so a branch name containing `\n` can't inject layout.
 
 ### `pr-state.sh` — mutation helper
 
@@ -190,11 +201,11 @@ Lean default. Reconciles state with conversation context:
 Heavy, on-demand. Walks `gh pr list --head/--base` from seed rows.
 1. Locate state file.
 2. Seeds in priority order: (a) PRs from conversation context, (b) existing state rows, (c) current branch's PR — last resort only.
-3. Walk up via `base_branch` (one hop = `gh pr list --head <base>`, expects exactly one match), walk down via `branch` (`gh pr list --base <head>`, multiple OK). Cap 20 new PRs/repo.
+3. Walk up via `base_branch` (`gh pr list --head <base> --state open`, expects exactly one match), walk down via `branch` (`gh pr list --base <head> --state open`, multiple OK). Cap 20 new PRs/repo. Stops at main-line branches (`main`/`master`/`develop`/`trunk`).
 4. Write back via helper. Doesn't drop or re-query existing rows.
 
 #### `/cleanup-pr-state`
-Cross-session cleanup. Walks every file in `pr-state/`, queries each PR, drops MERGED/CLOSED, deletes empty session files, prunes dangling workspace pointers.
+Cross-session cleanup. Walks every file in `pr-state/`, queries each PR, drops MERGED/CLOSED, deletes empty session files, prunes dangling workspace pointers (target session file missing). Malformed pointer contents — slashes, `..`, empty — are scrubbed instead by the statusline's opportunistic per-render prune.
 
 ---
 
@@ -237,6 +248,14 @@ Previously documented edges, now fixed:
 - `pr-cache/` branch invalidation (cache key is now `<md5(repo)>_<branch>`).
 - `%b` data injection (all data fields render via `%s`; ANSI is pre-built).
 - Dangling pointer accumulation (statusline opportunistically prunes ~once per 20 renders).
+- `_by_workspace` pointer collisions: replaced with a marker DIRECTORY, one touched file per session — concurrent sessions no longer overwrite each other.
+- `gh` transport outages no longer wipe state: refresh/cleanup distinguish auth/network failure (exit non-zero → preserve row) from "PR not found" (exit 0 → drop).
+- Stop hook is soft by default (one-line reminder, exit 0). Strict blocking via `CLAUDE_PR_STATUSLINE_STRICT=1`. Flags auto-expire after `CLAUDE_PR_STATUSLINE_FLAG_TTL` seconds.
+- Auto-seed: on first render, a branch with an open PR seeds itself into the state file, promoting the legacy single-line view into the multi-line tracked view next tick. Opt out with `CLAUDE_PR_STATUSLINE_AUTOSEED=0`.
+- Append-only `pr-log/<session_key>` records every PR the hook observes, used by `/refresh-pr-state` as a durable seed source resilient to conversation compaction.
+- `pr-state.sh` guard rejects `..` segments anywhere (`$STATE_DIR/../etc/foo` no longer escapes).
+- Hook atomic-writes use `mktemp` under `$STATE_DIR` so the rename stays atomic on container filesystems.
+- Hook passes the bash command to its python parser via env (`$CMD`) rather than argv, avoiding ARG_MAX surprises.
 
 ## Testing
 
@@ -254,7 +273,7 @@ Helpers / mocks:
 - `tests/claude-pr-statusline/lib/assert.sh` — `assert_equal`, `assert_contains`, `diff_snapshot`.
 - `tests/claude-pr-statusline/mocks/{gh,git}` — fixture-driven `gh`, no-op `git push`.
 
-Coverage matrix (19 cases):
+Coverage matrix (26 cases):
 
 | # | Targets | Notes |
 |---|---|---|
@@ -275,7 +294,15 @@ Coverage matrix (19 cases):
 | 16 | `discover-pr-state-core.sh` | Walk up (single match), walk down (multi), `-cached`, stdin seeds, ambiguous bail |
 | 17 | `cleanup-pr-state-core.sh` | All-session sweep, empty file delete, pointer prune |
 | 18 | end-to-end | hook → row → statusline → Stop nudge → refresh-clear → silent Stop |
-| 19 | resume | Same transcript_path = same session_key = state survives; cross-workspace pointers |
+| 19 | resume | Same transcript_path = same session_key = state survives; per-workspace markers |
+| 20 | `post-push-ci.sh` | `gh api -X POST .../pulls -f head=X`, PATCH/non-pulls rejected |
+| 21 | `post-push-ci.sh` | Unmatched quote in command → graceful exit 0, no row |
+| 22 | hook + statusline | `session_id` fallback when `transcript_path` is absent |
+| 23 | `statusline.sh` | ANSI-stripped snapshot diff (canonical 2-PR render) |
+| 24 | `stop-ci-check.sh` | Soft default, strict opt-in, TTL auto-expiry |
+| 25 | `statusline.sh` | Auto-seed: legacy fallback writes state file when current branch has a PR |
+| 26 | hook + refresh-core | Append-only PR log: state survives post-compaction refresh with no stdin seeds |
+| 27 | statusline + helper | Per-session marker dir: concurrent sessions don't collide; legacy pointer migrates |
 
 ## File map
 

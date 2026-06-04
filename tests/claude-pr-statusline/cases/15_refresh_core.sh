@@ -67,4 +67,22 @@ printf '' | bash "$CORE" "$STATE" > /dev/null
 new_base=$(awk -F'\t' '$2 == "feat-1" {print $4}' "$STATE")
 assert_equal "$new_base" "main" "base_branch refreshed"
 
+# --- Transport failure preserves rows (does NOT wipe state)
+# Reset state to 2 OPEN rows.
+cat > "$STATE" <<EOF
+$REPO	feat-1	https://example.com/pr/1	develop	1	100
+$REPO	feat-2	https://example.com/pr/2	feat-1	2	100
+EOF
+# Fixture returns exit 4 (auth error) for every query → transport failure.
+cat > "$GH_MOCK_FIXTURE" <<'JSON'
+{
+  "pr view https://example.com/pr/1 --json url,baseRefName,headRefName,number,state": {"stdout": "", "exit_code": 4},
+  "pr view https://example.com/pr/2 --json url,baseRefName,headRefName,number,state": {"stdout": "", "exit_code": 4}
+}
+JSON
+out=$(printf '' | bash "$CORE" "$STATE")
+line_count=$(wc -l < "$STATE")
+assert_equal "$line_count" "2" "rows preserved on gh transport failure"
+assert_contains "$out" "preserved" "summary flags preserved rows"
+
 echo "refresh-pr-state-core ok"
