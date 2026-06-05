@@ -62,30 +62,7 @@ if [ -n "$transcript" ]; then
     fi
 
     if [ "${CLAUDE_STATUSLINE_FORCE_PRUNE:-0}" = "1" ] || [ $((RANDOM % 20)) -eq 0 ]; then
-      grace="${CLAUDE_STATUSLINE_MARKER_GRACE:-300}"
-      now=$(date +%s)
-      shopt -s nullglob
-      for entry in "$WORKSPACE_DIR"/*; do
-        if [ -d "$entry" ]; then
-          for marker in "$entry"/*; do
-            [ -f "$marker" ] || continue
-            mname=$(basename "$marker")
-            if ! guard_basename "$mname"; then rm -f "$marker"; continue; fi
-            [ -f "$STATE_DIR/$mname" ] && continue  # session is alive
-            # No state file → apply grace period (a brand-new session has
-            # a marker but no state yet; mustn't yank it on the next tick).
-            mtime=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null || echo "$now")
-            [ $((now - mtime)) -gt "$grace" ] && rm -f "$marker"
-          done
-          rmdir "$entry" 2>/dev/null || true
-        elif [ -f "$entry" ]; then
-          # Legacy single-file pointers — no grace (always pointed at a real file).
-          sk=$(cat "$entry" 2>/dev/null || true)
-          if guard_basename "$sk" && [ -f "$STATE_DIR/$sk" ]; then continue; fi
-          rm -f "$entry"
-        fi
-      done
-      shopt -u nullglob
+      prune_workspace_pointers "${CLAUDE_STATUSLINE_MARKER_GRACE:-300}"
     fi
   fi
 fi
@@ -98,8 +75,12 @@ pr_cache_lookup() {
   [ -f "$f" ] && cat "$f"
 }
 
-# Lazy fill the cache. A `.checked` sentinel prevents repeat misses for
-# (repo, branch) pairs that have no PR.
+# Lazy-fill the cache. A `.checked` sentinel prevents repeat misses for
+# (repo, branch) pairs gh confirmed have no PR.
+#
+# We write the sentinel ONLY after gh succeeds (exit 0). A network/auth
+# failure leaves both files absent → next render retries. (Previous bug:
+# touching the sentinel before the gh call made offline misses sticky.)
 pr_cache_fill() {
   local repo="$1" branch="$2"
   [ -z "$branch" ] && return
@@ -107,10 +88,14 @@ pr_cache_fill() {
   local marker="${f}.checked"
   [ -f "$f" ] || [ -f "$marker" ] && return 0
   mkdir -p "$CACHE_DIR"
-  touch "$marker"
   local url
-  url=$(cd "$repo" && gh pr view "$branch" --json url -q .url 2>/dev/null || true)
-  [ -n "$url" ] && echo "$url" > "$f"
+  if url=$(cd "$repo" && gh pr view "$branch" --json url -q .url 2>/dev/null); then
+    if [ -n "$url" ]; then
+      echo "$url" > "$f"
+    else
+      touch "$marker"
+    fi
+  fi
 }
 
 # --- Tracked-stack rendering.
@@ -219,8 +204,7 @@ else
   if [ "${CLAUDE_PR_STATUSLINE_AUTOSEED:-1}" = "1" ] \
      && [ -n "$state_file" ] && [ -n "$pr_url" ] \
      && [ -n "$cur_branch" ] && [ -n "$cur_repo" ]; then
-    if gh_pr_view_full "$cur_branch" "$cur_repo" \
-       && { [ "$PR_STATE" = "OPEN" ] || [ "$PR_STATE" = "DRAFT" ]; }; then
+    if gh_pr_view_full "$cur_branch" "$cur_repo" && pr_is_alive "$PR_STATE"; then
       emit_row "$cur_repo" "$PR_HEAD" "$pr_url" "$PR_BASE" "$PR_NUMBER" >> "$state_file"
     fi
   fi

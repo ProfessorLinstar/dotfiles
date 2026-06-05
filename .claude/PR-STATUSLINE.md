@@ -32,7 +32,7 @@ When no state exists for the session, a legacy single-line view (`<cwd> <branch>
                   │   ├── pr-state/             │
                   │   │   ├── <session_key>     │  TSV: repo, branch,
                   │   │   ├── ...               │       pr_url, base,
-                  │   │   └── _by_workspace/    │       num, updated_at
+                  │   │   └── _by_workspace/    │       num
                   │   │       └── <md5($PWD)>   │  → session_key
                   │   ├── ci-state/             │
                   │   │   └── push-pending-<sk> │  PR URL of last push
@@ -89,13 +89,12 @@ All under `~/.local/state/claude/` (persistent across `/tmp` wipes and `--resume
 ### `pr-state/<session_key>` — per-session TSV
 
 - `session_key = md5(transcript_path)` (or `md5(session_id)` if no transcript).
-- Columns (TAB-separated):
+- Columns (TAB-separated, 5 columns):
   1. `repo_root` — git toplevel of the repo
   2. `branch` — the PR's `headRefName` (typically equals the local branch name when checked out)
   3. `pr_url`
   4. `base_branch` — `baseRefName` with any `-cached` suffix stripped (Spr/restack stack tools target a `develop-cached` mirror)
   5. `number`
-  6. `updated_at` — Unix timestamp
 - Dedup key: `(repo_root, branch)`. Pushing the same branch repeatedly updates; switching branches in the same workdir adds new rows.
 
 ### `pr-state/_by_workspace/<md5($PWD)>/<session_key>` — workspace markers
@@ -120,10 +119,6 @@ Modern layout: `<md5($PWD)>` is a **directory** of zero-byte `touch`ed markers, 
 - Branch-aware: switching branches invalidates the previous lookup.
 - Used by the statusline's single-line fallback when no session state exists, and by the auto-seed path that promotes the legacy view into the multi-line state on first render.
 - Lazy-populated via `gh pr view <branch> --json url` per `(repo, branch)` on first miss; a `.checked` sentinel prevents repeat misses for branches with no PR.
-
-### `pr-log/<session_key>` — append-only PR observation log
-
-TSV (`ts \t pr_url \t repo_root \t head \t source`) of every PR the hook has seen this session. Survives conversation compaction. Read by `/refresh-pr-state` as a durable seed source alongside conversation context.
 
 ---
 
@@ -181,7 +176,7 @@ Single-purpose script invoked by slash commands. Subcommands:
 | `drop-state <target>` | rm a session state file |
 | `prune-pointers` | rm `_by_workspace` pointers whose target session file no longer exists |
 
-Refuses to touch paths outside `state-dir` (`guard_state_path`). Refuses malformed session keys (containing `/` or `..`).
+Refuses to touch paths outside `state-dir` (`_lib.sh:guard_under_state_dir`). Refuses malformed session keys (containing `/` or `..`).
 
 Allowlisted with `Bash(bash ~/.claude/scripts/pr-state.sh:*)` in `settings.json` so slash commands don't trigger per-mutation Bash permission prompts.
 
@@ -252,7 +247,6 @@ Previously documented edges, now fixed:
 - `gh` transport outages no longer wipe state: refresh/cleanup distinguish auth/network failure (exit non-zero → preserve row) from "PR not found" (exit 0 → drop).
 - Stop hook is soft by default (one-line reminder, exit 0). Strict blocking via `CLAUDE_PR_STATUSLINE_STRICT=1`. Flags auto-expire after `CLAUDE_PR_STATUSLINE_FLAG_TTL` seconds.
 - Auto-seed: on first render, a branch with an open PR seeds itself into the state file, promoting the legacy single-line view into the multi-line tracked view next tick. Opt out with `CLAUDE_PR_STATUSLINE_AUTOSEED=0`.
-- Append-only `pr-log/<session_key>` records every PR the hook observes, used by `/refresh-pr-state` as a durable seed source resilient to conversation compaction.
 - `pr-state.sh` guard rejects `..` segments anywhere (`$STATE_DIR/../etc/foo` no longer escapes).
 - Hook atomic-writes use `mktemp` under `$STATE_DIR` so the rename stays atomic on container filesystems.
 - Hook passes the bash command to its python parser via env (`$CMD`) rather than argv, avoiding ARG_MAX surprises.
@@ -301,7 +295,9 @@ Coverage matrix (26 cases):
 | 23 | `statusline.sh` | ANSI-stripped snapshot diff (canonical 2-PR render) |
 | 24 | `stop-ci-check.sh` | Soft default, strict opt-in, TTL auto-expiry |
 | 25 | `statusline.sh` | Auto-seed: legacy fallback writes state file when current branch has a PR |
-| 26 | hook + refresh-core | Append-only PR log: state survives post-compaction refresh with no stdin seeds |
+| 28 | hook parser extras | `;` separator, `(...)` subshell stripping, `-XPOST`, `--method=POST`, MCP `success=false` short-circuit |
+| 29 | statusline cache | `.checked` sentinel NOT stuck after gh network failure |
+| 30 | discover-core | Records `gh-fail(up:...)` / `gh-fail(down:...)` bails on transport failure |
 | 27 | statusline + helper | Per-session marker dir: concurrent sessions don't collide; legacy pointer migrates |
 
 ## File map

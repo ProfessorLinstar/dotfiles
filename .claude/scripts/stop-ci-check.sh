@@ -32,7 +32,7 @@ if [ "$flag_mtime" -gt 0 ] && [ $((now - flag_mtime)) -gt "$ttl" ]; then
   exit 0
 fi
 
-pr_url=$(cat "$FLAG_FILE")
+pr_url=$(head -1 "$FLAG_FILE" 2>/dev/null)
 
 if [ "${CLAUDE_PR_STATUSLINE_STRICT:-0}" = "1" ]; then
   echo "You pushed to a PR but haven't finished post-push follow-up. Before stopping, you MUST:" >&2
