@@ -28,6 +28,9 @@ alias ghp="git stash push -u"
 alias ghl="git stash list"
 alias gmb="git merge-base"
 alias gp="git push"
+gfc () {
+  git fetch origin "$1" && gc "$1"
+}
 gg() {
   cd "$(git rev-parse --show-toplevel)"
 }
@@ -40,6 +43,7 @@ gm() {
 } 
 gmp() { gm "$1" && git push; }
 gamp() { gam "$1" && git push; }
+gnp() { ga . && git commit --no-verify --no-gpg-sign -m "${1:-unsigned-wip}" && git push }
 gb() {
   local rebase="$1"
   local remote="$(git remote show)"
