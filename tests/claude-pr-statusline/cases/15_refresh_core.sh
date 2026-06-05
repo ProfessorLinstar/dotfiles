@@ -55,4 +55,14 @@ out=$(printf '' | bash "$REFRESH" "$STATE")
 assert_equal "$(wc -l < "$STATE")" "2" "rows preserved on gh transport failure"
 assert_contains "$out" "preserved" "summary flags preserved rows"
 
+# --- gh returns exit 0 with empty stdout → row dropped as "unreachable"
+cat > "$STATE" <<EOF
+$REPO	feat-empty	https://example.com/pr/9	develop	9
+EOF
+gh_fixture_reset
+gh_fixture_raw "pr view https://example.com/pr/9 --json url,baseRefName,headRefName,number,state" "" 0
+out=$(printf '' | bash "$REFRESH" "$STATE")
+assert_equal "$(wc -l < "$STATE")" "0" "empty-stdout PR row dropped"
+assert_contains "$out" "unreachable" "summary mentions unreachable"
+
 echo "refresh-pr-state-core ok"

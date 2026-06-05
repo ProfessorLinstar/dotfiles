@@ -16,15 +16,13 @@ set -e
 
 STATE_FILE="${1:-}"
 [ -z "$STATE_FILE" ] && { echo "discover-pr-state-core: missing state file path" >&2; exit 1; }
-case "$STATE_FILE" in "$STATE_DIR"/*) : ;; *) echo "discover-pr-state-core: refusing path outside $STATE_DIR" >&2; exit 1 ;; esac
-
-HELPER="$(dirname "$0")/pr-state.sh"
+guard_under_state_dir "$STATE_FILE" || exit 1
 CAP_PER_REPO=20
 seeds_stdin=$(cat)
 
 declare -A tracked
 declare -A per_repo_count
-all_rows=""
+all_rows=()
 discovered_count=0
 bails=""
 
@@ -33,7 +31,7 @@ ingest_row() {
   local k="${r}|${br_}"
   [ -n "${tracked[$k]:-}" ] && return 1
   tracked[$k]=1
-  all_rows="${all_rows}$(emit_row "$r" "$br_" "$pr_" "$base_" "$num_")"$'\n'
+  all_rows+=("$r"$'\t'"$br_"$'\t'"$pr_"$'\t'"$base_"$'\t'"$num_")
   return 0
 }
 
@@ -64,13 +62,23 @@ walk_up() {
       bails="$bails cap-up($repo)"; return
     fi
     local json
-    json=$(cd "$repo" 2>/dev/null && gh pr list --head "$cur_base" --state open --json url,baseRefName,headRefName,number 2>/dev/null || true)
+    # gh failure (auth, rate-limit, 5xx) is distinct from "no PRs found".
+    # Record the bail rather than silently returning "added=0".
+    if ! json=$(cd "$repo" 2>/dev/null && gh pr list --head "$cur_base" --state open --json url,baseRefName,headRefName,number 2>/dev/null); then
+      dbg "discover: gh fail walk_up $cur_base"
+      bails="$bails gh-fail(up:$cur_base)"; return
+    fi
     [ -z "$json" ] && return
     local count
     count=$(printf '%s' "$json" | jq 'length')
     if [ "$count" != "1" ]; then
-      [ "$count" != "0" ] && bails="$bails up-ambig($cur_base,$count)"
-      return
+      # 0 = empty result (silent return), >1 = ambiguous (record + bail).
+      # Explicit `return 0` matters under `set -e` — a trailing `[ != ]`
+      # that returns 1 would kill the script via the caller.
+      if [ "$count" != "0" ]; then
+        bails="$bails up-ambig($cur_base,$count)"
+      fi
+      return 0
     fi
     local p_url p_base p_head p_num
     IFS=$'\t' read -r p_url p_base p_head p_num < <(
@@ -93,7 +101,10 @@ walk_down() {
     bails="$bails cap-down($repo)"; return
   fi
   local json
-  json=$(cd "$repo" 2>/dev/null && gh pr list --base "$cur_branch" --state open --json url,baseRefName,headRefName,number 2>/dev/null || true)
+  if ! json=$(cd "$repo" 2>/dev/null && gh pr list --base "$cur_branch" --state open --json url,baseRefName,headRefName,number 2>/dev/null); then
+    dbg "discover: gh fail walk_down $cur_branch"
+    bails="$bails gh-fail(down:$cur_branch)"; return
+  fi
   [ -z "$json" ] && return
   # Stream each PR through @tsv and process inline.
   while IFS=$'\t' read -r c_url c_base c_head c_num; do
@@ -114,7 +125,11 @@ while IFS=$'\t' read -r r br_ pr_ base_ num_; do
   walk_down "$r" "$br_"
 done <<< "$seed_set"
 
-printf '%s' "$all_rows" | bash "$HELPER" write-rows "$STATE_FILE"
+if [ "${#all_rows[@]}" -gt 0 ]; then
+  printf '%s\n' "${all_rows[@]}" | write_rows "$STATE_FILE"
+else
+  : | write_rows "$STATE_FILE"
+fi
 
 echo "discover: added=$discovered_count"
 [ -n "$bails" ] && echo "  bails:$bails"

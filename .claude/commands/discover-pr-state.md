@@ -32,12 +32,12 @@ If after these steps you have no seeds AND the state file is empty, report "no s
 
 ```bash
 printf '%s\n' \
-  "$REPO	feat-x	https://example.com/pr/100	develop	100	$(date +%s)" \
+  "$REPO	feat-x	https://example.com/pr/100	develop	100" \
   ... \
   | bash ~/.claude/scripts/discover-pr-state-core.sh "$STATE_FILE"
 ```
 
-Each stdin line is a full TSV row: `repo_root\tbranch\tpr_url\tbase_branch\tnumber\tupdated_at` (TABs, not spaces). The core script:
+Each stdin line is a full TSV row: `repo_root\tbranch\tpr_url\tbase_branch\tnumber` (TABs, not spaces, 5 columns). The core script:
 
 - Walks up from each row's `base_branch` via `gh pr list --head <base>`. Single match = parent found; multi-match = bail.
 - Walks down from each row's `branch` via `gh pr list --base <branch>`. Multi-match is fine; recurses on each.
