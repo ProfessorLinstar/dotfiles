@@ -1,38 +1,29 @@
 #!/bin/bash
 # pr-state.sh: state-dir / ci-dir / state-file / write-rows / drop-state /
 # clear-flag / prune-pointers. Guard rails: refuse paths outside state-dir,
-# refuse malformed session keys.
+# refuse malformed session keys, refuse `..` escape.
 
 set -e
-source "$TEST_ROOT/lib/sandbox.sh"
-source "$TEST_ROOT/lib/assert.sh"
-mk_sandbox
-
-HELPER="$SCRIPTS_ROOT/pr-state.sh"
-STATE_DIR="$HOME/.local/state/claude/pr-state"
-CI_DIR="$HOME/.local/state/claude/ci-state"
+source "$TEST_ROOT/lib/setup.sh"
+test_init
 
 # --- state-dir / ci-dir print correct paths
 assert_equal "$(bash "$HELPER" state-dir)" "$STATE_DIR" "state-dir output"
 assert_equal "$(bash "$HELPER" ci-dir)" "$CI_DIR" "ci-dir output"
-assert_file_exists "$STATE_DIR/_by_workspace/.gitkeep" 2>/dev/null \
-  || [ -d "$STATE_DIR/_by_workspace" ] || _fail "_by_workspace dir not created"
+[ -d "$STATE_DIR/_by_workspace" ] || _fail "_by_workspace dir not created"
 
 # --- state-file without a pointer returns empty
 cd "$HOME"
-out=$(bash "$HELPER" state-file)
-assert_equal "$out" "" "state-file with no pointer must be empty"
+assert_equal "$(bash "$HELPER" state-file)" "" "state-file with no pointer must be empty"
 
 # --- state-file with a valid pointer returns the path
 ws_key=$(md5 "$HOME")
 echo "abc123" > "$STATE_DIR/_by_workspace/$ws_key"
-out=$(cd "$HOME" && bash "$HELPER" state-file)
-assert_equal "$out" "$STATE_DIR/abc123" "state-file with pointer"
+assert_equal "$(cd "$HOME" && bash "$HELPER" state-file)" "$STATE_DIR/abc123" "state-file with pointer"
 
 # --- malformed pointer (slash) is ignored
 echo "../etc/passwd" > "$STATE_DIR/_by_workspace/$ws_key"
-out=$(cd "$HOME" && bash "$HELPER" state-file)
-assert_equal "$out" "" "state-file with slash in pointer is ignored"
+assert_equal "$(cd "$HOME" && bash "$HELPER" state-file)" "" "state-file with slash in pointer is ignored"
 
 # --- write-rows replaces target atomically
 echo "abc123" > "$STATE_DIR/_by_workspace/$ws_key"

@@ -29,9 +29,8 @@
 
 set -e
 
-STATE_DIR="$HOME/.local/state/claude/pr-state"
-CI_DIR="$HOME/.local/state/claude/ci-state"
-mkdir -p "$STATE_DIR" "$STATE_DIR/_by_workspace" "$CI_DIR"
+. "$(dirname "$0")/_lib.sh"
+state_ensure_dirs
 
 guard_state_path() {
   # Reject `..` segments anywhere in the path before they can escape via the
@@ -46,82 +45,63 @@ guard_state_path() {
 }
 
 case "$1" in
-  state-dir)
-    printf '%s\n' "$STATE_DIR"
-    ;;
-  ci-dir)
-    printf '%s\n' "$CI_DIR"
-    ;;
+  state-dir) printf '%s\n' "$STATE_DIR" ;;
+  ci-dir)    printf '%s\n' "$CI_DIR" ;;
   state-file)
     # Returns the path of THIS workspace's session state file. The file may
     # not exist yet — callers writing for the first time will create it.
-    # Never falls back to a session whose state file is missing — bail
-    # rather than silently corrupt.
-    ws=$(echo -n "$PWD" | md5sum | cut -d' ' -f1)
-    target="$STATE_DIR/_by_workspace/$ws"
+    target="$WORKSPACE_DIR/$(md5 "$PWD")"
     if [ -d "$target" ]; then
-      # Modern layout: directory of touched markers. `ls -t` returns names
-      # newest-first; the most-recent statusline render in this PWD wins.
-      # The state file itself may not exist yet — the marker is the proof
-      # of session presence; the caller may be about to write the file.
+      # Modern layout: directory of touched markers. ls -t picks the most
+      # recent statusline render in this PWD.
       newest=$(ls -t "$target" 2>/dev/null | head -1)
-      case "$newest" in
-        */*|*..*|"") ;;
-        *) printf '%s\n' "$STATE_DIR/$newest" ;;
-      esac
+      if guard_basename "$newest"; then
+        printf '%s\n' "$STATE_DIR/$newest"
+      fi
     elif [ -f "$target" ]; then
-      # Legacy single-file pointer.
       session=$(cat "$target")
-      case "$session" in
-        */*|*..*|"") ;;
-        *) printf '%s\n' "$STATE_DIR/$session" ;;
-      esac
+      if guard_basename "$session"; then
+        printf '%s\n' "$STATE_DIR/$session"
+      fi
     fi
     ;;
   write-rows)
-    target="$2"
+    target="${2:-}"
     [ -z "$target" ] && { echo "pr-state.sh write-rows: missing <target>" >&2; exit 1; }
     guard_state_path "$target"
-    tmp=$(mktemp "$STATE_DIR/.tmp.XXXXXX")
-    cat > "$tmp"
-    mv "$tmp" "$target"
+    atomic_write "$target"
     ;;
   clear-flag)
-    key="$2"
+    key="${2:-}"
     [ -z "$key" ] && { echo "pr-state.sh clear-flag: missing <session_key>" >&2; exit 1; }
-    case "$key" in
-      */*|*..*) echo "pr-state.sh clear-flag: invalid key: $key" >&2; exit 1 ;;
-    esac
+    guard_basename "$key" || { echo "pr-state.sh clear-flag: invalid key: $key" >&2; exit 1; }
     rm -f "$CI_DIR/push-pending-$key"
     ;;
   drop-state)
-    target="$2"
+    target="${2:-}"
     [ -z "$target" ] && { echo "pr-state.sh drop-state: missing <target>" >&2; exit 1; }
     guard_state_path "$target"
     rm -f "$target"
     ;;
   prune-pointers)
     shopt -s nullglob
-    for entry in "$STATE_DIR/_by_workspace"/*; do
+    for entry in "$WORKSPACE_DIR"/*; do
       if [ -d "$entry" ]; then
-        # Modern: directory of session markers. Drop markers whose target
-        # session file is gone; rmdir the workspace dir if it ends up empty.
         for marker in "$entry"/*; do
           [ -f "$marker" ] || continue
           mname=$(basename "$marker")
-          case "$mname" in
-            */*|*..*|"") rm -f "$marker" ;;
-            *) [ -f "$STATE_DIR/$mname" ] || rm -f "$marker" ;;
-          esac
+          if guard_basename "$mname" && [ -f "$STATE_DIR/$mname" ]; then
+            continue
+          fi
+          rm -f "$marker"
         done
         rmdir "$entry" 2>/dev/null || true
       elif [ -f "$entry" ]; then
-        # Legacy single-file pointer.
         sk=$(cat "$entry" 2>/dev/null || true)
-        case "$sk" in
-          */*|*..*|"") rm -f "$entry" ;;
-          *) [ -f "$STATE_DIR/$sk" ] || rm -f "$entry" ;;
-        esac
+        if guard_basename "$sk" && [ -f "$STATE_DIR/$sk" ]; then
+          continue
+        fi
+        rm -f "$entry"
       fi
     done
     shopt -u nullglob

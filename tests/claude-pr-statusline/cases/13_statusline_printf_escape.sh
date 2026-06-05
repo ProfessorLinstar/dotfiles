@@ -1,37 +1,21 @@
 #!/bin/bash
-# Data fields containing backslash escapes should not be interpreted as
-# printf %b escape sequences. A branch literally containing a backslash
-# should render as-is, not inject newlines/tabs/etc.
+# Data fields containing backslash escapes must NOT be interpreted as
+# printf %b escape sequences.
 
 set -e
-source "$TEST_ROOT/lib/sandbox.sh"
-source "$TEST_ROOT/lib/assert.sh"
-mk_sandbox
+source "$TEST_ROOT/lib/setup.sh"
+test_init escape
 
-SL="$SCRIPTS_ROOT/statusline.sh"
-STATE_DIR="$HOME/.local/state/claude/pr-state"
-mkdir -p "$STATE_DIR"
-
-tx=$(mk_session escape)
-sk=$(session_key_of "$tx")
-
-# A path with literal \n in it (legal in unix). The statusline must not
-# turn this into an actual newline when rendering.
-weird_path="$REPO"
-cat > "$STATE_DIR/$sk" <<EOF
-${weird_path}	feat\nfoo	https://example.com/pr/1	develop	1	100
-EOF
+seed_state_row "$REPO" 'feat\nfoo' https://example.com/pr/1 develop 1
 
 (cd "$REPO" && git checkout -q -b unrelated)
-out=$(statusline_input "$REPO" "$tx" | bash "$SL" | strip_ansi)
+out=$(render_status)
 
 # The two characters \ and n must appear literally somewhere
 assert_contains "$out" 'feat\nfoo' "branch with literal backslash-n preserved"
 
-# A real %b bug would have INJECTED a newline mid-line, splitting the row.
-# With one tracked PR + the "current branch unrelated" block + ctx line,
-# expect exactly 4 lines: tracked row, blank separator, current block, ctx%.
-line_count=$(printf '%s\n' "$out" | wc -l)
-[ "$line_count" -le 4 ] || _fail "spurious newline injected — got $line_count lines"
+# A real %b bug would have INJECTED a newline mid-line. Expect ≤4 lines:
+# tracked row, blank separator, current block, ctx%.
+[ "$(printf '%s\n' "$out" | wc -l)" -le 4 ] || _fail "spurious newline injected"
 
 echo "printf escape ok"

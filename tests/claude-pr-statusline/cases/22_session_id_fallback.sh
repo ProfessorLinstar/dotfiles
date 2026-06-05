@@ -1,21 +1,11 @@
 #!/bin/bash
-# When transcript_path is absent, both hook and statusline derive the
-# session_key from session_id instead. State files use the same key.
+# session_id fallback when transcript_path is absent.
 
 set -e
-source "$TEST_ROOT/lib/sandbox.sh"
-source "$TEST_ROOT/lib/assert.sh"
-mk_sandbox
+source "$TEST_ROOT/lib/setup.sh"
+test_init  # no session needed — using session_id directly
 
-HOOK="$SCRIPTS_ROOT/post-push-ci.sh"
-SL="$SCRIPTS_ROOT/statusline.sh"
-STATE_DIR="$HOME/.local/state/claude/pr-state"
-
-cat > "$GH_MOCK_FIXTURE" <<'JSON'
-{
-  "pr view feat-sid --json url,baseRefName,headRefName,number,state": "{\"url\":\"https://example.com/pr/55\",\"baseRefName\":\"develop\",\"headRefName\":\"feat-sid\",\"number\":55,\"state\":\"OPEN\"}"
-}
-JSON
+gh_fixture_pr feat-sid OPEN develop 55
 
 session_id="abc-123-fake-session"
 sk=$(md5 "$session_id")

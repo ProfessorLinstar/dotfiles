@@ -13,13 +13,14 @@
 # 2h) auto-expire and are deleted silently — protects long-running shells
 # from being nagged about stale state across reboots / abandoned tasks.
 
-input=$(cat)
+. "$(dirname "$0")/_lib.sh"
 
+input=$(cat)
 transcript=$(echo "$input" | jq -r '.transcript_path // .session_id // empty')
 [ -z "$transcript" ] && exit 0
-session_key=$(echo -n "$transcript" | md5sum | cut -d' ' -f1)
+session_key=$(md5 "$transcript")
 
-FLAG_FILE="$HOME/.local/state/claude/ci-state/push-pending-${session_key}"
+FLAG_FILE="$CI_DIR/push-pending-${session_key}"
 [ ! -f "$FLAG_FILE" ] && exit 0
 
 # Auto-expire stale flags.
@@ -42,6 +43,5 @@ if [ "${CLAUDE_PR_STATUSLINE_STRICT:-0}" = "1" ]; then
   exit 2
 fi
 
-# Soft: one-line reminder, non-blocking.
 echo "[pr-statusline] push pending: ${pr_url} — run /babysit-ci to monitor CI, /refresh-pr-state to update tracked state" >&2
 exit 0
