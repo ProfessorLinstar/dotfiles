@@ -8,42 +8,33 @@
 # back to the current branch for plain `git push`. Refuses to track a PR
 # when the tool reported failure.
 #
-# State lives under ~/.local/state/claude/ so it persists across /tmp
-# wipes (container restarts, reboots) and survives `claude --resume`.
-#
 # Side effects:
-# 1. Writes ~/.local/state/claude/ci-state/push-pending-<session_key> — the
-#    Stop hook uses this to nudge Claude into spawning /babysit-ci and
-#    running /refresh-pr-state before ending the turn.
-# 2. Appends/updates rows in ~/.local/state/claude/pr-state/<session_key>
-#    recording (repo_root, branch, pr_url, base_branch, number, updated_at).
-#    The statusline reads this to show every PR the session is tracking.
-# 3. Caches PR URL per-(repo,branch) at
-#    ~/.local/state/claude/pr-cache/<md5(repo_root)>_<branch> for the
-#    statusline's single-line fallback when no session state exists.
+# 1. ci-state/push-pending-<session_key>  — Stop hook nudge flag.
+# 2. pr-state/<session_key>               — TSV row per tracked PR.
+# 3. pr-cache/<md5(repo)>_<branch>        — fallback PR URL cache.
+# 4. pr-log/<session_key>                 — append-only observation log.
+
+. "$(dirname "$0")/_lib.sh"
 
 input=$(cat)
-
 tool_name=$(echo "$input" | jq -r '.tool_name // empty')
 
-# Skip when the tool itself failed — avoids tracking PRs from `gh pr create`
-# invocations that errored out (already-exists, permission denied, …).
-# `//` treats `false` as absent, so check the type explicitly.
-tool_success=$(echo "$input" | jq -r 'if .tool_response.success == false then "false" else "" end')
-if [ "$tool_success" = "false" ]; then
+# Skip when the tool itself failed. (`//` treats false as absent — check
+# the type explicitly.)
+if [ "$(echo "$input" | jq -r 'if .tool_response.success == false then "false" else "" end')" = "false" ]; then
   exit 0
 fi
 
 transcript=$(echo "$input" | jq -r '.transcript_path // .session_id // empty')
 [ -z "$transcript" ] && exit 0
-session_key=$(echo -n "$transcript" | md5sum | cut -d' ' -f1)
+session_key=$(md5 "$transcript")
 
 cwd=$(echo "$input" | jq -r '.cwd // empty')
 [ -z "$cwd" ] && exit 0
 
-# Pairs are emitted by the parser as `<repo_override_or_empty>\t<head_or_empty>`
-# on stdout, one per line. An empty head means "use the cwd's current branch"
-# (covers plain `git push` and `gh pr create` with no explicit head).
+# Pairs emitted by the parser as `<repo_override_or_empty>\t<head_or_empty>`.
+# Empty head means "use the cwd's current branch" (covers plain `git push`
+# and `gh pr create` with no explicit head).
 pairs=""
 if [ "$tool_name" = "mcp__github__create_pull_request" ]; then
   mcp_head=$(echo "$input" | jq -r '.tool_input.head // empty')
@@ -52,9 +43,6 @@ if [ "$tool_name" = "mcp__github__create_pull_request" ]; then
 elif [ "$tool_name" = "Bash" ]; then
   cmd=$(echo "$input" | jq -r '.tool_input.command // empty')
   [ -z "$cmd" ] && exit 0
-  # Pass the command via env rather than argv: argv hits ARG_MAX on huge
-  # pasted commands; env shares the same budget but keeps the python source
-  # tidy (no need to escape inside `python3 -c "$(...)"`).
   pairs=$(CMD="$cmd" python3 <<'PY'
 import shlex, os, sys
 
@@ -64,9 +52,6 @@ try:
 except ValueError:
     sys.exit(0)
 
-# Split on top-level boolean/sequence operators. shlex preserves these as
-# distinct tokens because they're surrounded by whitespace; sub-commands
-# concatenated with no space (`a&&b`) are uncommon enough to ignore.
 SEPS = {'&&', '||', ';', '|'}
 subs, cur = [], []
 for t in tokens:
@@ -79,7 +64,6 @@ if cur:
     subs.append(cur)
 
 def extract_gh_create(args):
-    """Return list of head branches from `gh pr create` args."""
     heads = []
     i = 0
     while i < len(args):
@@ -96,9 +80,7 @@ def extract_gh_create(args):
     return heads
 
 def extract_gh_api_pulls(args):
-    """Return list of `head=...` values from `gh api ... -X POST .../pulls`."""
-    has_post = False
-    has_pulls = False
+    has_post = has_pulls = False
     heads = []
     i = 0
     while i < len(args):
@@ -123,7 +105,6 @@ for sub in subs:
     if not sub:
         continue
     if sub[0] == 'cd' and len(sub) >= 2:
-        # The cd's effect carries into subsequent sub-commands in this chain.
         cd_override = sub[1]
         continue
     if len(sub) >= 3 and sub[0] == 'gh' and sub[1] == 'pr' and sub[2] == 'create':
@@ -132,16 +113,13 @@ for sub in subs:
             for h in heads:
                 out.append((cd_override or '', h))
         else:
-            # gh pr create with no -H → defaults to current branch
             out.append((cd_override or '', ''))
     elif len(sub) >= 2 and sub[0] == 'gh' and sub[1] == 'api':
-        heads = extract_gh_api_pulls(sub[2:])
-        for h in heads:
+        for h in extract_gh_api_pulls(sub[2:]):
             out.append((cd_override or '', h))
     elif len(sub) >= 2 and sub[0] == 'git' and sub[1] == 'push':
         out.append((cd_override or '', ''))
 
-# Dedup preserving order
 seen = set()
 for repo, head in out:
     key = (repo, head)
@@ -157,75 +135,50 @@ fi
 
 [ -z "$pairs" ] && exit 0
 
-STATE_DIR="$HOME/.local/state/claude/pr-state"
-CI_DIR="$HOME/.local/state/claude/ci-state"
-CACHE_DIR="$HOME/.local/state/claude/pr-cache"
-LOG_DIR="$HOME/.local/state/claude/pr-log"
-mkdir -p "$STATE_DIR" "$STATE_DIR/_by_workspace" "$CI_DIR" "$CACHE_DIR" "$LOG_DIR"
+state_ensure_dirs
 log_file="$LOG_DIR/$session_key"
 state_file="$STATE_DIR/$session_key"
-ts=$(date +%s)
 last_pr_url=""
 last_repo_root=""
 last_pr_head=""
 
 while IFS= read -r line; do
-  # Split on first TAB. `read` with tab-as-IFS would strip leading tabs
-  # (because tab is IFS whitespace), losing the empty-repo case.
+  # Split on first TAB — read with tab IFS would strip leading tabs.
   repo_override="${line%%$'\t'*}"
   head_branch="${line#*$'\t'}"
-  # Per-pair repo: cd-override (if any) else the hook's cwd.
   pair_cwd="${repo_override:-$cwd}"
   repo_root=$(git -C "$pair_cwd" rev-parse --show-toplevel 2>/dev/null)
   [ -z "$repo_root" ] && repo_root="$pair_cwd"
 
-  # Empty head → use the current branch of repo_root.
   if [ -z "$head_branch" ]; then
     head_branch=$(git -C "$repo_root" --no-optional-locks symbolic-ref --short HEAD 2>/dev/null)
     [ -z "$head_branch" ] && continue
   fi
 
-  pr_json=$(cd "$repo_root" && gh pr view "$head_branch" --json url,baseRefName,headRefName,number,state 2>/dev/null)
-  [ -z "$pr_json" ] && continue
+  gh_pr_view_full "$head_branch" "$repo_root" || continue
+  [ -z "$PR_URL" ] && continue
+  case "$PR_STATE" in OPEN|DRAFT) ;; *) continue ;; esac
 
-  state_=$(echo "$pr_json" | jq -r '.state // empty')
-  if [ "$state_" != "OPEN" ] && [ "$state_" != "DRAFT" ]; then
-    continue
-  fi
-
-  pr_url=$(echo "$pr_json" | jq -r '.url // empty')
-  base_branch=$(echo "$pr_json" | jq -r '.baseRefName // empty')
-  base_branch="${base_branch%-cached}"
-  pr_head=$(echo "$pr_json" | jq -r '.headRefName // empty')
-  number=$(echo "$pr_json" | jq -r '.number // empty')
-  [ -z "$pr_url" ] && continue
-  [ -z "$pr_head" ] && pr_head="$head_branch"
-
-  new_row=$(printf '%s\t%s\t%s\t%s\t%s\t%s' "$repo_root" "$pr_head" "$pr_url" "$base_branch" "$number" "$ts")
+  new_row=$(emit_row "$repo_root" "$PR_HEAD" "$PR_URL" "$PR_BASE" "$PR_NUMBER")
 
   if [ -f "$state_file" ]; then
-    # mktemp in STATE_DIR so the rename is same-filesystem → atomic.
-    tmp=$(mktemp "$STATE_DIR/.tmp.XXXXXX")
-    awk -F'\t' -v r="$repo_root" -v b="$pr_head" '$1==r && $2==b {next} {print}' "$state_file" > "$tmp"
-    mv "$tmp" "$state_file"
+    awk -F'\t' -v r="$repo_root" -v b="$PR_HEAD" '$1==r && $2==b {next} {print}' "$state_file" \
+      | atomic_write "$state_file"
   fi
   printf '%s\n' "$new_row" >> "$state_file"
 
-  # Append-only PR log: durable record of every PR this session has touched,
-  # used by /refresh-pr-state as a seed source resilient to conversation
-  # compaction. TSV: ts, pr_url, repo_root, head, source.
-  printf '%s\t%s\t%s\t%s\thook\n' "$ts" "$pr_url" "$repo_root" "$pr_head" >> "$log_file"
+  # Append-only PR log: durable seed source for /refresh-pr-state, survives
+  # conversation compaction. TSV: ts, pr_url, repo_root, head, source.
+  printf '%s\t%s\t%s\t%s\thook\n' "$(date +%s)" "$PR_URL" "$repo_root" "$PR_HEAD" >> "$log_file"
 
-  last_pr_url="$pr_url"
+  last_pr_url="$PR_URL"
   last_repo_root="$repo_root"
-  last_pr_head="$pr_head"
+  last_pr_head="$PR_HEAD"
 done <<< "$pairs"
 
 if [ -n "$last_pr_url" ]; then
   echo "$last_pr_url" > "$CI_DIR/push-pending-$session_key"
-  # Branch-aware cache key so switching branches doesn't surface a stale URL.
-  cache_key=$(printf '%s' "$last_repo_root" | md5sum | cut -d' ' -f1)
-  echo "$last_pr_url" > "$CACHE_DIR/${cache_key}_${last_pr_head}"
+  echo "$last_pr_url" > "$CACHE_DIR/$(md5 "$last_repo_root")_${last_pr_head}"
 fi
 
 exit 0

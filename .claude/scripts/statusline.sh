@@ -1,18 +1,21 @@
 #!/bin/bash
 # Claude Code statusLine script.
-# Renders the per-session list of PRs Claude is tracking, with the
-# currently-checked-out (repo, branch) highlighted. Falls back to a
-# single-line cwd/branch/pr view when no session state exists.
+# Renders the per-session list of PRs Claude is tracking with the current
+# (repo, branch) highlighted. Falls back to a single-line view when no
+# session state exists. Auto-seeds the state file when fallback finds a PR.
 #
-# Maintains ~/.local/state/claude/pr-state/_by_workspace/<md5(workspace)>
-# as a pointer to the active session_key so /refresh-pr-state and other
-# slash commands can find this session's state file.
+# Maintains _by_workspace/<md5($PWD)>/<session_key> as a touched marker so
+# slash commands can resolve "which session's state file is active here".
 #
-# Tunables (env vars):
-#   CLAUDE_STATUSLINE_MAX_ROWS  Max tracked rows before "+N more" cap. (10)
+# Tunables:
+#   CLAUDE_STATUSLINE_MAX_ROWS       Max tracked rows before "+N more". (10)
+#   CLAUDE_STATUSLINE_FORCE_PRUNE    Force prune on every render. (0)
+#   CLAUDE_STATUSLINE_MARKER_GRACE   Marker grace period in seconds. (300)
+#   CLAUDE_PR_STATUSLINE_AUTOSEED    Auto-seed state from fallback. (1)
+
+. "$(dirname "$0")/_lib.sh"
 
 input=$(cat)
-
 full_cwd=$(echo "$input" | jq -r '.workspace.current_dir')
 used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 used_int=$([ -n "$used" ] && printf '%.0f' "$used" || echo '')
@@ -33,80 +36,53 @@ shorten() {
   fi
 }
 
-# ANSI palette (printed via %s, never %b, so the data we print can never
-# inject escapes itself).
+# ANSI palette. Data fields always go through %s so they can't inject escapes.
 ESC=$'\033'
-blue="${ESC}[34m"
-green="${ESC}[32m"
-purple="${ESC}[35m"
-dim="${ESC}[2m"
-bold="${ESC}[1m"
-reset="${ESC}[0m"
+blue="${ESC}[34m"; green="${ESC}[32m"; purple="${ESC}[35m"
+dim="${ESC}[2m";   bold="${ESC}[1m";   reset="${ESC}[0m"
 
 MAX_ROWS="${CLAUDE_STATUSLINE_MAX_ROWS:-10}"
 
+# --- Workspace marker + opportunistic prune.
 session_key=""
-STATE_DIR="$HOME/.local/state/claude/pr-state"
 state_file=""
 if [ -n "$transcript" ]; then
-  session_key=$(printf '%s' "$transcript" | md5sum | cut -d' ' -f1)
+  session_key=$(md5 "$transcript")
   state_file="$STATE_DIR/$session_key"
   if [ -n "$full_cwd" ] && [ -n "$HOME" ]; then
-    ws_key=$(printf '%s' "$full_cwd" | md5sum | cut -d' ' -f1)
-    ws_dir="$STATE_DIR/_by_workspace/$ws_key"
-    # Modern layout: workspace is a directory of touched session markers.
-    # `touch` updates mtime, so `ls -t` returns the most-recent renderer
-    # first. Two concurrent sessions in the same PWD no longer overwrite
-    # each other.
+    ws_dir="$WORKSPACE_DIR/$(md5 "$full_cwd")"
     if mkdir -p "$ws_dir" 2>/dev/null; then
       touch "$ws_dir/$session_key" 2>/dev/null || true
     elif [ -f "$ws_dir" ]; then
-      # Legacy single-file pointer here: migrate by replacing with the dir.
-      # `rm` + `mkdir` is racy across two sessions; whichever wins gets to
-      # do the migration, the other's touch may fail silently — acceptable
-      # because the loser's session_key just doesn't get marked this tick.
+      # Legacy single-file pointer here: migrate to dir form. Racy across
+      # concurrent sessions but acceptable — loser's marker just doesn't
+      # get set this tick.
       rm -f "$ws_dir" 2>/dev/null && mkdir -p "$ws_dir" 2>/dev/null \
         && touch "$ws_dir/$session_key" 2>/dev/null || true
     fi
 
-    # Opportunistically prune dangling pointers (roughly once per 20 renders;
-    # CLAUDE_STATUSLINE_FORCE_PRUNE=1 forces on every render — used by tests).
-    #
-    # New-layout markers get a grace period: a brand-new session has a
-    # marker but no state file yet, and we mustn't yank its marker on the
-    # render *immediately after* the first one. Markers older than
-    # CLAUDE_STATUSLINE_MARKER_GRACE (default 300s) with no state file
-    # are considered dead and dropped.
     if [ "${CLAUDE_STATUSLINE_FORCE_PRUNE:-0}" = "1" ] || [ $((RANDOM % 20)) -eq 0 ]; then
       grace="${CLAUDE_STATUSLINE_MARKER_GRACE:-300}"
       now=$(date +%s)
       shopt -s nullglob
-      for entry in "$STATE_DIR/_by_workspace"/*; do
+      for entry in "$WORKSPACE_DIR"/*; do
         if [ -d "$entry" ]; then
           for marker in "$entry"/*; do
             [ -f "$marker" ] || continue
             mname=$(basename "$marker")
-            case "$mname" in
-              */*|*..*|"") rm -f "$marker"; continue ;;
-            esac
-            if [ -f "$STATE_DIR/$mname" ]; then
-              continue  # session is alive (has a state file)
-            fi
-            # No state file. Apply grace.
+            if ! guard_basename "$mname"; then rm -f "$marker"; continue; fi
+            [ -f "$STATE_DIR/$mname" ] && continue  # session is alive
+            # No state file → apply grace period (a brand-new session has
+            # a marker but no state yet; mustn't yank it on the next tick).
             mtime=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null || echo "$now")
-            if [ $((now - mtime)) -gt "$grace" ]; then
-              rm -f "$marker"
-            fi
+            [ $((now - mtime)) -gt "$grace" ] && rm -f "$marker"
           done
           rmdir "$entry" 2>/dev/null || true
         elif [ -f "$entry" ]; then
-          # Legacy single-file pointers — no grace; they always pointed at
-          # a real state file by construction.
+          # Legacy single-file pointers — no grace (always pointed at a real file).
           sk=$(cat "$entry" 2>/dev/null || true)
-          case "$sk" in
-            */*|*..*|"") rm -f "$entry" ;;
-            *) [ -f "$STATE_DIR/$sk" ] || rm -f "$entry" ;;
-          esac
+          if guard_basename "$sk" && [ -f "$STATE_DIR/$sk" ]; then continue; fi
+          rm -f "$entry"
         fi
       done
       shopt -u nullglob
@@ -114,41 +90,33 @@ if [ -n "$transcript" ]; then
   fi
 fi
 
-# Pick a PR-cache URL for (repo, branch). Empty if not yet known.
+# --- pr-cache helpers (branch-aware key).
+pr_cache_path() { printf '%s/%s_%s' "$CACHE_DIR" "$(md5 "$1")" "$2"; }
+
 pr_cache_lookup() {
-  local repo="$1" branch="$2"
-  local key
-  key=$(printf '%s' "$repo" | md5sum | cut -d' ' -f1)
-  local f="$HOME/.local/state/claude/pr-cache/${key}_${branch}"
-  if [ -f "$f" ]; then
-    cat "$f"
-  fi
+  local f; f=$(pr_cache_path "$1" "$2")
+  [ -f "$f" ] && cat "$f"
 }
 
-# Lazy fill the cache for (repo, branch) on first miss. Marker file prevents
-# repeated misses for the same (repo, branch) when no PR exists.
+# Lazy fill the cache. A `.checked` sentinel prevents repeat misses for
+# (repo, branch) pairs that have no PR.
 pr_cache_fill() {
   local repo="$1" branch="$2"
   [ -z "$branch" ] && return
-  local key
-  key=$(printf '%s' "$repo" | md5sum | cut -d' ' -f1)
-  local dir="$HOME/.local/state/claude/pr-cache"
-  local f="$dir/${key}_${branch}"
-  local marker="$dir/${key}_${branch}.checked"
-  if [ -f "$f" ] || [ -f "$marker" ]; then
-    return
-  fi
-  mkdir -p "$dir"
+  local f; f=$(pr_cache_path "$repo" "$branch")
+  local marker="${f}.checked"
+  [ -f "$f" ] || [ -f "$marker" ] && return 0
+  mkdir -p "$CACHE_DIR"
   touch "$marker"
   local url
   url=$(cd "$repo" && gh pr view "$branch" --json url -q .url 2>/dev/null || true)
-  if [ -n "$url" ]; then
-    echo "$url" > "$f"
-  fi
+  [ -n "$url" ] && echo "$url" > "$f"
 }
 
+# --- Tracked-stack rendering.
 if [ -n "$state_file" ] && [ -s "$state_file" ]; then
-  # Stack-sort rows by (repo asc, stack depth asc).
+  # Stack-sort: BFS the base-branch parent chain to compute per-row depth,
+  # then insertion-sort by (repo asc, depth asc).
   sorted=$(awk -F'\t' '
     { lines[NR]=$0; repo[NR]=$1; br[NR]=$2; base[NR]=$4 }
     END {
@@ -166,8 +134,7 @@ if [ -n "$state_file" ] && [ -s "$state_file" ]; then
           cur = parent; d++
           if (d > n) break
         }
-        depth[i] = d
-        order[i] = i
+        depth[i] = d; order[i] = i
       }
       for (i = 2; i <= n; i++) {
         j = i
@@ -182,139 +149,87 @@ if [ -n "$state_file" ] && [ -s "$state_file" ]; then
     }
   ' "$state_file")
 
-  # Collect rows into arrays first so we can apply the vertical cap and find
-  # the current row's index regardless of position.
-  rows_repo=()
-  rows_branch=()
-  rows_url=()
-  rows_base=()
-  rows_num=()
+  # Read sorted rows into parallel arrays; record current row's index.
+  rows_repo=(); rows_branch=(); rows_url=()
   cur_idx=-1
-  while IFS=$'\t' read -r r br_ pr_ base_ num_ ts_; do
+  while IFS=$'\t' read -r r br_ pr_ _base _num; do
     [ -z "$r" ] && continue
-    rows_repo+=("$r")
-    rows_branch+=("$br_")
-    rows_url+=("$pr_")
-    rows_base+=("$base_")
-    rows_num+=("$num_")
+    rows_repo+=("$r"); rows_branch+=("$br_"); rows_url+=("$pr_")
     if [ "$r" = "$cur_repo" ] && [ "$br_" = "$cur_branch" ]; then
       cur_idx=$(( ${#rows_repo[@]} - 1 ))
     fi
   done <<< "$sorted"
-
   n=${#rows_repo[@]}
 
-  # Build the index list of rows to render under the cap.
+  # Apply vertical cap; swap current row into visible window if needed.
   visible=()
+  truncated_count=0
   if [ "$n" -le "$MAX_ROWS" ]; then
     for ((i=0; i<n; i++)); do visible+=("$i"); done
-    truncated_count=0
   else
     keep=$((MAX_ROWS - 1))
     for ((i=0; i<keep; i++)); do visible+=("$i"); done
     truncated_count=$((n - keep))
-    # If the current row is outside the visible window, swap it into the
-    # last visible slot so the user can always see "where they are".
     if [ "$cur_idx" -ge 0 ]; then
       in_visible=0
-      for v in "${visible[@]}"; do
-        [ "$v" = "$cur_idx" ] && in_visible=1
-      done
-      if [ "$in_visible" -eq 0 ] && [ "$keep" -gt 0 ]; then
-        visible[$((keep-1))]=$cur_idx
-      fi
+      for v in "${visible[@]}"; do [ "$v" = "$cur_idx" ] && in_visible=1; done
+      [ "$in_visible" -eq 0 ] && [ "$keep" -gt 0 ] && visible[$((keep-1))]=$cur_idx
     fi
   fi
 
-  out=""
+  # Build the output as an array; final printf '%s\n' joins it cleanly.
+  lines=()
   shown_current=0
   for vi in "${visible[@]}"; do
-    r="${rows_repo[$vi]}"
-    br_="${rows_branch[$vi]}"
-    pr_="${rows_url[$vi]}"
+    r="${rows_repo[$vi]}"; br_="${rows_branch[$vi]}"; pr_="${rows_url[$vi]}"
     short_r=$(shorten "$r")
-
     if [ "$r" = "$cur_repo" ] && [ "$br_" = "$cur_branch" ]; then
       shown_current=1
-      line="${bold}${blue}▶ ${short_r}${reset}  ${green}${br_}${reset}  ${purple}${pr_}${reset}"
+      lines+=("${bold}${blue}▶ ${short_r}${reset}  ${green}${br_}${reset}  ${purple}${pr_}${reset}")
     else
-      line="${dim}  ${short_r}  ${br_}  ${pr_}${reset}"
+      lines+=("${dim}  ${short_r}  ${br_}  ${pr_}${reset}")
     fi
-    out="${out}${line}"$'\n'
   done
+  [ "$truncated_count" -gt 0 ] && lines+=("${dim}  … +${truncated_count} more${reset}")
 
-  if [ "$truncated_count" -gt 0 ]; then
-    out="${out}${dim}  … +${truncated_count} more${reset}"$'\n'
-  fi
-
-  # If the current (repo, branch) isn't part of the tracked stack at all,
-  # render it as a separate block below with a blank-line separator.
+  # Current (repo, branch) outside the tracked stack → render below with a blank-line separator.
   if [ "$shown_current" -eq 0 ] && [ -n "$cur_repo" ]; then
     pr_cache_fill "$cur_repo" "$cur_branch"
     cur_pr=$(pr_cache_lookup "$cur_repo" "$cur_branch")
-
     short_cur=$(shorten "$cur_repo")
     br_label="${cur_branch:-no branch}"
+    lines+=("")  # blank separator
     if [ -n "$cur_pr" ]; then
-      cur_row="${bold}${blue}▶ ${short_cur}${reset}  ${green}${br_label}${reset}  ${purple}${cur_pr}${reset}"
+      lines+=("${bold}${blue}▶ ${short_cur}${reset}  ${green}${br_label}${reset}  ${purple}${cur_pr}${reset}")
     else
-      cur_row="${bold}${blue}▶ ${short_cur}${reset}  ${green}${br_label}${reset}  ${dim}(no PR)${reset}"
+      lines+=("${bold}${blue}▶ ${short_cur}${reset}  ${green}${br_label}${reset}  ${dim}(no PR)${reset}")
     fi
-    out="${out}"$'\n'"${cur_row}"$'\n'
   fi
 
-  ctx_line=""
-  if [ -n "$used_int" ]; then
-    ctx_line="${dim}${used_int}%${reset}"
-  fi
-
-  printf '%s' "${out%$'\n'}"
-  if [ -n "$ctx_line" ]; then
-    printf '\n%s' "$ctx_line"
-  fi
+  [ -n "$used_int" ] && lines+=("${dim}${used_int}%${reset}")
+  printf '%s\n' "${lines[@]}"
 else
-  # Fallback: single-line legacy view.
+  # --- Fallback: single-line legacy view, with auto-seed.
   cwd_short=$(basename "$full_cwd")
   pr_cache_fill "$cur_repo" "$cur_branch"
   pr_url=$(pr_cache_lookup "$cur_repo" "$cur_branch")
 
-  # Auto-seed: if there's a session and we found a PR for the current
-  # (repo, branch), promote it into the state file so the next render
-  # uses the multi-line view. Disable with CLAUDE_PR_STATUSLINE_AUTOSEED=0.
-  # Only seeds when no state exists yet (this is the first render in the
-  # session's life — or the first render for a new branch with a PR).
+  # Auto-seed: promote the fallback discovery into a tracked state row so
+  # the next render uses the multi-line view.
   if [ "${CLAUDE_PR_STATUSLINE_AUTOSEED:-1}" = "1" ] \
-     && [ -n "$state_file" ] \
-     && [ -n "$pr_url" ] \
-     && [ -n "$cur_branch" ] \
-     && [ -n "$cur_repo" ]; then
-    # Look up full PR metadata. Best-effort — failures stay silent.
-    if seed_json=$(cd "$cur_repo" && gh pr view "$cur_branch" --json url,baseRefName,headRefName,number,state 2>/dev/null); then
-      state_=$(printf '%s' "$seed_json" | jq -r '.state // empty' 2>/dev/null || true)
-      if [ "$state_" = "OPEN" ] || [ "$state_" = "DRAFT" ]; then
-        base=$(printf '%s' "$seed_json" | jq -r '.baseRefName // empty')
-        base="${base%-cached}"
-        head=$(printf '%s' "$seed_json" | jq -r '.headRefName // empty')
-        number=$(printf '%s' "$seed_json" | jq -r '.number // empty')
-        [ -z "$head" ] && head="$cur_branch"
-        ts=$(date +%s)
-        printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
-          "$cur_repo" "$head" "$pr_url" "$base" "$number" "$ts" >> "$state_file"
-      fi
+     && [ -n "$state_file" ] && [ -n "$pr_url" ] \
+     && [ -n "$cur_branch" ] && [ -n "$cur_repo" ]; then
+    if gh_pr_view_full "$cur_branch" "$cur_repo" \
+       && { [ "$PR_STATE" = "OPEN" ] || [ "$PR_STATE" = "DRAFT" ]; }; then
+      emit_row "$cur_repo" "$PR_HEAD" "$pr_url" "$PR_BASE" "$PR_NUMBER" >> "$state_file"
     fi
   fi
 
   git_info=""
-  if [ -n "$cur_branch" ]; then
-    git_info="  ${green}${cur_branch}${reset}"
-  fi
+  [ -n "$cur_branch" ] && git_info="  ${green}${cur_branch}${reset}"
   pr_info=""
-  if [ -n "$pr_url" ]; then
-    pr_info=" ${purple}${pr_url}${reset}"
-  fi
+  [ -n "$pr_url" ] && pr_info=" ${purple}${pr_url}${reset}"
   ctx_info=""
-  if [ -n "$used_int" ]; then
-    ctx_info=" ${dim}${used_int}%${reset}"
-  fi
+  [ -n "$used_int" ] && ctx_info=" ${dim}${used_int}%${reset}"
   printf '%s%s%s%s%s%s' "$blue" "$cwd_short" "$reset" "$git_info" "$pr_info" "$ctx_info"
 fi
