@@ -96,7 +96,7 @@ gu() {
   local branch="$(git rev-parse --abbrev-ref @)"
   local remote="$(git remote show)"
   git fetch "$remote" "$branch"
-  git merge "$remote/$branch"
+  git reset --hard "$remote/$branch"
 }
 
 # miscellaneous software shortcuts
