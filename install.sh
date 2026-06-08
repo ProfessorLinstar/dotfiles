@@ -47,17 +47,19 @@ See README.md for more information.
 EOF
 }
 
+# Default to lightweight install when no options are provided. Done before
+# any bash-4-only syntax (e.g. `declare -A`) so the common path works under
+# /bin/bash 3.x and when this file is sourced from zsh.
+if [[ $# -eq 0 ]]; then
+  exec "$SCRIPT_DIR/light-install.sh" -a
+fi
+
 # --- Flag parsing ---
 # Order here determines run order below.
 FEATURES=(pacman yay terminal font printer logiops lunarvim link services manual tmux gitconfig dconf xdg info)
 declare -A SKIP
 for k in "${FEATURES[@]}"; do SKIP[$k]=true; done
 DRY_RUN=false
-
-# Default to lightweight install when no options are provided.
-if [[ $# -eq 0 ]]; then
-  exec "$SCRIPT_DIR/light-install.sh" -a
-fi
 
 LONG="all,dry-run,help,$(IFS=,; printf '%s' "${FEATURES[*]}")"
 OPTS="$(getopt -o '' --long "$LONG" --name "$(basename "$0")" -- "$@")" || { usage; exit 1; }
