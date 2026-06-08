@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+
+################################################################################
+# Program: clip
+# Description: Copy stdin (or a remote machine's clip file) to the system
+#              clipboard. Prefers native clipboard tools (pbcopy / wl-copy /
+#              xclip / xsel) and falls back to OSC 52 escape sequences with
+#              tmux DCS passthrough when none are available.
+# Location: /usr/local/bin/clip
+################################################################################
+
+set -euo pipefail
+
+CLIP_FILE="$HOME/.cache/clip"
+CLIP_HOST_FILE="$HOME/.cache/clip.last_host"
+
+log() { printf '[clip] %s\n' "$*" >&2; }
+
+usage() {
+    cat <<EOF
+Usage: <command> | clip
+       clip -r [HOST]
+       clip -h
+
+Copies stdin to the system clipboard. Stdin is always written to
+$CLIP_FILE so the payload is recoverable (e.g. for clip -r from
+another machine).
+
+Options:
+  -r [HOST]   Pull HOST:$CLIP_FILE into the local clipboard via scp.
+              HOST defaults to the last -r host (remembered in
+              $CLIP_HOST_FILE).
+  -h          Show this help.
+
+Backends tried in order: pbcopy, wl-copy, xclip, xsel, OSC 52.
+Note: tmux silently truncates OSC 52 forwarding past ~100KB; use
+clip -r from your local machine for larger payloads.
+EOF
+    exit 1
+}
+
+# Read $CLIP_FILE, write to the system clipboard using whichever backend
+# is available. Native tools are preferred because they handle arbitrary
+# bytes without size limits.
+copy_to_clipboard() {
+    if command -v pbcopy >/dev/null 2>&1; then
+        log "using pbcopy"
+        pbcopy < "$CLIP_FILE"
+    elif command -v wl-copy >/dev/null 2>&1; then
+        log "using wl-copy"
+        wl-copy < "$CLIP_FILE"
+    elif command -v xclip >/dev/null 2>&1; then
+        log "using xclip"
+        xclip -selection clipboard -in < "$CLIP_FILE"
+    elif command -v xsel >/dev/null 2>&1; then
+        log "using xsel"
+        xsel --clipboard --input < "$CLIP_FILE"
+    else
+        log "using OSC 52"
+        copy_via_osc52
+    fi
+}
+
+copy_via_osc52() {
+    # base64 output is plain ASCII so the shell variable round-trip is
+    # lossless; the raw bytes never pass through a shell variable.
+    local payload
+    payload=$(base64 -w0 < "$CLIP_FILE")
+    if [ -n "${TMUX:-}" ]; then
+        # DCS-wrapped, ESCs inside the wrap doubled. Unwrapped by tmux to:
+        #   ESC ]52;c;<payload> ESC \
+        printf '\033Ptmux;\033\033]52;c;%s\033\033\\\033\\' "$payload"
+    else
+        printf '\033]52;c;%s\033\\' "$payload"
+    fi
+}
+
+remote_pull() {
+    local host="${1:-}"
+    if [ -z "$host" ]; then
+        if [ -r "$CLIP_HOST_FILE" ]; then
+            host=$(cat "$CLIP_HOST_FILE")
+        else
+            log "no host given and no remembered host at $CLIP_HOST_FILE"
+            return 1
+        fi
+    else
+        mkdir -p "$(dirname "$CLIP_HOST_FILE")"
+        printf '%s\n' "$host" > "$CLIP_HOST_FILE"
+    fi
+    log "pulling clip from $host"
+    mkdir -p "$(dirname "$CLIP_FILE")"
+    scp -q "$host:$CLIP_FILE" "$CLIP_FILE"
+    log "received $(wc -c < "$CLIP_FILE") bytes"
+    copy_to_clipboard
+}
+
+mkdir -p "$(dirname "$CLIP_FILE")"
+
+case "${1:-}" in
+    -h|--help)
+        usage
+        ;;
+    -r|--remote)
+        remote_pull "${2:-}"
+        ;;
+    "")
+        if [ -t 0 ]; then
+            log "no input on stdin"
+            usage
+        fi
+        cat > "$CLIP_FILE"
+        log "saved $(wc -c < "$CLIP_FILE") bytes to $CLIP_FILE"
+        copy_to_clipboard
+        ;;
+    *)
+        log "unknown option: $1"
+        usage
+        ;;
+esac
