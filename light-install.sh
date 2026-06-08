@@ -193,6 +193,7 @@ link_bin() {
   # Paths relative to DOTFILES_ROOT/root, linked to / (requires sudo).
   local paths=(
     usr/local/bin/vis
+    usr/local/bin/clip
   )
 
   for rel in "${paths[@]}"; do
