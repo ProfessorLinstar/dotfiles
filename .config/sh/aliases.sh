@@ -36,13 +36,14 @@ gg() {
 }
 gm() {
   if [ -z "$1" ]; then
-    git commit
+    git commit -S
   else
-    git commit -m "$1"
+    git commit -S -m "$1"
   fi
 } 
 gmp() { gm "$1" && git push; }
 gamp() { gam "$1" && git push; }
+gn() { ga . && git commit --no-verify --no-gpg-sign -m "${1:-unsigned-wip}" }
 gnp() { ga . && git commit --no-verify --no-gpg-sign -m "${1:-unsigned-wip}" && git push; }
 gb() {
   local rebase="$1"
