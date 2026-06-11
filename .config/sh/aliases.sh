@@ -43,7 +43,7 @@ gm() {
 } 
 gmp() { gm "$1" && git push; }
 gamp() { gam "$1" && git push; }
-gn() { ga . && git commit --no-verify --no-gpg-sign -m "${1:-unsigned-wip}" }
+gn() { ga . && git commit --no-verify --no-gpg-sign -m "${1:-unsigned-wip}"; }
 gnp() { ga . && git commit --no-verify --no-gpg-sign -m "${1:-unsigned-wip}" && git push; }
 gb() {
   local rebase="$1"
