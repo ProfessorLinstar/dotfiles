@@ -67,8 +67,8 @@ if [ -n "$transcript" ]; then
   fi
 fi
 
-# --- pr-cache helpers (branch-aware key).
-pr_cache_path() { printf '%s/%s_%s' "$CACHE_DIR" "$(md5 "$1")" "$2"; }
+# --- pr-cache helpers (branch-aware key; `pr_cache_path` lives in _lib.sh
+#     so the hook and statusline agree on sanitization).
 
 pr_cache_lookup() {
   local f; f=$(pr_cache_path "$1" "$2")

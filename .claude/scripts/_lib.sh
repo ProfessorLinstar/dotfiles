@@ -164,7 +164,17 @@ upsert_pr_state() {
   fi
   printf '%s\n' "$url" | atomic_write "$CI_DIR/push-pending-$sk" 2>/dev/null \
     || printf '%s\n' "$url" > "$CI_DIR/push-pending-$sk"
-  printf '%s\n' "$url" > "$CACHE_DIR/$(md5 "$repo_root")_${head}"
+  printf '%s\n' "$url" > "$(pr_cache_path "$repo_root" "$head")"
+}
+
+# Path of the per-(repo, branch) PR-URL cache file. Branch names often
+# contain `/` (`andywang/feat`) — without sanitization the filename would
+# be interpreted as a subdirectory path, breaking writes ("No such file or
+# directory") and missing on lookups. Replace `/` with `_`.
+pr_cache_path() {
+  local repo="$1" branch="$2"
+  local safe="${branch//\//_}"
+  printf '%s/%s_%s' "$CACHE_DIR" "$(md5 "$repo")" "$safe"
 }
 
 # Atomic same-filesystem write under $STATE_DIR.

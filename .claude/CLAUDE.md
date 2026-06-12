@@ -8,6 +8,7 @@
 - Only push changes to remote if there is not a PR open for the current branch or if the PR is a draft
 
 ### Github PRs
+- When iterating on an open or draft PR, add new commits instead of amending existing ones and force pushing
 - Never add comments in github unless I say exactly to "reply" to a comment.
 - Double check for permission before adding comments.
 - Always PRs in draft mode, never ready for review

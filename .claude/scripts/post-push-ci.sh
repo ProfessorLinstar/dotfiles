@@ -40,36 +40,50 @@ session_key=$(md5 "$transcript")
 pairs=""
 if [ "$tool_name" = "mcp__github__create_pull_request" ]; then
   [ -z "$mcp_head" ] && exit 0
-  # Prefer the PR data carried in tool_response. The MCP server just
-  # returned it; using it here avoids the propagation race where
-  # `gh pr view <head>` against GitHub's API can return empty for a
-  # brand-new PR. Field names span two shapes: REST API
-  # (html_url, head.ref, base.ref, state=lowercase) and gh's --json
-  # (url, headRefName, baseRefName, state=uppercase). Try both.
-  IFS=$'\t' read -r mcp_url mcp_number mcp_state mcp_head_resp mcp_base <<< "$(
+  # Avoid `gh pr view <head>` against a brand-new PR (GitHub's read replicas
+  # lag for hundreds of ms → 404 → empty result → race). Reconstruct PR
+  # metadata from BOTH tool_response and tool_input: the MCP server's
+  # response often contains only {id, url}, but tool_input always carries
+  # head/base (required to create the PR). Number is parsed from the URL
+  # (`/pull/<n>`); state defaults to OPEN, or DRAFT if tool_input.draft.
+  # Use mapfile (one jq value per line) instead of `IFS=$'\t' read` because
+  # bash's whitespace-IFS rule collapses consecutive tabs, eating empty
+  # fields. The `number` field is often empty (minimal MCP response shape)
+  # which would shift every subsequent column.
+  mapfile -t mcp_fields < <(
     echo "$input" | jq -r '
       (.tool_response // {}) as $r |
-      [ ($r.html_url // $r.url // ""),
+      (.tool_input // {}) as $i |
+      ($r.html_url // $r.url // "") as $url |
+        $url,
         (($r.number // "") | tostring),
-        (($r.state // "") | ascii_upcase),
-        ($r.head.ref // $r.headRefName // ""),
-        ($r.base.ref // $r.baseRefName // "") ] | @tsv'
-  )"
+        (($r.state // (if $i.draft == true then "DRAFT" else "OPEN" end)) | ascii_upcase),
+        ($r.head.ref // $r.headRefName // $i.head // ""),
+        ($r.base.ref // $r.baseRefName // $i.base // "")'
+  )
+  mcp_url="${mcp_fields[0]:-}"
+  mcp_number="${mcp_fields[1]:-}"
+  mcp_state="${mcp_fields[2]:-}"
+  mcp_head_resp="${mcp_fields[3]:-}"
+  mcp_base="${mcp_fields[4]:-}"
   mcp_base="${mcp_base%-cached}"
-  [ -z "$mcp_head_resp" ] && mcp_head_resp="$mcp_head"
+  # Parse number from URL when the response omits it (common minimal shape).
+  # GitHub uses `/pull/<n>` but tests sometimes use `/pr/<n>` — accept any
+  # trailing `/<digits>` segment (optionally followed by `/`).
+  if [ -z "$mcp_number" ] && [ -n "$mcp_url" ]; then
+    mcp_number=$(printf '%s' "$mcp_url" | sed -nE 's,.*/([0-9]+)/?$,\1,p')
+  fi
 
   if [ -n "$mcp_url" ] && [ -n "$mcp_head_resp" ] && [ -n "$mcp_base" ] \
      && [ -n "$mcp_number" ] && pr_is_alive "$mcp_state"; then
-    # Full PR data from tool_response — bypass `gh pr view` entirely.
     state_ensure_dirs
     repo_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)
     [ -z "$repo_root" ] && repo_root="$cwd"
     upsert_pr_state "$session_key" "$repo_root" "$mcp_head_resp" "$mcp_url" "$mcp_base" "$mcp_number"
     exit 0
   fi
-  # tool_response incomplete → fall back to `gh pr view`. Logged so
-  # silent regressions in the MCP server's response shape surface in
-  # the debug log instead of just being a perf hit.
+  # Still incomplete (no URL at all — server returned nothing useful) →
+  # fall back to `gh pr view`. Log so silent regressions surface.
   dbg "mcp fast-path incomplete: url='$mcp_url' head='$mcp_head_resp' base='$mcp_base' num='$mcp_number' state='$mcp_state' — falling back to gh pr view"
   pairs=$(printf '\t%s\n' "$mcp_head")
 elif [ "$tool_name" = "Bash" ]; then

@@ -96,7 +96,6 @@ gbg() {
 gu() {
   local branch="$(git rev-parse --abbrev-ref @)"
   local remote="$(git remote show)"
-  ghp
   git fetch "$remote" "$branch"
   git reset --hard "$remote/$branch"
 }
