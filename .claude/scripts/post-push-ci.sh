@@ -40,6 +40,37 @@ session_key=$(md5 "$transcript")
 pairs=""
 if [ "$tool_name" = "mcp__github__create_pull_request" ]; then
   [ -z "$mcp_head" ] && exit 0
+  # Prefer the PR data carried in tool_response. The MCP server just
+  # returned it; using it here avoids the propagation race where
+  # `gh pr view <head>` against GitHub's API can return empty for a
+  # brand-new PR. Field names span two shapes: REST API
+  # (html_url, head.ref, base.ref, state=lowercase) and gh's --json
+  # (url, headRefName, baseRefName, state=uppercase). Try both.
+  IFS=$'\t' read -r mcp_url mcp_number mcp_state mcp_head_resp mcp_base <<< "$(
+    echo "$input" | jq -r '
+      (.tool_response // {}) as $r |
+      [ ($r.html_url // $r.url // ""),
+        (($r.number // "") | tostring),
+        (($r.state // "") | ascii_upcase),
+        ($r.head.ref // $r.headRefName // ""),
+        ($r.base.ref // $r.baseRefName // "") ] | @tsv'
+  )"
+  mcp_base="${mcp_base%-cached}"
+  [ -z "$mcp_head_resp" ] && mcp_head_resp="$mcp_head"
+
+  if [ -n "$mcp_url" ] && [ -n "$mcp_head_resp" ] && [ -n "$mcp_base" ] \
+     && [ -n "$mcp_number" ] && pr_is_alive "$mcp_state"; then
+    # Full PR data from tool_response — bypass `gh pr view` entirely.
+    state_ensure_dirs
+    repo_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)
+    [ -z "$repo_root" ] && repo_root="$cwd"
+    upsert_pr_state "$session_key" "$repo_root" "$mcp_head_resp" "$mcp_url" "$mcp_base" "$mcp_number"
+    exit 0
+  fi
+  # tool_response incomplete → fall back to `gh pr view`. Logged so
+  # silent regressions in the MCP server's response shape surface in
+  # the debug log instead of just being a perf hit.
+  dbg "mcp fast-path incomplete: url='$mcp_url' head='$mcp_head_resp' base='$mcp_base' num='$mcp_number' state='$mcp_state' — falling back to gh pr view"
   pairs=$(printf '\t%s\n' "$mcp_head")
 elif [ "$tool_name" = "Bash" ]; then
   cmd=$(echo "$input" | jq -r '.tool_input.command // empty')
@@ -106,9 +137,25 @@ def extract_gh_api_pulls(args):
         i += 1
     return heads if (has_post and has_pulls) else []
 
+# Bash allows inline env-var assignments before a command:
+#   GH_HOST=foo gh pr create -H feat
+#   A=1 B=2 git push
+# shlex emits each KEY=VALUE as its own token. Strip them so the dispatch
+# below sees `gh`/`git` as sub[0].
+ENV_ASSIGN_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*=')
+
+def strip_env_prefix(sub):
+    i = 0
+    while i < len(sub) and ENV_ASSIGN_RE.match(sub[i]):
+        i += 1
+    return sub[i:]
+
 cd_override = None
 out = []
 for sub in subs:
+    if not sub:
+        continue
+    sub = strip_env_prefix(sub)
     if not sub:
         continue
     if sub[0] == 'cd' and len(sub) >= 2:
@@ -143,10 +190,6 @@ fi
 [ -z "$pairs" ] && exit 0
 
 state_ensure_dirs
-state_file="$STATE_DIR/$session_key"
-last_pr_url=""
-last_repo_root=""
-last_pr_head=""
 
 while IFS= read -r line; do
   # Split on first TAB — read with tab IFS would strip leading tabs.
@@ -165,30 +208,7 @@ while IFS= read -r line; do
   [ -z "$PR_URL" ] && continue
   pr_is_alive "$PR_STATE" || continue
 
-  # Build the full rewritten state-file content in memory so a concurrent
-  # statusline can't read between the truncate (mv) and the append.
-  if [ -f "$state_file" ]; then
-    existing_rows=$(awk -F'\t' -v r="$repo_root" -v b="$PR_HEAD" '$1==r && $2==b {next} {print}' "$state_file")
-    if [ -n "$existing_rows" ]; then
-      { printf '%s\n' "$existing_rows"; emit_row "$repo_root" "$PR_HEAD" "$PR_URL" "$PR_BASE" "$PR_NUMBER"; } \
-        | atomic_write "$state_file"
-    else
-      emit_row "$repo_root" "$PR_HEAD" "$PR_URL" "$PR_BASE" "$PR_NUMBER" | atomic_write "$state_file"
-    fi
-  else
-    emit_row "$repo_root" "$PR_HEAD" "$PR_URL" "$PR_BASE" "$PR_NUMBER" > "$state_file"
-  fi
-
-  last_pr_url="$PR_URL"
-  last_repo_root="$repo_root"
-  last_pr_head="$PR_HEAD"
+  upsert_pr_state "$session_key" "$repo_root" "$PR_HEAD" "$PR_URL" "$PR_BASE" "$PR_NUMBER"
 done <<< "$pairs"
-
-if [ -n "$last_pr_url" ]; then
-  # Atomic write so a concurrent Stop hook can't read a torn flag.
-  printf '%s\n' "$last_pr_url" | atomic_write "$CI_DIR/push-pending-$session_key" 2>/dev/null \
-    || printf '%s\n' "$last_pr_url" > "$CI_DIR/push-pending-$session_key"
-  printf '%s\n' "$last_pr_url" > "$CACHE_DIR/$(md5 "$last_repo_root")_${last_pr_head}"
-fi
 
 exit 0

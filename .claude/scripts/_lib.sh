@@ -136,6 +136,37 @@ emit_row() {
   printf '%s\t%s\t%s\t%s\t%s\n' "$@"
 }
 
+# Upsert a (repo, head) row into a session state file: filter out any
+# pre-existing row with the same key, then append the new one. Also
+# refreshes the push-pending flag and the per-(repo,branch) cache so a
+# concurrent Stop hook / statusline render sees the latest.
+#
+# Used by both the MCP fast-path and the main `gh pr view` loop in the
+# hook so the upsert ceremony stays in one place.
+#
+# Usage:
+#   upsert_pr_state <session_key> <repo_root> <head> <url> <base> <number>
+upsert_pr_state() {
+  local sk="$1" repo_root="$2" head="$3" url="$4" base="$5" num="$6"
+  local state_file="$STATE_DIR/$sk"
+  local new_row
+  new_row=$(emit_row "$repo_root" "$head" "$url" "$base" "$num")
+  if [ -f "$state_file" ]; then
+    local existing
+    existing=$(awk -F'\t' -v r="$repo_root" -v b="$head" '$1==r && $2==b {next} {print}' "$state_file")
+    if [ -n "$existing" ]; then
+      { printf '%s\n' "$existing"; printf '%s\n' "$new_row"; } | atomic_write "$state_file"
+    else
+      printf '%s\n' "$new_row" | atomic_write "$state_file"
+    fi
+  else
+    printf '%s\n' "$new_row" > "$state_file"
+  fi
+  printf '%s\n' "$url" | atomic_write "$CI_DIR/push-pending-$sk" 2>/dev/null \
+    || printf '%s\n' "$url" > "$CI_DIR/push-pending-$sk"
+  printf '%s\n' "$url" > "$CACHE_DIR/$(md5 "$repo_root")_${head}"
+}
+
 # Atomic same-filesystem write under $STATE_DIR.
 # Usage:  atomic_write <target>   # reads stdin
 atomic_write() {
