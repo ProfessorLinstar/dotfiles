@@ -24,4 +24,8 @@
   - #xxxxx
   ```
 - When retargeting a stacked PR (e.g. after a parent PR merges), update the stack list in the description accordingly.
+
+## Formatting
+- Don't manually wrap markdown unless existing code already does it
+- Wrap comments with a text width of 120 characters
 # /Added by dotfiles
