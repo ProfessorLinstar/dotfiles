@@ -80,6 +80,9 @@ if [ "$tool_name" = "mcp__github__create_pull_request" ]; then
     repo_root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)
     [ -z "$repo_root" ] && repo_root="$cwd"
     upsert_pr_state "$session_key" "$repo_root" "$mcp_head_resp" "$mcp_url" "$mcp_base" "$mcp_number"
+    # Babysit-ci nudge on the SAME turn as the push — the Stop-hook
+    # reminder only fires at turn boundaries which Claude often skips.
+    echo "[pr-statusline] tracked PR $mcp_url — run /babysit-ci $mcp_url in the background to monitor CI" >&2
     exit 0
   fi
   # Still incomplete (no URL at all — server returned nothing useful) →
@@ -223,6 +226,8 @@ while IFS= read -r line; do
   pr_is_alive "$PR_STATE" || continue
 
   upsert_pr_state "$session_key" "$repo_root" "$PR_HEAD" "$PR_URL" "$PR_BASE" "$PR_NUMBER"
+  # Babysit-ci nudge per captured PR — same rationale as MCP fast-path.
+  echo "[pr-statusline] tracked PR $PR_URL — run /babysit-ci $PR_URL in the background to monitor CI" >&2
 done <<< "$pairs"
 
 exit 0

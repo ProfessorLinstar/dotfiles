@@ -32,6 +32,7 @@ Options:
   -l, --link-config        Symlink neovim and tmux configs into ~
   -b, --link-bin    Symlink executables into /usr/local/bin (requires sudo)
   -G, --gng         Install gng (Gradle wrapper) to ~/.local
+  -r, --tre         Build and install tre (tree alternative) from source
   -c, --claude      Configure CLAUDE.md, hooks, scripts, and commands
   -g, --gitconfig   Set up default global git config
   -a, --all         Run all of the above
@@ -46,6 +47,7 @@ DO_INSTALL=false
 DO_LINK_CONFIG=false
 DO_LINK_BIN=false
 DO_GNG=false
+DO_TRE=false
 DO_CLAUDE=false
 DO_GITCONFIG=false
 
@@ -62,9 +64,10 @@ while [[ $# -gt 0 ]]; do
     -l|--link-config)      DO_LINK_CONFIG=true;      shift ;;
     -b|--link-bin)  DO_LINK_BIN=true;  shift ;;
     -G|--gng)       DO_GNG=true;       shift ;;
+    -r|--tre)       DO_TRE=true;       shift ;;
     -c|--claude)    DO_CLAUDE=true;    shift ;;
     -g|--gitconfig) DO_GITCONFIG=true; shift ;;
-    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GNG=true; DO_CLAUDE=true; DO_GITCONFIG=true; shift ;;
+    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GNG=true; DO_TRE=true; DO_CLAUDE=true; DO_GITCONFIG=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     *)            echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -333,6 +336,38 @@ install_gng() {
   info "gng installed"
 }
 
+# --- Install tre ---
+install_tre() {
+  if command -v tre &>/dev/null; then
+    info "tre already available: $(command -v tre)"
+    return
+  fi
+
+  # tre is built from source with cargo.
+  if ! command -v cargo &>/dev/null; then
+    error "cargo not found, required to build tre.
+Install Rust and Cargo first (e.g. https://rustup.rs)."
+  fi
+
+  local tmp
+  tmp="$(mktemp -d)"
+
+  info "Cloning tre..."
+  git clone https://github.com/dduan/tre.git "$tmp/tre"
+
+  info "Building tre (cargo build --release)..."
+  (
+    cd "$tmp/tre"
+    cargo build --release
+  )
+
+  mkdir -p "$LOCAL_BIN"
+  mv "$tmp/tre/target/release/tre" "$LOCAL_BIN/tre"
+
+  rm -rf "$tmp"
+  info "tre installed to $LOCAL_BIN/tre"
+}
+
 # --- Link Claude scripts/commands directories ---
 configure_claude_dirs() {
   # Symlink individual files within scripts/ and commands/ so that
@@ -570,6 +605,10 @@ fi
 
 if $DO_GNG; then
   install_gng
+fi
+
+if $DO_TRE; then
+  install_tre
 fi
 
 if $DO_CLAUDE; then
