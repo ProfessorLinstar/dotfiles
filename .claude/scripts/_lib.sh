@@ -110,19 +110,32 @@ gh_view_rc() {
 # specific state) from "gh failed / network down" (non-zero).
 #
 # Usage:
-#   gh_pr_view_full <url_or_branch> [repo_root]
+#   gh_pr_view_full <url_or_branch> [repo_root] [attempts]
 #     repo_root defaults to PWD; we `cd` into it for branch-name lookups.
+#     attempts  total tries (default 1). >1 retries with 0.5s/1s/2s backoff
+#               when the view fails OR returns empty — both are symptoms of
+#               read-replica lag right after a PR is created. Callers that
+#               KNOW the PR exists (just ran `gh pr create`) pass 3; plain
+#               pushes pass 1 so a branch with genuinely no PR isn't slowed.
 gh_pr_view_full() {
-  local ref="$1" repo="${2:-.}"
+  local ref="$1" repo="${2:-.}" attempts="${3:-1}"
+  [ "$attempts" -lt 1 ] 2>/dev/null && attempts=1
   PR_URL= PR_HEAD= PR_BASE= PR_NUMBER= PR_STATE=
-  local json rc
-  if json=$(cd "$repo" 2>/dev/null && gh pr view "$ref" --json url,baseRefName,headRefName,number,state 2>/dev/null); then
-    rc=0
-  else
-    rc=$?
-  fi
-  [ "$rc" -ne 0 ] && return "$rc"
-  [ -z "$json" ] && return 0  # exit 0, empty stdout — caller checks PR_STATE
+  local json rc attempt=1
+  while :; do
+    if json=$(cd "$repo" 2>/dev/null && gh pr view "$ref" --json url,baseRefName,headRefName,number,state 2>/dev/null); then
+      rc=0
+    else
+      rc=$?
+    fi
+    # Done as soon as we get a non-empty payload.
+    { [ "$rc" -eq 0 ] && [ -n "$json" ]; } && break
+    # Out of attempts → return whatever we have (caller distinguishes
+    # non-zero rc = transport failure from rc 0 + empty = PR not visible).
+    [ "$attempt" -ge "$attempts" ] && { [ "$rc" -ne 0 ] && return "$rc"; return 0; }
+    case "$attempt" in 1) sleep 0.5 ;; 2) sleep 1 ;; *) sleep 2 ;; esac
+    attempt=$((attempt + 1))
+  done
   IFS=$'\t' read -r PR_URL PR_BASE PR_HEAD PR_NUMBER PR_STATE < <(
     printf '%s' "$json" | jq -r '[.url, .baseRefName, .headRefName, .number, .state] | map(. // "") | @tsv'
   )
