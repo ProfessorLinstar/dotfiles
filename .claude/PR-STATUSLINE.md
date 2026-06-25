@@ -128,17 +128,26 @@ Modern layout: `<md5($PWD)>` is a **directory** of zero-byte `touch`ed markers, 
 
 Fires on `Bash` and `mcp__github__create_pull_request`. Detects:
 
-- `gh pr create` (Bash): parses `-H/--head <branch>` from args. Handles batches (e.g. `gh pr create -H a && gh pr create -H b`).
+- `gh pr create` (Bash): parses `-H/--head`, `-B/--base`, and `--draft` from args. Handles batches (e.g. `gh pr create -H a && gh pr create -H b`).
 - `gh api -X POST .../pulls -f head=<branch>`: parses `-f head=` form.
 - `mcp__github__create_pull_request`: reads `.tool_input.head`.
-- `git push` (Bash): falls back to the currently checked-out branch.
+- `git push` (Bash): parses the refspec destination — `git push origin <branch>`, `… <src>:refs/heads/<dst>`, force (`+src:dst`) — so a worktree pushing one branch while checked out on another tracks the *pushed* branch, not the checked-out one. Deletes (`:branch`) and tag pushes track nothing. Only a refspec-less `git push` / `git push origin` falls back to the current branch.
+
+A leading `export`/`declare` keyword + its assignments is stripped along with inline `KEY=VALUE` prefixes, so an `export GH_HOST=…` statement that merges into the next command's token stream across a newline doesn't hide the `gh pr create`.
+
+The Bash parser emits 5-field rows (`repo  head  base  kind  draft`, `kind ∈ {create, api, push}`) so the shared tracking loop knows whether a PR is *expected* to exist.
 
 For each captured head, runs `gh pr view <head> --json url,baseRefName,headRefName,number,state` from the repo root, strips `-cached` from `baseRefName`, and writes a row to the session state file. Sets the `push-pending` flag with the last PR URL.
+
+**Read-replica race handling (the `gh pr create` path).** Right after creation, GitHub's read replicas lag a few hundred ms, so a `gh pr view <head>` can 404 / return empty and the PR would be dropped. Three guards (mirroring what the MCP fast-path already did):
+1. **stdout fast-path** — the URL `gh pr create` printed is carried in `tool_response.stdout`; if the view races, the row is reconstructed from that URL (number parsed from it, base from the `-B/--base` flag). A created PR is therefore never silently dropped as long as `gh` printed its URL.
+2. **bounded retry** — `gh_pr_view_full` retries create-ish lookups 3× (0.5s/1s/2s backoff). Plain pushes view once so a branch with genuinely no PR isn't slowed.
+3. **no silent miss** — a create whose URL can't be resolved by either path emits a `could not auto-track …` stderr nudge and a `dbg` line, instead of vanishing.
 
 **Hooks bypass Bash tool permission prompts**, so the hook can write anywhere without user approval.
 
 **Failure modes**:
-- If `cd /other/repo && gh pr create ...` is in the cmd, the hook's `cwd` is the calling cwd, not `/other/repo`. The `gh pr view <head>` from the wrong repo returns nothing → row not added. `/refresh-pr-state`'s conversation-context cross-check is the recovery path for this.
+- If `cd /other/repo && gh pr create ...` is in the cmd, the hook's `cwd` is the calling cwd, not `/other/repo`. The `gh pr view <head>` from the wrong repo returns nothing → it falls back to the stdout URL if present, else surfaces a miss. `/refresh-pr-state`'s conversation-context cross-check is the recovery path.
 
 ### `stop-ci-check.sh` — Stop hook
 
@@ -250,6 +259,8 @@ Previously documented edges, now fixed:
 - `pr-state.sh` guard rejects `..` segments anywhere (`$STATE_DIR/../etc/foo` no longer escapes).
 - Hook atomic-writes use `mktemp` under `$STATE_DIR` so the rename stays atomic on container filesystems.
 - Hook passes the bash command to its python parser via env (`$CMD`) rather than argv, avoiding ARG_MAX surprises.
+- **Bash `gh pr create` read-replica race (dropped foundry/forge#243489).** The Bash path used to depend solely on a `gh pr view <head>` fired immediately after creation, which races GitHub's lagging read replica → 404 → silent drop (no row, no flag, no trace). Now: track from the `gh pr create` stdout URL when the view races, retry the view 3× for create-ish commands, and surface a `could not auto-track …` nudge + `dbg` line on a genuine miss. The MCP path already had an equivalent guard; the Bash path now matches it.
+- **`export` prefix + push refspec parsing (dropped foundry/forge#243515).** Two parser gaps: (1) `cd repo && export GH_HOST=… ⏎ gh pr create …` hid the create because the `export` statement merged into its sub across the newline — now stripped like an env prefix; (2) `git push origin <sha>:refs/heads/<branch>` from a worktree on a different branch tracked the wrong branch — the parser now reads the refspec destination instead of always falling back to the current branch.
 
 ## Testing
 
@@ -299,6 +310,8 @@ Coverage matrix (26 cases):
 | 29 | statusline cache | `.checked` sentinel NOT stuck after gh network failure |
 | 30 | discover-core | Records `gh-fail(up:...)` / `gh-fail(down:...)` bails on transport failure |
 | 27 | statusline + helper | Per-session marker dir: concurrent sessions don't collide; legacy pointer migrates |
+| 39 | `post-push-ci.sh` | Bash `gh pr create` replica race: stdout fast-path, base from `-B`, miss surfaced (not silent), view-wins-over-stdout, plain-push stays silent, batched creates |
+| 40 | `post-push-ci.sh` | `export`+newline before `gh pr create`; push refspec dst (`sha:refs/heads/x`, explicit branch, `-u`) tracked over current branch; plain-push fallback intact; delete/tag pushes track nothing |
 
 ## File map
 

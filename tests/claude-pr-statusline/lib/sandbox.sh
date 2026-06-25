@@ -79,13 +79,14 @@ EOF
 }
 
 hook_input_bash() {
-  local cmd="$1" cwd="$2" transcript="$3" success="${4:-true}"
+  local cmd="$1" cwd="$2" transcript="$3" success="${4:-true}" stdout="${5:-}"
   jq -nc \
     --arg cmd "$cmd" \
     --arg cwd "$cwd" \
     --arg tx "$transcript" \
     --argjson success "$success" \
-    '{tool_name:"Bash",tool_input:{command:$cmd},cwd:$cwd,transcript_path:$tx,tool_response:{success:$success}}'
+    --arg stdout "$stdout" \
+    '{tool_name:"Bash",tool_input:{command:$cmd},cwd:$cwd,transcript_path:$tx,tool_response:{success:$success,stdout:$stdout}}'
 }
 
 hook_input_mcp_create() {
