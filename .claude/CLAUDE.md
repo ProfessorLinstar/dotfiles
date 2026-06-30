@@ -43,7 +43,8 @@
 ## Commenting
 - Whenever something needs to be documented in code (e.g. javadocs), add a `TODO(andywang): add comment` instead.
 - If an existing comment should be changed, add `TODO(andywang): update comment` instead.
-- Never author comments in code without explicit instruction.
+- You may copy comments verbatim, but if the comment needs to be adapted, then add `TODO(andywang): update comment` instead.
+- Never author new comments in code without explicit instruction.
 - If some behavior deserves explanation, you may add a github comment IF the PR is in draft mode. Otherwise flag this to the user directly.
 
 ## Formatting
