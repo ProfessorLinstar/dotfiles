@@ -12,18 +12,38 @@
 - Never add comments in github unless I say exactly to "reply" to a comment.
 - Double check for permission before adding comments.
 - Always PRs in draft mode, never ready for review
-- When making a new PR, respect the repository's PR description template (usually at `.github/PULL_REQUEST_TEMPLATE.md`)
-- When editing a PR description, always check the previous state to make sure that you're not dropping important context.
-- List resolved issues / related PRs at the top of the description
-- When a PR fixes an issue, add `fixes <issue-url>` to the start of the description
-- When updating a PR description for a stacked PR, add the stack to the start of the description, with 👈 marking the current PR (always use #xxxxx for PRs in the same repo; for PRs outside of the repo, provide the full URL. Do not include any other text or explanation.):
-  ```
-  PR stack:
-  - #xxxxx
-  - #xxxxx 👈
-  - #xxxxx
-  ```
+- When writing a PR description, you should:
+  - for new PRs, respect the repository's PR description template (usually at `.github/PULL_REQUEST_TEMPLATE.md`). Do not fill anything in the PR description unless the PR is a testing PR not meant to be merged into production.
+  - for existing PRs, always check the previous state to make sure that you're not dropping important context.
+  - At the top of the description, add whichever of the following blocks are relevant (always include newlines between any of these blocks!):
+    ```
+    Fixes <issue-url>
+
+    Related PRs:
+    - #xxxxx
+    - #xxxxx
+
+    Depends on:
+    - #xxxxx
+
+    Is dependent of:
+    - #xxxxx
+
+    PR stack:
+    - #xxxxx
+    - #xxxxx 👈
+    - #xxxxx
+    
+    ```
+  - When updating a PR stack, use 👈 to mark the current PR
+  - always use #xxxxx for PRs in the same repo; for PRs outside of the repo, provide the full URL. Do not include any other text or explanation.
 - When retargeting a stacked PR (e.g. after a parent PR merges), update the stack list in the description accordingly.
+
+
+## Commenting
+- Whenever something needs to be documented in code (e.g. javadocs), add a `TODO(andywang): add comment` instead.
+- Never author comments in code without explicit instruction.
+- If some behavior deserves explanation, you may add a github comment IF the PR is in draft mode. Otherwise flag this to the user directly.
 
 ## Formatting
 - Don't manually wrap markdown unless existing code already does it
