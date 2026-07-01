@@ -18,9 +18,8 @@
   - At the top of the description, add whichever of the following blocks are relevant (always include newlines after a list):
     ```
     Context: <slack-thread-if-provided>
-    Main issue: <main-issue-url-only-if-there-is-not-a-more-specific-issue>
-    Preflight for: <another-pr-if-this-is-a-preflight>
-    Fixes <issue-url>
+    Main issue: <main-issue-url> / Fixes <issue-url> / Part of <issue-url> / Preflight for: <another-pr-if-this-is-a-preflight> <!-- only pick one of these -->
+    
     Supercedes: <previous-pr-url-if-this-is-a-clone>
     Related PRs:
     - #xxxxx
