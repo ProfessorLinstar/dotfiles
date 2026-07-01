@@ -15,10 +15,10 @@
 - When writing a PR description, you should:
   - for new PRs, respect the repository's PR description template (usually at `.github/PULL_REQUEST_TEMPLATE.md`). Do not fill anything in the PR description unless the PR is a testing PR not meant to be merged into production.
   - for existing PRs, always check the previous state to make sure that you're not dropping important context.
-  - At the top of the description, add whichever of the following blocks are relevant (always include newlines between any of these blocks!):
+  - At the top of the description, add whichever of the following blocks are relevant (always include newlines after a list):
     ```
+    Context: <slack-thread-if-provided>
     Fixes <issue-url>
-
     Related PRs:
     - #xxxxx
     - #xxxxx
@@ -33,7 +33,6 @@
     - #xxxxx
     - #xxxxx 👈
     - #xxxxx
-    
     ```
   - When updating a PR stack, use 👈 to mark the current PR
   - always use #xxxxx for PRs in the same repo; for PRs outside of the repo, provide the full URL. Do not include any other text or explanation.
