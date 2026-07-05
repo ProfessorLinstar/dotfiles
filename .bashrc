@@ -21,3 +21,6 @@ alias py=python3.10                                             # Python shortcu
 alias vi=lvim                                                   #
 alias vis="source vis"                                          # Allow vis to change cwd
 alias tt="gio trash"                                            # move file to trash
+
+# Added by light-install.sh
+source ~/dotfiles/.config/sh/aliases.sh

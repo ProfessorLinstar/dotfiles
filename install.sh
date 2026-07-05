@@ -31,7 +31,6 @@ See README.md for more information.
   --pacman       install pacman packages
   --font         install meslo font for powerlevel10k
   --logiops      install and configure logitech software
-  --lunarvim     install lunarvim (default config)
   --yay          install yay packages
   --link         create dotfile links
   --services     enable and start custom services
@@ -56,7 +55,7 @@ fi
 
 # --- Flag parsing ---
 # Order here determines run order below.
-FEATURES=(pacman yay terminal font printer logiops lunarvim link services manual tmux gitconfig dconf xdg info)
+FEATURES=(pacman yay terminal font printer logiops link services manual tmux gitconfig dconf xdg info)
 declare -A SKIP
 for k in "${FEATURES[@]}"; do SKIP[$k]=true; done
 DRY_RUN=false
@@ -263,7 +262,6 @@ GNOME_PACMAN=(
 )
 
 LATEX_PACMAN=(
-  "texlive-most"                                                # provide most latex packages
   "texlive-binextra"                                            # get latexmk
   "biber"                                                       # enable biber for latexmk
   "perl-clone"                                                  # fix missing dependency for biber (08-05-2022)
@@ -421,26 +419,6 @@ install_logiops() {
   fi
 }
 
-install_lunarvim() {
-  if [[ "$(npm config get prefix 2>/dev/null || true)" != "$HOME/.local" ]]; then
-    info "Resolving npm EACCES permissions..."
-    run npm config set prefix "$HOME/.local"
-  fi
-
-  if ! command -v lvim &>/dev/null; then
-    info "Installing Lunarvim..."
-    run sudo pacman --needed -S git make python npm cargo
-    if [[ -f "$HOME/.config/lvim/config.lua" ]]; then
-      run mv "$HOME/.config/lvim/config.lua" "$HOME/.config/lvim/config.lua.old"
-    fi
-    if $DRY_RUN; then
-      info "[dry-run] would run Lunarvim installer"
-    else
-      LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
-    fi
-  fi
-}
-
 link_dotfiles() {
   local dotfile rel target user src
   while IFS= read -r -d '' dotfile; do
@@ -467,15 +445,6 @@ enable_services() {
 
 apply_manual_patches() {
   confirmsed /etc/bluetooth/main.conf "#AutoEnable=false" "AutoEnable=true" sudo
-  confirmsed "$HOME/.local/share/lunarvim/site/pack/packer/start/vimtex/autoload/vimtex/syntax/core.vim" \
-    "  syntax iskeyword 48-57,a-z,A-Z,192-255" \
-    "  syntax iskeyword a-z,A-Z,192-255"
-  confirmsed "$HOME/.local/share/lunarvim/lvim/lua/lvim/core/dap.lua" \
-    '  lvim.builtin.which_key.mappings\["d"\] = \{' \
-    '  lvim.builtin.which_key.mappings\["u"\] = \{'
-  confirmsed "$HOME/.local/share/lunarvim/site/pack/packer/start/onedark.nvim/lua/onedark/highlights.lua" \
-    '    IndentBlanklineChar = \{ fg = c.bg1, gui = "nocombine" \},' \
-    '    IndentBlanklineChar = \{ fg = c.grey, gui = "nocombine" \},'
 }
 
 install_tmux_plugins() {
@@ -560,7 +529,6 @@ ${SKIP[terminal]}  || install_terminal
 ${SKIP[font]}      || install_font
 ${SKIP[printer]}   || install_printer
 ${SKIP[logiops]}   || install_logiops
-${SKIP[lunarvim]}  || install_lunarvim
 ${SKIP[link]}      || link_dotfiles
 ${SKIP[services]}  || enable_services
 ${SKIP[manual]}    || apply_manual_patches
