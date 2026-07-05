@@ -258,7 +258,6 @@ GNOME_PACMAN=(
   "kid3"                                                        # audio metadata editor
   "bluez-utils"                                                 # bluetooth support
   "discord"                                                     # social media
-  "qgnomeplatform-qt5"                                          # gnome themes (adwaita) for qt5 applications
   "solaar"                                                      # logitech pairing software
   "obsidian"                                                    # markdown note taker
 )
