@@ -61,13 +61,8 @@ source ~/dotfiles/.config/zsh/keybindings.zsh
 # opam configuration
 [[ ! -r /home/linstar/.opam/opam-init/init.zsh ]] || source /home/linstar/.opam/opam-init/init.zsh  > /dev/null 2> /dev/null
 
-# pyenv
-export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init - zsh)"
-
 ################################################################################
-# External packages
+# Starship prompt
 ################################################################################
 
 eval "$(starship init zsh)"
