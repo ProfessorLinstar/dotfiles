@@ -169,6 +169,9 @@ sidebar-width=230
 start-with-sidebar=true
 
 [org/gnome/settings-daemon/plugins/color]
+[org/gnome/portal/filechooser/org.gnome.Settings]
+last-folder-path='/home/linstar/dotfiles/dump/wallpaper'
+
 night-light-enabled=false
 
 [org/gnome/settings-daemon/plugins/media-keys]
