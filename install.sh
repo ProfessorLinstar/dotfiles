@@ -29,7 +29,7 @@ See README.md for more information.
   --all          install all options
   --terminal     install terminal packages
   --pacman       install pacman packages
-  --font         install meslo font for powerlevel10k
+  --font         install jetbrains mono font
   --logiops      install and configure logitech software
   --yay          install yay packages
   --link         create dotfile links
