@@ -275,25 +275,12 @@ PRINTER_PACMAN=(
   "hplip"                                                       # hp printer driver installer
 )
 
-# Yay package list
-TERMINAL_YAY=(
-  "zsh-theme-powerlevel10k"                                     # zsh powerlevel10k theme
-)
-
 GNOME_YAY=(
   "adw-gtk-theme"                                               # dark gtk theme
   "xcursor-breeze"                                              # cursor theme
   "insync"                                                      # drive sync
   "google-chrome"                                               # web browser
   "zoom"                                                        # video conferencing platform
-)
-
-# Meslo font installation
-MESLO_FONT_URLS=(
-  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Regular.ttf"
-  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold.ttf"
-  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Italic.ttf"
-  "https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Bold%20Italic.ttf"
 )
 
 # Exclude paths beginning with these prefixes when linking.
@@ -365,23 +352,23 @@ install_terminal() {
     info "Installing yay packages for terminal..."
     run_tty yay --answerclean None --answerdiff None --needed -Sq "${TERMINAL_YAY[@]}"
   fi
+
+  curl -sS https://starship.rs/install.sh | sh
 }
 
 install_font() {
   if $DRY_RUN; then
-    info "[dry-run] would download ${#MESLO_FONT_URLS[@]} Meslo fonts to ~/.local/share/fonts"
+    info "[dry-run] would install JetBrainsMono"
     return
   fi
   mkdir -p "$HOME/.local/share/fonts"
   (
-    cd "$HOME/.local/share/fonts"
-    local url fname
-    for url in "${MESLO_FONT_URLS[@]}"; do
-      fname="${url##*/}"
-      fname="${fname//%20/ }"
-      curl -L -o "$fname" "$url"
-    done
+    cd /tmp && rm -rf fonts && mkdir fonts && cd fonts
+    curl -L -o "fonts.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/JetBrainsMono.zip" 
+    unzip "fonts.zip"
+    mv *.ttf "$HOME/.local/share/fonts"
   )
+  rm -rf /tmp/fonts
 }
 
 install_printer() {
@@ -399,10 +386,7 @@ install_logiops() {
       info "[dry-run] would build and install PixlOne/logiops from source"
     else
       (
-        cd /tmp
-        rm -rf logiops
-        git clone https://github.com/PixlOne/logiops
-        cd logiops
+        cd /tmp && rm -rf logiops && git clone https://github.com/PixlOne/logiops && cd logiops
         mkdir -p build
         cd build
         cmake ..

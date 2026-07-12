@@ -6,24 +6,15 @@
 typeset -U path                                                 # Remove duplicates in path/PATH
 
 ################################################################################
-# Powershell and zsh plugins
+# zsh plugins
 ################################################################################
 
-
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
-# Package list: zsh-theme-powerlevel10k
+# Package list:
 #               zsh-autosuggestions
 #               zsh-syntax-highlighting
 #               zsh-history-substring-search
 #               zsh-completions
 
-source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
 source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh
@@ -39,12 +30,12 @@ colors                                                          # Activate color
 # Shell config
 ################################################################################
 
-# variables
-HISTFILE=~/.zhistory
-HISTSIZE=10000
-SAVEHIST=10000
-WORDCHARS=${WORDCHARS//\/[&.;]}                                 # Don't consider certain characters as words
-ZLE_RPROMPT_INDENT=0                                            # No space after right prompt
+# zsh common
+export HISTFILE=~/.zhistory
+export HISTSIZE=10000
+export SAVEHIST=10000
+export WORDCHARS=${WORDCHARS//\/[&.;]}                          # Don't consider certain characters as words
+export ZLE_RPROMPT_INDENT=0                                     # No space after right prompt
 
 # Color man pages
 export LESS_TERMCAP_mb=$'\E[01;32m'
@@ -75,14 +66,8 @@ export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init - zsh)"
 
-# Claude Code
-# export ANTHROPIC_BEDROCK_BASE_URL=<base url here>
-# export ANTHROPIC_AUTH_TOKEN=<auth token here>
-export CLAUDE_CODE_USE_BEDROCK=1
-export CLAUDE_CODE_SKIP_BEDROCK_AUTH=1
-export DISABLE_TELEMETRY=1
-export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+################################################################################
+# External packages
+################################################################################
 
-# Node/SSL Certs
-# export SSL_CERT_FILE=/path/to/certificate-bundle.crt
-# export NODE_EXTRA_CA_CERTS=/path/to/certificate-bundle.crt
+eval "$(starship init zsh)"
