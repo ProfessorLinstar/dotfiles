@@ -119,6 +119,12 @@ two-finger-scrolling-enabled=true
 [org/gnome/desktop/privacy]
 disable-microphone=false
 
+[org/gnome/desktop/screensaver]
+color-shading-type='solid'
+picture-options='zoom'
+picture-uri='file:///home/linstar/dotfiles/dump/wallpaper/GH2.jpg'
+primary-color='#000000000000'
+secondary-color='#000000000000'
 [org/gnome/desktop/session]
 idle-delay=uint32 900
 
@@ -171,8 +177,11 @@ start-with-sidebar=true
 [org/gnome/settings-daemon/plugins/color]
 [org/gnome/portal/filechooser/org.gnome.Settings]
 last-folder-path='/home/linstar/dotfiles/dump/wallpaper'
-
 night-light-enabled=false
+
+[org/gnome/settings-daemon/plugins/color]
+night-light-enabled=false
+night-light-schedule-automatic=false
 
 [org/gnome/settings-daemon/plugins/media-keys]
 custom-keybindings=['/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom1/', '/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom2/']
@@ -196,6 +205,7 @@ command='discord'
 name='Discord'
 
 [org/gnome/settings-daemon/plugins/power]
+ambient-enabled=false
 idle-dim=true
 power-button-action='suspend'
 sleep-inactive-ac-timeout=1800
@@ -225,3 +235,5 @@ text-blink-mode='always'
 use-system-font=false
 use-theme-colors=true
 visible-name='default'
+[org/gtk/gtk4/settings/file-chooser]
+show-hidden=true
