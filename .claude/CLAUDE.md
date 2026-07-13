@@ -11,7 +11,7 @@
 - When iterating on an open or draft PR, add new commits instead of amending existing ones and force pushing
 - Never add comments in github unless I say exactly to "reply" to a comment.
 - Double check for permission before adding comments.
-- Always PRs in draft mode, never ready for review
+- Always create PRs in draft mode, never ready for review
 - When writing a PR description, you should:
   - for new PRs, respect the repository's PR description template (usually at `.github/PULL_REQUEST_TEMPLATE.md`). Do not fill anything in the PR description unless the PR is a testing PR not meant to be merged into production.
   - for existing PRs, always check the previous state to make sure that you're not dropping important context.
