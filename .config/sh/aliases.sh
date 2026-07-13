@@ -28,6 +28,7 @@ alias ghp="git stash push -u"
 alias ghl="git stash list"
 alias gmb="git merge-base"
 alias gp="git push"
+alias gnb="git rebase --no-verify --no-gpg-sign -i"
 gfc () {
   git fetch origin "$1" && gc "$1"
 }
@@ -73,7 +74,7 @@ gb() {
     return 1
   fi
 
-  cmd="git fetch "$remote" "$rebase" && git rebase -i "$remote/$rebase""
+  cmd="git fetch "$remote" "$rebase" && git rebase -S -i "$remote/$rebase""
   echo "Command to run: $cmd"
   read -n 1
   echo "Running command..."
