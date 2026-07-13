@@ -27,6 +27,8 @@ Lightweight terminal setup script. All operations are idempotent.
 
 Options:
   -s, --shell       Configure shell keybindings (source aliases in shell rc)
+  -p, --starship    Add the starship prompt init line to the shell rc
+  -z, --zsh         Clone zsh plugins into ~/.zsh and source them in .zshrc
   -t, --tmux        Install tmux plugin manager and plugins
   -i, --install     Install neovim and tmux to ~/.local/bin from GitHub
   -l, --link-config        Symlink neovim and tmux configs into ~
@@ -42,6 +44,8 @@ EOF
 
 # --- Flag parsing ---
 DO_SHELL=false
+DO_STARSHIP=false
+DO_ZSH=false
 DO_TMUX=false
 DO_INSTALL=false
 DO_LINK_CONFIG=false
@@ -59,6 +63,8 @@ fi
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -s|--shell)   DO_SHELL=true;   shift ;;
+    -p|--starship) DO_STARSHIP=true; shift ;;
+    -z|--zsh)     DO_ZSH=true;     shift ;;
     -t|--tmux)    DO_TMUX=true;    shift ;;
     -i|--install) DO_INSTALL=true; shift ;;
     -l|--link-config)      DO_LINK_CONFIG=true;      shift ;;
@@ -67,7 +73,7 @@ while [[ $# -gt 0 ]]; do
     -r|--tre)       DO_TRE=true;       shift ;;
     -c|--claude)    DO_CLAUDE=true;    shift ;;
     -g|--gitconfig) DO_GITCONFIG=true; shift ;;
-    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GNG=true; DO_TRE=true; DO_CLAUDE=true; DO_GITCONFIG=true; shift ;;
+    -a|--all)     DO_SHELL=true; DO_STARSHIP=true; DO_ZSH=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GNG=true; DO_TRE=true; DO_CLAUDE=true; DO_GITCONFIG=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     *)            echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -108,30 +114,132 @@ github_release_url() {
     | cut -d'"' -f4
 }
 
+# --- Managed block helper ---
+# Idempotently insert or update a named block of lines in a file. Each block is
+# delimited by markers unique to <name>:
+#     # Added by light-install.sh#<name>
+#     ...content...
+#     # /Added by light-install.sh#<name>
+# so multiple blocks can coexist in one file and each is updated in place (not
+# duplicated) on re-run. Creates the file if missing.
+# Usage: upsert_block <file> <name> <content>
+upsert_block() {
+  local file="$1" name="$2" content="$3"
+  local start="# Added by light-install.sh#$name"
+  local end="# /Added by light-install.sh#$name"
+
+  if [[ ! -f "$file" ]]; then
+    info "Creating $file"
+    touch "$file"
+  fi
+
+  local desired
+  desired="$(printf '%s\n%s\n%s' "$start" "$content" "$end")"
+
+  # No existing block for this name — append a fresh one.
+  if ! grep -qxF "$start" "$file"; then
+    info "Adding block '$name' to $file"
+    printf '\n%s\n' "$desired" >> "$file"
+    return
+  fi
+
+  # Block exists — skip if unchanged, otherwise replace it in place.
+  local existing
+  existing="$(awk -v s="$start" -v e="$end" '
+    $0==s {found=1}
+    found {print}
+    $0==e {found=0}
+  ' "$file")"
+  if [[ "$existing" == "$desired" ]]; then
+    info "Block '$name' already up to date in $file"
+    return
+  fi
+
+  info "Updating block '$name' in $file"
+  local tmp content_file
+  tmp="$(mktemp)"
+  content_file="$(mktemp)"
+  printf '%s\n' "$desired" > "$content_file"
+  awk -v s="$start" -v e="$end" -v cf="$content_file" '
+    $0==s {
+      while ((getline line < cf) > 0) print line
+      close(cf)
+      skip=1
+      next
+    }
+    skip && $0==e { skip=0; next }
+    !skip { print }
+  ' "$file" > "$tmp"
+  rm "$content_file"
+  mv "$tmp" "$file"
+}
+
+# Resolve the login shell's name and rc file into globals SHELL_NAME / RC_FILE.
+detect_shell_rc() {
+  SHELL_NAME="$(basename "$SHELL")"
+  case "$SHELL_NAME" in
+    zsh)  RC_FILE="$HOME/.zshrc" ;;
+    bash) RC_FILE="$HOME/.bashrc" ;;
+    *)    warn "Unrecognized shell '$SHELL_NAME', defaulting to bash/.bashrc"
+          SHELL_NAME=bash; RC_FILE="$HOME/.bashrc" ;;
+  esac
+}
+
 # --- Shell keybindings ---
 configure_shell() {
-  local source_line="source ~/dotfiles/.config/sh/aliases.sh"
-  local shell_name rc_file
+  local aliases_line="source ~/dotfiles/.config/sh/aliases.sh"
+  local keybindings_line="source ~/dotfiles/.config/zsh/keybindings.zsh"
 
-  shell_name="$(basename "$SHELL")"
-  case "$shell_name" in
-    zsh)  rc_file="$HOME/.zshrc" ;;
-    bash) rc_file="$HOME/.bashrc" ;;
-    *)    warn "Unrecognized shell '$shell_name', defaulting to .bashrc"
-          rc_file="$HOME/.bashrc" ;;
-  esac
+  detect_shell_rc
 
-  if [[ ! -f "$rc_file" ]]; then
-    info "Creating $rc_file"
-    touch "$rc_file"
+  # Aliases apply to every shell; keybindings.zsh is zsh-only. Both live in a
+  # single managed block.
+  local content="$aliases_line"
+  if [[ "$SHELL_NAME" == zsh ]]; then
+    content+=$'\n'"$keybindings_line"
   fi
 
-  if grep -qF "$source_line" "$rc_file"; then
-    info "Shell aliases already configured in $rc_file"
-  else
-    info "Adding shell aliases to $rc_file"
-    printf '\n# Added by light-install.sh\n%s\n' "$source_line" >> "$rc_file"
-  fi
+  upsert_block "$RC_FILE" shell "$content"
+}
+
+# --- Starship prompt ---
+# Add the starship init line to the shell rc as a managed block. Assumes the
+# starship binary is installed separately (see install.sh --terminal).
+configure_starship() {
+  detect_shell_rc
+  upsert_block "$RC_FILE" starship "eval \"\$(starship init $SHELL_NAME)\""
+}
+
+# --- Zsh plugins ---
+# Clone popular zsh plugins into ~/.zsh/plugins and source them from .zshrc.
+# Portable: no package manager or root required. Safe to re-run.
+configure_zsh_plugins() {
+  local plugins_dir="$HOME/.zsh/plugins"
+
+  # Each repo's main script shares the repo's basename (e.g. zsh-autosuggestions.zsh).
+  # Order matters: syntax-highlighting must precede history-substring-search.
+  local repos=(
+    zsh-users/zsh-autosuggestions
+    zsh-users/zsh-syntax-highlighting
+    zsh-users/zsh-history-substring-search
+  )
+
+  mkdir -p "$plugins_dir"
+
+  local content="" repo name
+  for repo in "${repos[@]}"; do
+    name="${repo##*/}"
+    if [[ -d "$plugins_dir/$name" ]]; then
+      info "zsh plugin already cloned: $name"
+    else
+      info "Cloning $name..."
+      git clone --depth 1 "https://github.com/$repo" "$plugins_dir/$name"
+    fi
+    [[ -n "$content" ]] && content+=$'\n'
+    content+="source ~/.zsh/plugins/$name/$name.zsh"
+  done
+
+  upsert_block "$HOME/.zshrc" zsh_plugins "$content"
 }
 
 # --- Tmux plugins ---
@@ -598,6 +706,14 @@ fi
 
 if $DO_SHELL; then
   configure_shell
+fi
+
+if $DO_STARSHIP; then
+  configure_starship
+fi
+
+if $DO_ZSH; then
+  configure_zsh_plugins
 fi
 
 if $DO_TMUX; then
