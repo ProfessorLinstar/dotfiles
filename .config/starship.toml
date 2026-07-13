@@ -23,6 +23,12 @@ disabled = true
 [hostname]
 disabled = true
 
+[nodejs]
+disabled = true
+
+[rust]
+disabled = true
+
 ################################################################################
 # Icon presets (https://starship.rs/presets/nerd-font)
 ################################################################################
@@ -166,9 +172,6 @@ symbol = " "
 [nix_shell]
 symbol = " "
 
-[nodejs]
-symbol = " "
-
 [ocaml]
 symbol = " "
 
@@ -276,9 +279,6 @@ symbol = "󰟔 "
 
 [ruby]
 symbol = " "
-
-[rust]
-symbol = "󱘗 "
 
 [scala]
 symbol = " "
