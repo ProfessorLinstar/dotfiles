@@ -55,45 +55,38 @@ fi
 
 # --- Flag parsing ---
 # Order here determines run order below.
-# Each feature has a corresponding SKIP_<name> variable (bool). Per-name
-# variables are used instead of `declare -A` so this script also runs under
-# the bash 3.2 that macOS ships with /bin/bash.
 FEATURES=(pacman yay terminal font printer logiops link services manual tmux gitconfig dconf xdg info)
-for k in "${FEATURES[@]}"; do eval "SKIP_${k}=true"; done
+declare -A SKIP
+for k in "${FEATURES[@]}"; do SKIP[$k]=true; done
 DRY_RUN=false
 
-is_valid_feature() {
-  local k
-  for k in "${FEATURES[@]}"; do
-    [[ "$k" == "$1" ]] && return 0
-  done
-  return 1
-}
+LONG="all,dry-run,help,$(IFS=,; printf '%s' "${FEATURES[*]}")"
+OPTS="$(getopt -o '' --long "$LONG" --name "$(basename "$0")" -- "$@")" || { usage; exit 1; }
+eval set -- "$OPTS"
 
-# No getopt: none of the flags take values, and macOS's BSD /usr/bin/getopt
-# doesn't support `--long`, silently dropping every flag it's given.
-while [[ $# -gt 0 ]]; do
+while true; do
   case "$1" in
     --all)
       # 'terminal' is intentionally left skipped: pacman + yay together cover
       # all packages the --terminal flag would install.
       for k in "${FEATURES[@]}"; do
         if [[ "$k" != "terminal" ]]; then
-          eval "SKIP_${k}=false"
+          SKIP[$k]=false
         fi
       done
       shift
       ;;
     --dry-run) DRY_RUN=true; shift ;;
     --help)    usage; exit 0 ;;
+    --)        shift; break ;;
     --*)
       key="${1#--}"
-      if ! is_valid_feature "$key"; then
+      if [[ -z "${SKIP[$key]+x}" ]]; then
         warn "Unknown option: $1"
         usage
         exit 1
       fi
-      eval "SKIP_${key}=false"
+      SKIP[$key]=false
       shift
       ;;
     *) usage; exit 1 ;;
@@ -350,11 +343,11 @@ install_yay() {
 # Install only the terminal subset of packages. Skips work already covered by
 # install_pacman / install_yay when those flags were also given.
 install_terminal() {
-  if $SKIP_pacman; then
+  if ${SKIP[pacman]}; then
     info "Installing pacman packages for terminal..."
     run_tty sudo pacman --needed -Sq "${TERMINAL_PACMAN[@]}"
   fi
-  if $SKIP_yay; then
+  if ${SKIP[yay]}; then
     ensure_yay
     info "Installing yay packages for terminal..."
     run_tty yay --answerclean None --answerdiff None --needed -Sq "${TERMINAL_YAY[@]}"
@@ -368,7 +361,6 @@ install_font() {
     info "[dry-run] would install JetBrainsMono"
     return
   fi
-  info "Installing JetBrainsMono font..."
   mkdir -p "$HOME/.local/share/fonts"
   (
     cd /tmp && rm -rf fonts && mkdir fonts && cd fonts
@@ -515,19 +507,19 @@ EOF
 # --- Main ---
 info "Beginning dotfiles installation..."
 
-$SKIP_pacman    || install_pacman
-$SKIP_yay       || install_yay
-$SKIP_terminal  || install_terminal
-$SKIP_font      || install_font
-$SKIP_printer   || install_printer
-$SKIP_logiops   || install_logiops
-$SKIP_link      || link_dotfiles
-$SKIP_services  || enable_services
-$SKIP_manual    || apply_manual_patches
-$SKIP_tmux      || install_tmux_plugins
-$SKIP_gitconfig || configure_git
-$SKIP_dconf     || load_dconf
-$SKIP_xdg       || configure_xdg
-$SKIP_info      || print_info
+${SKIP[pacman]}    || install_pacman
+${SKIP[yay]}       || install_yay
+${SKIP[terminal]}  || install_terminal
+${SKIP[font]}      || install_font
+${SKIP[printer]}   || install_printer
+${SKIP[logiops]}   || install_logiops
+${SKIP[link]}      || link_dotfiles
+${SKIP[services]}  || enable_services
+${SKIP[manual]}    || apply_manual_patches
+${SKIP[tmux]}      || install_tmux_plugins
+${SKIP[gitconfig]} || configure_git
+${SKIP[dconf]}     || load_dconf
+${SKIP[xdg]}       || configure_xdg
+${SKIP[info]}      || print_info
 
 info "dotfiles installation complete."
