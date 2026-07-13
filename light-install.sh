@@ -33,6 +33,7 @@ Options:
   -b, --link-bin    Symlink executables into /usr/local/bin (requires sudo)
   -G, --gng         Install gng (Gradle wrapper) to ~/.local
   -r, --tre         Build and install tre (tree alternative) from source
+  -S, --starship    Install starship prompt to ~/.local/bin
   -c, --claude      Configure CLAUDE.md, hooks, scripts, and commands
   -g, --gitconfig   Set up default global git config
   -a, --all         Run all of the above
@@ -48,6 +49,7 @@ DO_LINK_CONFIG=false
 DO_LINK_BIN=false
 DO_GNG=false
 DO_TRE=false
+DO_STARSHIP=false
 DO_CLAUDE=false
 DO_GITCONFIG=false
 
@@ -65,9 +67,10 @@ while [[ $# -gt 0 ]]; do
     -b|--link-bin)  DO_LINK_BIN=true;  shift ;;
     -G|--gng)       DO_GNG=true;       shift ;;
     -r|--tre)       DO_TRE=true;       shift ;;
+    -S|--starship)  DO_STARSHIP=true;  shift ;;
     -c|--claude)    DO_CLAUDE=true;    shift ;;
     -g|--gitconfig) DO_GITCONFIG=true; shift ;;
-    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GNG=true; DO_TRE=true; DO_CLAUDE=true; DO_GITCONFIG=true; shift ;;
+    -a|--all)     DO_SHELL=true; DO_TMUX=true; DO_INSTALL=true; DO_LINK_CONFIG=true; DO_LINK_BIN=true; DO_GNG=true; DO_TRE=true; DO_STARSHIP=true; DO_CLAUDE=true; DO_GITCONFIG=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     *)            echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -108,30 +111,75 @@ github_release_url() {
     | cut -d'"' -f4
 }
 
+# --- Managed block helper ---
+# Writes <content> into <target_file>, delimited by our managed markers.
+# If a managed block already exists it is replaced; otherwise a new one is appended.
+# Usage: write_managed_block <target_file> <content>
+write_managed_block() {
+  local target="$1" content="$2"
+  local marker_start="# Added by light-install.sh"
+  local marker_end="# /Added by light-install.sh"
+
+  if [[ ! -f "$target" ]]; then
+    info "Creating $target"
+    touch "$target"
+  fi
+
+  local new_block
+  new_block="$(printf '%s\n%s\n%s\n' "$marker_start" "$content" "$marker_end")"
+
+  if grep -qF "$marker_start" "$target"; then
+    local existing
+    existing="$(awk -v ms="$marker_start" -v me="$marker_end" '
+      $0==ms { found=1; next }
+      $0==me { found=0; next }
+      found  { print }
+    ' "$target")"
+    if [[ "$existing" == "$content" ]]; then
+      info "Managed block already up to date in $target"
+      return
+    fi
+    info "Updating managed block in $target"
+    local tmp block_file
+    tmp="$(mktemp)"
+    block_file="$(mktemp)"
+    printf '%s\n' "$new_block" > "$block_file"
+    awk -v ms="$marker_start" -v me="$marker_end" -v bf="$block_file" '
+      $0 == ms {
+        while ((getline line < bf) > 0) print line
+        close(bf)
+        skip = 1
+        next
+      }
+      skip && $0 == me { skip = 0; next }
+      !skip { print }
+    ' "$target" > "$tmp"
+    rm "$block_file"
+    mv "$tmp" "$target"
+  else
+    info "Appending managed block to $target"
+    printf '\n%s\n' "$new_block" >> "$target"
+  fi
+}
+
 # --- Shell keybindings ---
 configure_shell() {
-  local source_line="source ~/dotfiles/.config/sh/aliases.sh"
-  local shell_name rc_file
+  local shell_name rc_file starship_init
 
   shell_name="$(basename "$SHELL")"
   case "$shell_name" in
-    zsh)  rc_file="$HOME/.zshrc" ;;
-    bash) rc_file="$HOME/.bashrc" ;;
+    zsh)  rc_file="$HOME/.zshrc";  starship_init='eval "$(starship init zsh)"' ;;
+    bash) rc_file="$HOME/.bashrc"; starship_init='eval "$(starship init bash)"' ;;
     *)    warn "Unrecognized shell '$shell_name', defaulting to .bashrc"
-          rc_file="$HOME/.bashrc" ;;
+          rc_file="$HOME/.bashrc"; starship_init='eval "$(starship init bash)"' ;;
   esac
 
-  if [[ ! -f "$rc_file" ]]; then
-    info "Creating $rc_file"
-    touch "$rc_file"
-  fi
+  local block
+  block="$(printf '%s\n%s' \
+    "source ~/dotfiles/.config/sh/aliases.sh" \
+    "$starship_init")"
 
-  if grep -qF "$source_line" "$rc_file"; then
-    info "Shell aliases already configured in $rc_file"
-  else
-    info "Adding shell aliases to $rc_file"
-    printf '\n# Added by light-install.sh\n%s\n' "$source_line" >> "$rc_file"
-  fi
+  write_managed_block "$rc_file" "$block"
 }
 
 # --- Tmux plugins ---
@@ -367,6 +415,21 @@ Install Rust and Cargo first (e.g. https://rustup.rs)."
 
   rm -rf "$tmp"
   info "tre installed to $LOCAL_BIN/tre"
+}
+
+# --- Install starship ---
+install_starship() {
+  if command -v starship &>/dev/null; then
+    info "starship already available: $(command -v starship)"
+    return
+  fi
+
+  mkdir -p "$LOCAL_BIN"
+
+  info "Installing starship to $LOCAL_BIN..."
+  curl -sS https://starship.rs/install.sh | sh -s -- --yes --bin-dir "$LOCAL_BIN"
+
+  info "starship installed to $LOCAL_BIN/starship"
 }
 
 # --- Link Claude scripts/commands directories ---
@@ -610,6 +673,10 @@ fi
 
 if $DO_TRE; then
   install_tre
+fi
+
+if $DO_STARSHIP; then
+  install_starship
 fi
 
 if $DO_CLAUDE; then
