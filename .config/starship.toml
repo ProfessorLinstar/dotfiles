@@ -8,6 +8,21 @@ disabled = true
 [time]
 disabled = false
 
+[java]
+disabled = true
+
+[gradle]
+disabled = true
+
+[singularity]
+disabled = true
+
+[container]
+disabled = true
+
+[hostname]
+disabled = true
+
 ################################################################################
 # Icon presets (https://starship.rs/presets/nerd-font)
 ################################################################################
@@ -45,9 +60,6 @@ symbol = " "
 
 [conda]
 symbol = " "
-
-[container]
-symbol = " "
 
 [crystal]
 symbol = " "
@@ -103,9 +115,6 @@ tag_symbol = '  '
 [golang]
 symbol = " "
 
-[gradle]
-symbol = " "
-
 [guix_shell]
 symbol = " "
 
@@ -120,12 +129,6 @@ symbol = " "
 
 [hg_branch]
 symbol = " "
-
-[hostname]
-ssh_symbol = " "
-
-[java]
-symbol = " "
 
 [julia]
 symbol = " "
@@ -283,8 +286,6 @@ symbol = " "
 [shlvl]
 symbol = "󰹍 "
 
-[singularity]
-symbol = " "
 
 [solidity]
 symbol = " "
