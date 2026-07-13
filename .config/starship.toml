@@ -5,6 +5,9 @@ add_newline = false
 [line_break]
 disabled = true
 
+[time]
+disabled = false
+
 ################################################################################
 # Icon presets (https://starship.rs/presets/nerd-font)
 ################################################################################
