@@ -184,6 +184,7 @@ link_configs() {
     .tmux.conf
     .tmux/resurrect/saferestore.sh
     .config/nvim
+    .config/starship.toml
   )
 
   for rel in "${paths[@]}"; do
