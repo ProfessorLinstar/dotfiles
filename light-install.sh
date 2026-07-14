@@ -206,6 +206,13 @@ configure_shell() {
 # Add the starship init line to the shell rc as a managed block. Assumes the
 # starship binary is installed separately (see install.sh --terminal).
 configure_starship() {
+  if command -v starship &>/dev/null; then
+    info "starship already available: $(command -v starship)"
+    return
+  else
+    curl -sS https://starship.rs/install.sh | sh
+  fi
+
   detect_shell_rc
   upsert_block "$RC_FILE" starship "eval \"\$(starship init $SHELL_NAME)\""
 }
@@ -704,16 +711,20 @@ if $DO_LINK_BIN; then
   link_bin
 fi
 
+# Plugins must be configured before the shell block: keybindings.zsh binds keys
+# to widgets (e.g. history-substring-search-up) that the plugin block defines,
+# and zsh-syntax-highlighting warns about "unhandled ZLE widget" if a keybinding
+# references a widget that has not been sourced yet.
+if $DO_ZSH; then
+  configure_zsh_plugins
+fi
+
 if $DO_SHELL; then
   configure_shell
 fi
 
 if $DO_STARSHIP; then
   configure_starship
-fi
-
-if $DO_ZSH; then
-  configure_zsh_plugins
 fi
 
 if $DO_TMUX; then
