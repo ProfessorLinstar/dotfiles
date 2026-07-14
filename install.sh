@@ -353,7 +353,12 @@ install_terminal() {
     run_tty yay --answerclean None --answerdiff None --needed -Sq "${TERMINAL_YAY[@]}"
   fi
 
-  curl -sS https://starship.rs/install.sh | sh
+  if command -v starship &>/dev/null; then
+    info "starship already available: $(command -v starship)"
+    return
+  else
+    curl -sS https://starship.rs/install.sh | sh
+  fi
 }
 
 install_font() {
