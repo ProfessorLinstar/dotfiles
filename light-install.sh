@@ -210,7 +210,7 @@ configure_starship() {
     info "starship already available: $(command -v starship)"
     return
   else
-    curl -sS https://starship.rs/install.sh | sh
+    curl -sS https://starship.rs/install.sh | sh -s -- -y
   fi
 
   detect_shell_rc
