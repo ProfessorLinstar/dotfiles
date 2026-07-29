@@ -100,6 +100,20 @@ gu() {
   git fetch "$remote" "$branch"
   git reset --hard "$remote/$branch"
 }
+gal() {
+  local host dir
+  host=$(gh auth status --json hosts --jq '.hosts | keys[0]') || return 1
+  dir=$(mktemp -d)
+  cat >"$dir/xclip" <<EOF
+#!/bin/sh
+PATH="\${PATH#$dir:}"   # drop shim dir so clip doesn't re-invoke this wrapper
+exec clip > /dev/tty    # gh discards the helper's stdout — send clip's OSC 52 to the real terminal
+EOF
+  chmod +x "$dir/xclip"
+  PATH="$dir:$PATH" gh auth login -h "$host" -c -p https < /dev/null
+  rm -rf "$dir"
+}
+
 
 # miscellaneous software shortcuts
 alias dnuke='docker kill $(docker ps -aq); docker rm -fv $(docker ps -aq)'
