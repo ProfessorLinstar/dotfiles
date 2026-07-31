@@ -1,10 +1,12 @@
 ---
 name: discover-pr-state
-description: Discover sibling PRs in the same stack and add them to the session's PR tracking state. Walks baseRefName up and headRefName down from each tracked row using `gh pr list`. Use when the statusline is missing PRs that exist on the remote (e.g. created outside this session, or part of a pre-existing stack). For a routine refresh that doesn't search, use /refresh-pr-state instead.
+description: Manual escape hatch (rarely needed). Expands the session's PR tracking to the ENTIRE stack — walks baseRefName up to mainline and headRefName down through all descendants from each tracked row via `gh pr list`, so the session ends up tracking sibling PRs it never created or touched. This is NOT the normal flow: a session should track only the PRs it actually worked on, which /refresh-pr-state handles. Use this ONLY when the user explicitly wants to adopt a pre-existing stack they inherited but did not work on this session.
 allowed-tools: Bash
 ---
 
 # Discover PR stack
+
+> **Manual escape hatch — not part of normal flow.** By design this tracks *more than the session is responsible for*: it pulls in the whole ancestor chain (up to mainline) **and** every descendant PR, not just the PRs this session created or pushed. That is usually NOT what you want. Reach for `/refresh-pr-state` first — it tracks only session-worked PRs. Only run this command when the user has explicitly asked to adopt an inherited/pre-existing stack.
 
 Walk the base/head chain from each tracked PR to find related open PRs on the remote and add them to the session's state file. Heavier than `/refresh-pr-state` because it issues `gh pr list` calls.
 

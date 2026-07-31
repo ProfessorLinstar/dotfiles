@@ -343,7 +343,7 @@ while IFS= read -r line; do
     # A PR was just created but neither view nor stdout yielded a URL. This
     # was a 100% silent drop before — surface it so it's self-diagnosing.
     dbg "bash create drop: no URL from view (rc=$view_rc state='$PR_STATE') or stdout for head='$head_branch' repo='$repo_root' kind='$kind'"
-    echo "[pr-statusline] could not auto-track just-created PR for $head_branch (read-replica lag?) — run /refresh-pr-state once it is visible (or /discover-pr-state)" >&2
+    echo "[pr-statusline] could not auto-track just-created PR for $head_branch (read-replica lag?) — run /refresh-pr-state once it is visible" >&2
   else
     # Plain push to a branch with no PR (or none yet) — nothing to track.
     dbg "no PR for pushed branch head='$head_branch' repo='$repo_root' (kind='${kind:-push}')"

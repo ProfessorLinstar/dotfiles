@@ -202,7 +202,9 @@ Lean default. Reconciles state with conversation context:
 **Does NOT auto-add the current branch's PR** — the current branch may be unrelated to session focus. Only adds if the PR is in conversation context.
 
 #### `/discover-pr-state`
-Heavy, on-demand. Walks `gh pr list --head/--base` from seed rows.
+Heavy, on-demand **manual escape hatch — not part of normal flow.** A session is meant to track only the PRs it actually worked on (created/pushed/edited); `/refresh-pr-state` is the primary path and nothing in the automatic flow (hook, Stop nudge, auto-seed) invokes discovery. This command deliberately breaks that principle: it expands tracking to the *entire* stack — all ancestors up to mainline plus all descendants — which is more than the session is responsible for. Run it only when the user explicitly asks to adopt an inherited/pre-existing stack.
+
+Walks `gh pr list --head/--base` from seed rows.
 1. Locate state file.
 2. Seeds in priority order: (a) PRs from conversation context, (b) existing state rows, (c) current branch's PR — last resort only.
 3. Walk up via `base_branch` (`gh pr list --head <base> --state open`, expects exactly one match), walk down via `branch` (`gh pr list --base <head> --state open`, multiple OK). Cap 20 new PRs/repo. Stops at main-line branches (`main`/`master`/`develop`/`trunk`).
