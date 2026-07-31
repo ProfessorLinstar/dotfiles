@@ -47,8 +47,20 @@ gamp() { gam "$1" && git push; }
 gn() { ga . && git commit --no-verify --no-gpg-sign -m "${1:-unsigned-wip}"; }
 gnp() { ga . && git commit --no-verify --no-gpg-sign -m "${1:-unsigned-wip}" && git push; }
 gb() {
-  local rebase="$1"
   local remote="$(git remote show)"
+  local rebase=""
+
+  # The first *positional* argument (i.e. one that doesn't start with '-') is
+  # still the rebase target, exactly as before. Everything else is treated as
+  # pass-through options for `git rebase`, so `gb` behaves like a normal git
+  # command: `gb --no-gpg-sign`, `gb main --autosquash`, `gb main --no-gpg-sign`
+  # all work. A leading flag (e.g. `gb --no-gpg-sign`) leaves the target unset,
+  # so the gh/HEAD detection below still computes it.
+  if [ -n "$1" ] && [ "${1#-}" = "$1" ]; then
+    rebase="$1"
+    shift
+  fi
+  # Remaining "$@" is now the pass-through option list.
 
   command gh >/dev/null && target="$(gh pr view --json baseRefName -q '.baseRefName')"
   if [ -z "$target" ]; then
@@ -74,11 +86,12 @@ gb() {
     return 1
   fi
 
-  cmd="git fetch "$remote" "$rebase" && git rebase -S -i "$remote/$rebase""
-  echo "Command to run: $cmd"
+  # Pass-through options go AFTER the built-in `-S -i` so they can override the
+  # defaults (e.g. `--no-gpg-sign` wins over `-S`); the upstream ref stays last.
+  echo "Command to run: git fetch $remote $rebase && git rebase -S -i $* $remote/$rebase"
   read -n 1
   echo "Running command..."
-  eval "$cmd"
+  git fetch "$remote" "$rebase" && git rebase -S -i "$@" "$remote/$rebase"
 }
 gbg() {
   local base

@@ -1,12 +1,12 @@
 ---
 name: refresh-pr-state
-description: Refresh the per-session PR tracking state used by the statusline. Re-queries each tracked PR's state and base branch, drops closed/merged PRs, adds any PRs you know about from this conversation (current branch, or recent PRs you opened) that aren't yet tracked, and clears the push-pending flag. For walking related PRs you don't know about (pre-existing stacks created outside this session), use /discover-pr-state.
+description: Refresh the per-session PR tracking state used by the statusline. This is the primary way to keep the statusline current. Re-queries each tracked PR's state and base branch, drops closed/merged PRs, adds any PRs you know about from this conversation (current branch, or recent PRs you opened) that aren't yet tracked, and clears the push-pending flag. It deliberately tracks only the PRs this session worked on. For the rare case of deliberately adopting a pre-existing stack created outside this session, /discover-pr-state is a manual escape hatch that walks the whole stack.
 allowed-tools: Bash
 ---
 
 # Refresh PR state
 
-The session tracks PRs in `~/.local/state/claude/pr-state/<session_key>` for the statusline to render. This command re-validates what's tracked and adds session-relevant PRs the hook may have missed (e.g. PRs opened via `cd /repo && gh pr create ...` where the hook's cwd didn't match). It does NOT search the remote for unknown PRs — for that, follow up with `/discover-pr-state`.
+The session tracks PRs in `~/.local/state/claude/pr-state/<session_key>` for the statusline to render. This command re-validates what's tracked and adds session-relevant PRs the hook may have missed (e.g. PRs opened via `cd /repo && gh pr create ...` where the hook's cwd didn't match). It does NOT search the remote for unknown PRs — that is intentional, so a session tracks only the PRs it worked on rather than fanning out to the whole stack. For the rare case of deliberately adopting an inherited stack, `/discover-pr-state` is available as a manual escape hatch.
 
 The deterministic file I/O lives in `~/.claude/scripts/refresh-pr-state-core.sh`. Your job is to gather the right PR set from this conversation and feed it in.
 
