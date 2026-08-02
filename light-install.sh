@@ -298,7 +298,14 @@ link_configs() {
   local paths=(
     .tmux.conf
     .tmux/resurrect/saferestore.sh
-    .config/nvim
+    .config/nvim/core/autocommands.vim
+    .config/nvim/core/commands.vim
+    .config/nvim/core/filetypes.vim
+    .config/nvim/core/mappings.vim
+    .config/nvim/core/options.vim
+    .config/nvim/core/plugins.vim
+    .config/nvim/core/plugmaps.vim
+    .config/nvim/init.vim
     .config/starship.toml
   )
 
