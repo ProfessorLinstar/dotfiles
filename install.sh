@@ -430,6 +430,7 @@ link_dotfiles() {
 
 enable_services() {
   run systemctl enable --now auto-suspend.timer
+  run systemctl enable --now bluetooth.service
 }
 
 apply_manual_patches() {
