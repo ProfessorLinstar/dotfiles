@@ -209,12 +209,12 @@ TERMINAL_PACMAN=(
   "zsh-completions"                                             # .
   "tmux"                                                        # terminal multiplexer
   "git"                                                         # install.sh
-  "make"                                                        # Lunarvim dependency
-  "python"                                                      # Lunarvim dependency
-  "npm"                                                         # Lunarvim dependency
-  "cargo"                                                       # Lunarvim dependency
-  "ripgrep"                                                     # Lunarvim telescope dependency
-  "fd"                                                          # Lunarvim telescope dependency
+  "git-lfs"                                                     # handling large files in git
+  "gradle"                                                      # Gradle build tool
+  "make"                                                        # standard build tool
+  "python"                                                      # Python
+  "npm"                                                         # Javascript package manager
+  "cargo"                                                       # Rust package manager
   "neovim"                                                      # text editor
   "yarn"                                                        # markdown-preview dependency
   "noto-fonts"                                                  # special fonts
@@ -238,6 +238,7 @@ GNOME_PACMAN=(
   "gnome-control-center"                                        # settings
   "gparted"                                                     # disk partition editor
   "baobab"                                                      # disk usage analyzer
+  "gnome-disk-utility"                                          # disk manager
   "dconf-editor"                                                # gnome settings editor
   "seahorse"                                                    # keyring manager
   "papirus-icon-theme"                                          # nice app icon theme
