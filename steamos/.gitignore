@@ -1,0 +1,3 @@
+bin/ttyd
+bin/ttyd.*
+__pycache__/
