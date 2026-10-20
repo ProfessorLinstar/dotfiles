@@ -90,16 +90,21 @@ rm -rf ~/.local/state/webterm
 systemctl --user daemon-reload
 ```
 
-Your URL token stays in `~/.config/webterm/env`.
+Your URL token stays in `~/.config/webterm/token`.
 
 ## Configuration
 
 | Setting      | Where                                                     | Default            |
 | ------------ | --------------------------------------------------------- | ------------------ |
 | Idle timeout | `WEBTERM_IDLE` in `webterm.service`                       | `30s`              |
-| Font         | `WEBTERM_FONT` in `webterm-ttyd.service` or the env file  | JetBrainsMono Nerd Font Mono |
-| URL token    | `WEBTERM_TOKEN` in `~/.config/webterm/env`                | random, 32 hex     |
+| Shell        | `SHELL` in the env file                                   | `/usr/bin/zsh`     |
+| Font         | `WEBTERM_FONT` in the env file                            | JetBrainsMono Nerd Font Mono |
+| URL token    | `WEBTERM_TOKEN` in `~/.config/webterm/token`              | random, 32 hex     |
 | Port         | `ListenStream` in `steamos/systemd/webterm.socket`        | `127.0.0.1:3000`   |
+
+The env file, `~/.config/webterm/env`, is linked from `~/dotfiles/.config/webterm/env` by the `link` feature, so
+settings there are kept in git; run `--link` before `--webterm`, which needs it. The token gets its own unlinked
+file (mode 600), which `--webterm` creates if it's missing, so it never lands in the repo.
 
 Change the environment settings with a drop-in, for example:
 
@@ -124,7 +129,7 @@ You don't need to close the browser. The script:
 3. restarts the proxy and ttyd, but only if they're running. If they aren't,
    the next visit starts them with the new settings anyway.
 
-`~/.config/webterm/env` is read again on every start, so changes there apply
+`~/.config/webterm/env` and `~/.config/webterm/token` are read again on every start, so changes there apply
 too.
 
 Open tabs show "Reconnecting..." and come back by themselves with the new
@@ -151,11 +156,10 @@ How it works:
 - If the browser was already open when the font was installed, restart it.
   Until then it uses the next font in the list.
 
-To use a different font, add it to `~/.config/webterm/env` and restart.
-Open tabs switch fonts when they reconnect:
+To use a different font, change `WEBTERM_FONT` in `~/dotfiles/.config/webterm/env`, for example to
+`WEBTERM_FONT=JetBrainsMonoNL Nerd Font Mono, monospace`, then restart. Open tabs switch fonts when they reconnect:
 
 ```sh
-echo 'WEBTERM_FONT=JetBrainsMonoNL Nerd Font Mono, monospace' >> ~/.config/webterm/env
 ~/dotfiles/install.sh --variant steamos --webterm
 ```
 
@@ -262,7 +266,7 @@ can do anything you can.
   what the random URL token is for. ttyd only serves the terminal under
   `/<token>/` and answers 404 everywhere else, so such a page can't find it.
   Keep the token private, like a password. Setting `WEBTERM_TOKEN=` (empty)
-  turns this protection off.
+  in the token or env file turns this protection off.
 - Don't expose it beyond localhost (port forwarding, reverse proxy,
   `0.0.0.0`) without real authentication and TLS.
 

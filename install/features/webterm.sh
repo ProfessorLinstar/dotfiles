@@ -5,6 +5,7 @@ WEBTERM_DIR="$DOTFILES_ROOT/steamos"
 WEBTERM_UNIT_DIR="$HOME/.config/systemd/user"
 WEBTERM_CONF_DIR="$HOME/.config/webterm"
 WEBTERM_ENV="$WEBTERM_CONF_DIR/env"
+WEBTERM_TOKEN_FILE="$WEBTERM_CONF_DIR/token"
 WEBTERM_SOCKET="$WEBTERM_DIR/systemd/webterm.socket"
 WEBTERM_SERVICES=(webterm.service webterm-ttyd.service)
 
@@ -57,15 +58,16 @@ webterm_url() {
   _url="http://$listen/${token:+$token/}"
 }
 
-# Secret URL path: keeps other sites (incl. DNS rebinding) from finding the shell
+# Secret URL path: keeps other sites (incl. DNS rebinding) from finding the shell.
+# Kept in its own file, not env, so the settings in env can be linked from the repo.
 ensure_token() {
   local token
-  if [[ -f "$WEBTERM_ENV" ]]; then
-    token="$(sed -n 's/^WEBTERM_TOKEN=//p' "$WEBTERM_ENV")"
+  if [[ -f "$WEBTERM_TOKEN_FILE" ]]; then
+    token="$(sed -n 's/^WEBTERM_TOKEN=//p' "$WEBTERM_TOKEN_FILE")"
   else
     token="$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
     run mkdir -p "$WEBTERM_CONF_DIR"
-    (umask 077 && printf 'WEBTERM_TOKEN=%s\n' "$token" | write_file "$WEBTERM_ENV")
+    (umask 077 && printf 'WEBTERM_TOKEN=%s\n' "$token" | write_file "$WEBTERM_TOKEN_FILE")
   fi
   _token="$token"
 }
@@ -99,6 +101,7 @@ feature_webterm() {
     || error "no systemd user session (log in graphically or via ssh, not su/sudo)"
   f_write_args find_proxyd _proxyd
   [[ -n "$_proxyd" ]] || error "systemd-socket-proxyd not found"
+  [[ -f "$WEBTERM_ENV" ]] || $DRY_RUN || error "$WEBTERM_ENV not found; run with --link first"
 
   install_ttyd
   run "$WEBTERM_DIR/bin/webterm-index" \
