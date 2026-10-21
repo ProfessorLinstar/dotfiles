@@ -15,7 +15,7 @@ case ":${LS_COLORS:-}:" in
   *":ow=0:ex=0:"*) ;;
   *) export LS_COLORS="${LS_COLORS:-}:ow=0:ex=0" ;;
 esac
-export EDITOR=/usr/bin/nvim                                     # Change default editor
+export EDITOR=nvim                                              # Change default editor
 export QT_QPA_PLATFORMTHEME=gnome                               # Make QT applications use gnome theme when launched from terminal
 
 # Color man pages
