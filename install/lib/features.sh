@@ -30,15 +30,27 @@ feature_description() {
     steamos_xclip) echo "install xclip to ~/.local/bin by copying it out of a temporary arch distrobox" ;;
     webterm)     echo "download ttyd and install the webterm systemd user units (browser shell on localhost)" ;;
     home_units)  echo "install home-units.service into /etc (sudo, only if the home is encrypted with dirlock)" ;;
+    distrobox)   echo "create an 'arch' distrobox from archlinux:latest and enter it" ;;
     *)           echo "" ;;
   esac
 }
 
 # Features that honor --dry-run; others are only announced.
-DRY_RUN_FEATURES=" pacman yay terminal font printer logiops link services manual tmux gitconfig dconf xdg info steamos_xclip flatpak udev tmpfiles webterm home_units "
+DRY_RUN_FEATURES=" pacman yay terminal font printer logiops link services manual tmux gitconfig dconf xdg info steamos_xclip flatpak udev tmpfiles webterm home_units distrobox "
 
 feature_function() {
   printf 'feature_%s' "${1//-/_}"
+}
+
+# Features can define uninstall_feature_<name>, run by --uninstall and before
+# feature_<name> by --reinstall. It must be idempotent and honor --dry-run.
+uninstall_function() {
+  printf 'uninstall_feature_%s' "${1//-/_}"
+}
+
+# Return 0 if feature $1 defines an uninstall function.
+feature_uninstallable() {
+  declare -F "$(uninstall_function "$1")" >/dev/null
 }
 
 # Return 0 if a variant_<name> function is defined.

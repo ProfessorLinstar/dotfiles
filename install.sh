@@ -32,7 +32,7 @@ available_variants() {
 }
 
 usage() {
-  local variant="$1" v features all_exclude
+  local variant="$1" v features all_exclude uninstallable=""
   cat <<EOF
 Usage: $(basename "$0") --variant NAME [OPTIONS]
 
@@ -59,7 +59,12 @@ Options for variant '$variant':
 EOF
   for v in $features; do
     printf '  --%-14s %s\n' "$v" "$(feature_description "$v")"
+    feature_uninstallable "$v" && uninstallable+="${uninstallable:+ }$v"
   done
+  if [[ -n "$uninstallable" ]]; then
+    printf '  --%-14s %s (%s)\n' reinstall "uninstall the selected options, then install them" "$uninstallable"
+    printf '  --%-14s %s (%s)\n' uninstall "uninstall the selected options" "$uninstallable"
+  fi
   cat <<EOF
   --dry-run        print what would happen without making changes
   --help           show this help page
@@ -74,7 +79,7 @@ usage_error() {
 }
 
 parse_args() {
-  local variant="" flags=" " all=false dry_run=false help=false
+  local variant="" flags=" " mode=install all=false dry_run=false help=false
 
   [[ $# -gt 0 ]] || help=true
   while [[ $# -gt 0 ]]; do
@@ -87,6 +92,12 @@ parse_args() {
       --variant=*) variant="${1#--variant=}"; shift ;;
       --all)       all=true; shift ;;
       --dry-run)   dry_run=true; shift ;;
+      --reinstall|--uninstall)
+        [[ "$mode" == install || "$mode" == "${1#--}" ]] \
+          || usage_error "--reinstall and --uninstall are mutually exclusive"
+        mode="${1#--}"
+        shift
+        ;;
       --help|-h)   help=true; shift ;;
       --?*)        flags+="${1#--} "; shift ;;
       *)           usage_error "Unexpected argument: $1" ;;
@@ -95,6 +106,7 @@ parse_args() {
 
   _variant="$variant"
   _flags="$flags"
+  _mode="$mode"
   _all="$all"
   _dry_run="$dry_run"
   _help="$help"
@@ -115,8 +127,10 @@ exit_with_usage_unless_runnable() {
   fi
 }
 
+# Outputs: _enabled, the selected features. Under --uninstall, features
+# without an uninstall function are dropped (with a warning if named).
 resolve_features() {
-  local variant="$1" flags="$2" all="$3" features all_exclude enabled=" " k
+  local variant="$1" flags="$2" all="$3" mode="$4" features all_exclude enabled=" " k
 
   f_write_args variant_config _features _all_exclude -- "$variant"
   features="$_features"
@@ -128,6 +142,16 @@ resolve_features() {
   done
   for k in $features; do
     if list_contains "$flags" "$k" || { $all && ! list_contains "$all_exclude" "$k"; }; then
+      if [[ "$mode" != install ]] && ! feature_uninstallable "$k"; then
+        if list_contains "$flags" "$k"; then
+          if [[ "$mode" == uninstall ]]; then
+            warn "--$k has no uninstall step; skipping it"
+          else
+            warn "--$k has no uninstall step; installing it without uninstalling first"
+          fi
+        fi
+        [[ "$mode" == uninstall ]] && continue
+      fi
       enabled+="$k "
     fi
   done
@@ -141,33 +165,54 @@ enter_dotfiles_root() {
   cd "$DOTFILES_ROOT"
 }
 
+# Outputs: _reversed, the words of $1 in reverse order.
+reverse_words() {
+  local word reversed=""
+  for word in $1; do
+    reversed="$word${reversed:+ $reversed}"
+  done
+  _reversed="$reversed"
+}
+
+# Run the enabled features in variant order: install runs feature_<name>,
+# reinstall runs uninstall_feature_<name> (if defined) then feature_<name>, and
+# uninstall runs uninstall_feature_<name> in reverse order.
 run_features() {
-  local variant="$1" enabled="$2" features feature
+  local variant="$1" enabled="$2" mode="$3" features feature
 
   f_write_args variant_config _features -- "$variant"
   features="$_features"
+  if [[ "$mode" == uninstall ]]; then
+    f_write_args reverse_words _reversed -- "$features"
+    features="$_reversed"
+  fi
 
-  info "Beginning dotfiles installation (variant: $variant)..."
+  info "Beginning dotfiles $mode (variant: $variant)..."
   for feature in $features; do
     list_contains "$enabled" "$feature" || continue
+    if [[ "$mode" != install ]] && feature_uninstallable "$feature"; then
+      info "Uninstalling feature: $feature"
+      "$(uninstall_function "$feature")" "$variant" "$enabled"
+    fi
+    [[ "$mode" != uninstall ]] || continue
     if $DRY_RUN && ! list_contains "$DRY_RUN_FEATURES" "$feature"; then
       info "[dry-run] would run feature: $feature"
       continue
     fi
     "$(feature_function "$feature")" "$variant" "$enabled"
   done
-  info "dotfiles installation complete."
+  info "dotfiles $mode complete."
 }
 
 main() {
-  f_write_args parse_args _variant _flags _all _dry_run _help -- "$@"
+  f_write_args parse_args _variant _flags _mode _all _dry_run _help -- "$@"
   readonly DRY_RUN="$_dry_run"
 
   exit_with_usage_unless_runnable "$_variant" "$_flags" "$_all" "$_help"
 
-  f_write_args resolve_features _enabled -- "$_variant" "$_flags" "$_all"
+  f_write_args resolve_features _enabled -- "$_variant" "$_flags" "$_all" "$_mode"
   enter_dotfiles_root
-  run_features "$_variant" "$_enabled"
+  run_features "$_variant" "$_enabled" "$_mode"
 }
 
 main "$@"
