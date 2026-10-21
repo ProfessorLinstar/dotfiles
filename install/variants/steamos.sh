@@ -1,7 +1,7 @@
 # SteamOS.
 variant_steamos() {
   _description="SteamOS: per-user installs for the read-only rootfs, plus webterm"
-  _features="link starship tmux claude gitconfig steamos_xclip flatpak udev font webterm home_units"
+  _features="link starship tmux claude gitconfig steamos_xclip flatpak udev tmpfiles font webterm home_units"
   _all_exclude=""
   # Link the shell startup files rather than running the shell and zsh features. zsh plugins load from
   # /usr/share/zsh/plugins when present and are skipped otherwise.
@@ -10,3 +10,5 @@ variant_steamos() {
 }
 
 # TODO(andywang): add steamos-specific features (e.g. read-only rootfs handling, pacman packages)
+# TODO(andywang): udev and tmpfiles are Framework 16 fixes, not SteamOS ones. Consider composing variants
+# (--variant steamos,framework) or a separate machine layer (--machine framework16) that only adds features and paths.
