@@ -12,7 +12,7 @@ Personal Linux/macOS dotfiles plus `install.sh`, which links them into place and
 
 ## Shell conventions
 Write functions in a functional style:
-- Pass inputs as arguments. Return values through `_`-prefixed output variables via `f_write_args fn _out1 _out2 -- args...`, not by setting globals or parsing stdout.
+- Pass inputs as arguments. Return values through `_`-prefixed output variables via `f_write_args fn _out1 _out2 -- args...`, not by setting globals or parsing stdout. A function with a single result may print it instead, for the caller to capture with `$(...)` (e.g. `feature_function`, `explain_checkout_problem`).
 - Globals are UPPER_CASE constants set at file load time; never mutate them from functions. Declare everything else `local`.
 - Keep pure logic (parsing, resolving config) separate from side effects, and route side effects through `run`/`run_tty` so `--dry-run` works.
 - Every feature must be idempotent: check current state first, and use `make_symlink` and `upsert_block` rather than raw `ln` or appends.
@@ -21,5 +21,7 @@ Write functions in a functional style:
 - Don't call `_`-prefixed helpers from another file; they are private to it. Add a public helper to `install/lib/` instead.
 
 ## Verifying changes
-- `bash -n` every changed script, and `shellcheck` when available (`shellcheck -s bash` for sourced files without a shebang, such as `install/lib`, `install/features` and `install/variants`).
+- Run `make check` before pushing; CI runs the same targets. It runs `make validate` (structure that must hold: checkout name, README tree, pinned checksums), `make lint` (syntax, the pinned shellcheck with `.shellcheckrc`, actionlint) and `make test` (behavior: install.sh in scratch homes). Put structural checks in `tests/validation/`, code-quality checks in `tests/lint/`, and behavior tests at the top of `tests/`. See Testing in `README.md`.
+- Fix shellcheck findings rather than disabling them; when one is intentional (e.g. word splitting a list), disable it on that line with a `# shellcheck disable=SCxxxx # reason` comment.
+- shellcheck follows sourced files (`.shellcheckrc`). In startup files write `source "$HOME/dotfiles/..."`, not `~/dotfiles/...`: shellcheck resolves it through the checkout's parent (so the checkout must be named `dotfiles`, which `install.sh` enforces). Give other runtime paths (`$LIB_DIR/...`) a `# shellcheck source=<path relative to the script>` directive; use `source=/dev/null` only for sources that can't be followed, like a glob loop or user config.
 - `install.sh` requires the repo at `~/dotfiles`. To exercise a feature without touching the real home, point `HOME` at a scratch directory containing a `dotfiles` symlink to this checkout, then run `HOME=<dir> ./install.sh --variant <name> --<feature>`; use `--dry-run` for features that need root or a package manager.

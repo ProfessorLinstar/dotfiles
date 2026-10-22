@@ -90,7 +90,7 @@ Install them first (e.g. apt install build-essential pkg-config libevent-dev ncu
   src_dir="$(find "$tmp" -maxdepth 1 -mindepth 1 -type d | head -1)"
 
   (
-    cd "$src_dir"
+    cd "$src_dir" || exit
     ./configure --prefix="$LOCAL_PREFIX"
     make
     make install
@@ -153,7 +153,7 @@ Install Rust and Cargo first (e.g. https://rustup.rs)."
 
   info "Building tre (cargo build --release)..."
   (
-    cd "$tmp/tre"
+    cd "$tmp/tre" || exit
     cargo build --release
   )
 
