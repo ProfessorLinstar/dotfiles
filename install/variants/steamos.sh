@@ -2,7 +2,7 @@
 variant_steamos() {
   _description="SteamOS: per-user installs for the read-only rootfs, plus webterm"
   # distrobox is last since it leaves you in the new container's shell.
-  _features="link neovim starship tmux claude gitconfig steamos_xclip flatpak udev tmpfiles font webterm home_units distrobox"
+  _features="link neovim starship tmux claude gitconfig steamos_xclip flatpak kde udev tmpfiles font webterm home_units distrobox"
   _os="steamos"
   _gui="kde"
   _optional=""

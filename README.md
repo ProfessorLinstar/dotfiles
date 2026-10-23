@@ -46,6 +46,7 @@ This repository contains configuration files for my linux workspace. The followi
 │   │   │   └── alacritty.toml       --- alacritty terminal emulator configuration file
 │   │   ├── git                      ---
 │   │   │   └── ignore               --- default ignored git files
+│   │   ├── kcminputrc               --- KDE input settings (keyboard repeat), merged by the kde feature (not linked)
 │   │   ├── nvim                     ---
 │   │   │   ├── core                 ---
 │   │   │   │   ├── autocommands.vim --- global autocommands
@@ -191,10 +192,11 @@ Each variant declares the `_os` and `_gui` it targets. `tests/validation/feature
 | `steamos_xclip` | any | steamos | desktop | |
 | `webterm` | any | linux | any | `link` |
 | `home_units` | any | steamos | any | |
+| `kde` | any | linux | kde | |
 
 `linux` covers `arch` and `steamos`; GUI `any` also works headless, and `desktop` needs some graphical session. The variants target: `arch` (arch, gnome), `steamos` (steamos, kde), `coder` (linux, no GUI) and `portable` (linux and macos, no GUI).
 
-The `steamos` variant installs everything per-user, since the SteamOS root filesystem is read-only; its `neovim` feature, for example, downloads the release binary into `~/.local`. Its `webterm` feature serves a shell in the browser on localhost, started on demand by systemd; see [steamos/README.md](steamos/README.md) and [docs/steamos-setup.md](docs/steamos-setup.md).
+The `steamos` variant installs everything per-user, since the SteamOS root filesystem is read-only; its `neovim` feature, for example, downloads the release binary into `~/.local`. Its `kde` feature merges partial KDE config files such as `home/.config/kcminputrc` (keyboard repeat rate) into their `~/.config` counterparts key by key with `kwriteconfig6`, rather than linking them, since KDE rewrites its config files and would break symlinks; keys not in the repo file are left alone. Add more files to `KDE_CONFIG_FILES` in `install/features/kde.sh`. Its `webterm` feature serves a shell in the browser on localhost, started on demand by systemd; see [steamos/README.md](steamos/README.md) and [docs/steamos-setup.md](docs/steamos-setup.md).
 
 Variants that don't symlink whole files (e.g. `coder`) instead write into a single `# Managed by dotfiles` ... `# /Managed by dotfiles` section of each managed file (`~/.profile`, `~/.zprofile`, `~/.bash_profile` if present, `~/.bashrc`, `~/.zshrc`, `~/git/.claude/CLAUDE.md`). Each feature owns a `# feature <name>` subblock inside it and rewrites only that subblock on re-run. Shell startup file subblocks only source files under `home/.config/sh` and `home/.config/zsh`, which the linked startup files (on `arch` and `steamos`) source too. Edit the files outside the section freely.
 
