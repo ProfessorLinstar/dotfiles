@@ -10,25 +10,48 @@
 
 set -euo pipefail
 
+# The repo and commit cloned when install.sh runs outside a checkout (e.g. with curl), unless DOTFILES_REPO or
+# DOTFILES_REF is set. PINNED_COMMIT is already on main, since a file can't name the commit that adds it.
+# BEGIN GENERATED PIN: run 'make pin' to update; checked by 'make validate'
+PINNED_REPO="https://github.com/eldenmanking/dotfiles.git"
+PINNED_COMMIT="0bbd5caa343b1ac80d7cf81416fa43840d1577eb"
+# END GENERATED PIN
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)"
 INSTALL_DIR="$SCRIPT_DIR/install"
 DOTFILES_ROOT="$HOME/dotfiles"
-DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/eldenmanking/dotfiles.git}"
+DOTFILES_REPO="${DOTFILES_REPO:-$PINNED_REPO}"
 BACKUPS_ROOT="$DOTFILES_ROOT/.backup"
 LOCAL_PREFIX="$HOME/.local"
 LOCAL_BIN="$LOCAL_PREFIX/bin"
+INSTALL_CONFIG="${DOTFILES_INSTALL_CONFIG:-$HOME/.config/dotfiles/install.conf}"
 
 # When run without its install/ directory beside it (e.g. fetched with curl), clone the repo to $DOTFILES_ROOT unless
-# it is already there, then re-run its install.sh with the same arguments. Runs before install/lib is loaded, so it
+# it is already there, then re-run its install.sh with the same arguments. A clone of PINNED_REPO without DOTFILES_REF
+# checks out PINNED_COMMIT on the default branch, so it can still be pulled (detached if the repo's HEAD is detached,
+# as in a CI checkout). Runs before install/lib is loaded, so it
 # prints its own messages. Stdin is reattached to the terminal when it isn't one (as with 'curl ... | bash -s -- ARGS'),
 # so features that prompt still can.
 bootstrap() {
-  [[ ! -f "$INSTALL_DIR/lib/fn.sh" ]] || return 0
+  local pinned=false branch checkout_args
+  if [[ -f "$INSTALL_DIR/lib/fn.sh" ]]; then
+    clone_checkout_to_root "$@"
+    return 0
+  fi
 
   if [[ ! -e "$DOTFILES_ROOT" ]]; then
     command -v git >/dev/null || { printf '[error] git is required to clone %s\n' "$DOTFILES_REPO" >&2; exit 1; }
-    printf '[info] Cloning %s into %s\n' "$DOTFILES_REPO" "$DOTFILES_ROOT"
-    git clone --quiet ${DOTFILES_REF:+--branch "$DOTFILES_REF"} "$DOTFILES_REPO" "$DOTFILES_ROOT"
+    [[ -n "${DOTFILES_REF:-}" || "$DOTFILES_REPO" != "$PINNED_REPO" ]] || pinned=true
+    printf '[info] Cloning %s%s into %s\n' "$DOTFILES_REPO" \
+      "$($pinned && printf ' at %s' "$PINNED_COMMIT")${DOTFILES_REF:+ at $DOTFILES_REF}" "$DOTFILES_ROOT"
+    git -c advice.detachedHead=false clone --quiet ${DOTFILES_REF:+--branch "$DOTFILES_REF"} "$DOTFILES_REPO" "$DOTFILES_ROOT"
+    if $pinned; then
+      branch="$(git -C "$DOTFILES_ROOT" symbolic-ref --short -q HEAD || true)"
+      checkout_args=(--detach)
+      [[ -z "$branch" ]] || checkout_args=(-B "$branch")
+      git -C "$DOTFILES_ROOT" checkout --quiet "${checkout_args[@]}" "$PINNED_COMMIT" \
+        || { printf '[error] %s has no commit %s\n' "$DOTFILES_REPO" "$PINNED_COMMIT" >&2; exit 1; }
+    fi
   fi
   [[ -f "$DOTFILES_ROOT/install.sh" ]] \
     || { printf '[error] %s exists but has no install.sh; move it aside and re-run.\n' "$DOTFILES_ROOT" >&2; exit 1; }
@@ -36,6 +59,32 @@ bootstrap() {
   if [[ ! -t 0 ]] && { : </dev/tty; } 2>/dev/null; then
     exec bash "$DOTFILES_ROOT/install.sh" "$@" </dev/tty
   fi
+  exec bash "$DOTFILES_ROOT/install.sh" "$@"
+}
+
+# When run from a git checkout elsewhere (e.g. Coder's ~/.config/coderv2/dotfiles) and $DOTFILES_ROOT doesn't exist,
+# clone that checkout's current commit to $DOTFILES_ROOT, point its origin at the checkout's origin, then re-run its
+# install.sh with the same arguments. Uncommitted changes aren't copied. Anything else is left to enter_dotfiles_root.
+clone_checkout_to_root() {
+  local top head branch origin
+  [[ ! -e "$DOTFILES_ROOT" && ! -L "$DOTFILES_ROOT" ]] || return 0
+  command -v git >/dev/null || return 0
+  top="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)" || return 0
+  [[ "$(cd "$top" && pwd -P)" == "$(cd "$SCRIPT_DIR" && pwd -P)" ]] || return 0
+
+  head="$(git -C "$SCRIPT_DIR" rev-parse HEAD)"
+  branch="$(git -C "$SCRIPT_DIR" symbolic-ref --short -q HEAD || true)"
+  origin="$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || true)"
+  [[ -z "$(git -C "$SCRIPT_DIR" status --porcelain)" ]] \
+    || printf '[warn] %s has uncommitted changes, which are not copied to %s\n' "$SCRIPT_DIR" "$DOTFILES_ROOT" >&2
+  printf '[info] Cloning %s (%s) into %s\n' "$SCRIPT_DIR" "${branch:-${head:0:12}}" "$DOTFILES_ROOT"
+  git -c advice.detachedHead=false clone --quiet --no-checkout "$SCRIPT_DIR" "$DOTFILES_ROOT"
+  if [[ -n "$branch" ]]; then
+    git -C "$DOTFILES_ROOT" checkout --quiet -B "$branch" "$head"
+  else
+    git -C "$DOTFILES_ROOT" checkout --quiet --detach "$head"
+  fi
+  [[ -z "$origin" ]] || git -C "$DOTFILES_ROOT" remote set-url origin "$origin"
   exec bash "$DOTFILES_ROOT/install.sh" "$@"
 }
 
@@ -66,10 +115,13 @@ usage_feature() {
 usage() {
   local variant="$1" v features optional uninstallable=""
   cat <<EOF
-Usage: $(basename "$0") --variant NAME [OPTIONS]
+Usage: $(basename "$0") [--variant NAME] [OPTIONS]
 
 dotfiles installation and configuration script. All operations are idempotent.
 Run '$(basename "$0") --variant NAME --help' to list the options of a variant.
+Without --variant, DOTFILES_VARIANT names the variant; without options,
+DOTFILES_FEATURES lists them (feature names, or all for --all). Set them in
+the environment or in $INSTALL_CONFIG.
 See README.md for more information.
 
 Variants:
@@ -120,7 +172,6 @@ usage_error() {
 parse_args() {
   local variant="" flags=" " mode=install all=false dry_run=false help=false
 
-  [[ $# -gt 0 ]] || help=true
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --variant)
@@ -151,10 +202,46 @@ parse_args() {
   _help="$help"
 }
 
+# Outputs: _default_variant and _default_features, from DOTFILES_VARIANT and DOTFILES_FEATURES in the environment or,
+# for each one unset there, in config file $1. The file is sourced in a subshell so it can't change this shell's state.
+load_install_defaults() {
+  local conf="$1" file_variant="" file_features=""
+  if [[ -f "$conf" ]]; then
+    { IFS= read -r -d '' file_variant && IFS= read -r -d '' file_features; } < <(
+      unset DOTFILES_VARIANT DOTFILES_FEATURES
+      # shellcheck source=/dev/null
+      source "$conf" >&2 || exit 1
+      printf '%s\0%s\0' "${DOTFILES_VARIANT:-}" "${DOTFILES_FEATURES:-}"
+    ) || error "Could not read $conf"
+  fi
+  _default_variant="${DOTFILES_VARIANT:-$file_variant}"
+  _default_features="${DOTFILES_FEATURES:-$file_features}"
+}
+
+# Outputs: _variant, _flags and _all, the parsed variant $1, flags $2 and --all $3 with the defaults applied. Default
+# variant $5 is used when no --variant was given. Default features $6 (feature names, and all for --all) are used when
+# the command line selects none, unless mode $4 is uninstall or the command line names a variant other than $5.
+apply_install_defaults() {
+  local variant="$1" flags="$2" all="$3" mode="$4" default_variant="$5" default_features="$6" word
+  [[ -n "$variant" ]] || variant="$default_variant"
+  if [[ "$flags" == " " ]] && ! $all && [[ "$mode" != uninstall ]] \
+    && [[ -z "$default_variant" || "$variant" == "$default_variant" ]]; then
+    for word in $default_features; do
+      word="${word#--}"
+      if [[ "$word" == all ]]; then all=true; else flags+="$word "; fi
+    done
+  fi
+  _variant="$variant"
+  _flags="$flags"
+  _all="$all"
+}
+
+# Print usage and exit unless variant $1 can run: with no variant, or with no features selected ($2 flags, $3 --all)
+# or --help ($4). Without a variant this is an error unless --help was given or there were no arguments ($5).
 exit_with_usage_unless_runnable() {
-  local variant="$1" flags="$2" all="$3" help="$4"
+  local variant="$1" flags="$2" all="$3" help="$4" no_args="$5"
   if [[ -z "$variant" ]]; then
-    $help || usage_error "--variant is required"
+    $help || $no_args || usage_error "--variant is required"
     usage ""
     exit 0
   fi
@@ -270,7 +357,10 @@ main() {
   f_write_args parse_args _variant _flags _mode _all _dry_run _help -- "$@"
   readonly DRY_RUN="$_dry_run"
 
-  exit_with_usage_unless_runnable "$_variant" "$_flags" "$_all" "$_help"
+  f_write_args load_install_defaults _default_variant _default_features -- "$INSTALL_CONFIG"
+  f_write_args apply_install_defaults _variant _flags _all -- \
+    "$_variant" "$_flags" "$_all" "$_mode" "$_default_variant" "$_default_features"
+  exit_with_usage_unless_runnable "$_variant" "$_flags" "$_all" "$_help" "$([[ $# -eq 0 ]] && echo true || echo false)"
 
   f_write_args resolve_features _enabled -- "$_variant" "$_flags" "$_all" "$_mode"
   enter_dotfiles_root

@@ -68,7 +68,7 @@ install_ok() {
 install_refused() {
   local home="$1"
   shift
-  if run_install "$home" "$@"; then fail "install.sh $* (should be refused)"; else pass "install.sh $* (refused)"; fi
+  if run_install "$home" "$@"; then fail "install.sh${*:+ $*} (should be refused)"; else pass "install.sh${*:+ $*} (refused)"; fi
 }
 
 # Outputs: _features and _link_paths of variant $1, read from its definition the same way install.sh does, and
@@ -142,6 +142,48 @@ test_usage() {
   install_refused "$_home" --variant coder --nope
 }
 
+# Write install.conf in home $1 with the remaining args as its lines.
+write_install_conf() {
+  local home="$1"
+  shift
+  mkdir -p "$home/.config/dotfiles"
+  printf '%s\n' "$@" > "$home/.config/dotfiles/install.conf"
+}
+
+# DOTFILES_VARIANT and DOTFILES_FEATURES, from the environment or ~/.config/dotfiles/install.conf, stand in for
+# --variant and the feature options when the command line leaves them out.
+test_defaults() {
+  local out
+  info "defaults: DOTFILES_VARIANT and DOTFILES_FEATURES from install.conf or the environment"
+  new_home
+  write_install_conf "$_home" "DOTFILES_VARIANT=coder"
+  install_ok "$_home" && check "  ...lists the default variant's options" grep -q "Options for variant 'coder'" "$LOG"
+
+  write_install_conf "$_home" "DOTFILES_VARIANT=coder" "DOTFILES_FEATURES=all"
+  install_ok "$_home" --dry-run && check "  ...runs --all" grep -q "would run feature: binaries" "$LOG"
+  install_ok "$_home" --variant arch && check "  ...ignores the features for another variant" \
+    grep -q "Options for variant 'arch'" "$LOG"
+  install_ok "$_home" --dry-run --uninstall \
+    && check "  ...ignores the features under --uninstall" grep -q "Options for variant 'coder'" "$LOG"
+  install_ok "$_home" --dry-run --gitconfig && check "  ...lets options override the features" \
+    sh -c '! grep -q "would run feature: binaries" "$1"' sh "$LOG"
+  if out="$(env -i HOME="$_home" PATH="$PATH" TERM=dumb DOTFILES_VARIANT=portable DOTFILES_FEATURES=gitconfig \
+    "$INSTALL_BASH" "$_home/dotfiles/install.sh" --dry-run </dev/null 2>&1)" \
+    && grep -q "variant: portable" <<< "$out" && grep -q "git config --global" <<< "$out"; then
+    pass "the environment overrides install.conf"
+  else
+    fail "the environment overrides install.conf: $out"
+  fi
+
+  write_install_conf "$_home" "DOTFILES_VARIANT=coder" "DOTFILES_FEATURES=gitconfig"
+  install_ok "$_home" && check "  ...installs with no arguments" grep -q "excludesFile" "$_home/.gitconfig"
+
+  write_install_conf "$_home" 'DOTFILES_VARIANT="$UNSET_VARIABLE"'
+  install_refused "$_home" --dry-run
+  write_install_conf "$_home" "DOTFILES_VARIANT=nope"
+  install_refused "$_home"
+}
+
 # Run install.sh at $1 with home $2 and expect it to refuse, with a message matching $3. $4 describes the case.
 expect_refused() {
   local script="$1" home="$2" pattern="$3" description="$4" out
@@ -154,19 +196,113 @@ expect_refused() {
   fi
 }
 
+# Commit to repo $1 with message $2, as a test user.
+test_commit() {
+  git -C "$1" -c user.name=test -c user.email=test@example.com -c commit.gpgsign=false \
+    commit --quiet --allow-empty -m "$2"
+}
+
+# Clone this checkout to $1 on branch main, as a GitHub repo would be (CI checks out a detached HEAD), and commit the
+# working tree's install.sh and install/ there, so tests that clone it test them rather than the last commit.
+clone_working_tree() {
+  local src="$1"
+  git -c advice.detachedHead=false clone --quiet "$REPO_ROOT" "$src"
+  git -C "$src" checkout --quiet -B main
+  cp -R "$REPO_ROOT/install.sh" "$REPO_ROOT/install" "$src/"
+  git -C "$src" add -A
+  test_commit "$src" "working tree"
+}
+
+# Run from a git checkout elsewhere with no ~/dotfiles, install.sh clones that checkout's commit to ~/dotfiles, keeps
+# its origin, and installs from the clone.
+test_clone_checkout() {
+  local home src
+  info "checkout location: install.sh clones a checkout elsewhere to ~/dotfiles"
+  home="$(mktemp -d "$SCRATCH/home.XXXXXX")"
+  src="$SCRATCH/coder-checkout"
+  clone_working_tree "$src"
+  git -C "$src" remote set-url origin https://example.com/dotfiles.git
+  printf 'local change\n' > "$src/uncommitted"
+  if env -i HOME="$home" PATH="$PATH" TERM=dumb "$INSTALL_BASH" "$src/install.sh" --variant coder --gitconfig \
+    </dev/null >"$LOG" 2>&1; then
+    pass "install.sh from $src"
+  else
+    fail "install.sh from $src"
+    sed 's/^/       | /' "$LOG" >&2
+    return
+  fi
+  check "  ...cloned the same commit" \
+    test "$(git -C "$home/dotfiles" rev-parse HEAD)" = "$(git -C "$src" rev-parse HEAD)"
+  check "  ...kept the origin" test "$(git -C "$home/dotfiles" remote get-url origin)" = https://example.com/dotfiles.git
+  check "  ...warned about uncommitted changes" grep -q "uncommitted changes" "$LOG"
+  check "  ...installed from the clone" grep -q "$home/dotfiles/home/.config/git/ignore" "$home/.gitconfig"
+}
+
+# Run on its own (as with curl), install.sh clones PINNED_REPO at PINNED_COMMIT, on the default branch so it can be
+# pulled; with DOTFILES_REPO naming another repo it clones that repo's tip instead.
+test_bootstrap_pin() {
+  local src pinned script home
+  info "bootstrap: install.sh on its own clones its pinned commit to ~/dotfiles"
+  src="$SCRATCH/pinned-repo"
+  clone_working_tree "$src"
+  pinned="$(git -C "$src" rev-parse HEAD)"
+  test_commit "$src" "after the pin"
+  mkdir "$SCRATCH/standalone"
+  script="$SCRATCH/standalone/install.sh"
+  sed -e "s#^PINNED_REPO=.*#PINNED_REPO=\"$src\"#" -e "s#^PINNED_COMMIT=.*#PINNED_COMMIT=\"$pinned\"#" \
+    "$REPO_ROOT/install.sh" > "$script"
+
+  home="$(mktemp -d "$SCRATCH/home.XXXXXX")"
+  if env -i HOME="$home" PATH="$PATH" TERM=dumb "$INSTALL_BASH" "$script" --variant coder --gitconfig \
+    </dev/null >"$LOG" 2>&1; then
+    pass "install.sh on its own"
+    check "  ...checked out the pinned commit" test "$(git -C "$home/dotfiles" rev-parse HEAD)" = "$pinned"
+    check "  ...on the default branch" test -n "$(git -C "$home/dotfiles" symbolic-ref -q HEAD)"
+  else
+    fail "install.sh on its own"
+    sed 's/^/       | /' "$LOG" >&2
+  fi
+
+  # A repo whose HEAD is detached gets the pinned commit detached.
+  git -C "$src" checkout --quiet --detach
+  home="$(mktemp -d "$SCRATCH/home.XXXXXX")"
+  if env -i HOME="$home" PATH="$PATH" TERM=dumb "$INSTALL_BASH" "$script" --variant coder --gitconfig \
+    </dev/null >"$LOG" 2>&1; then
+    pass "install.sh on its own, from a repo with a detached HEAD"
+    check "  ...checked out the pinned commit" test "$(git -C "$home/dotfiles" rev-parse HEAD)" = "$pinned"
+  else
+    fail "install.sh on its own, from a repo with a detached HEAD"
+    sed 's/^/       | /' "$LOG" >&2
+  fi
+  git -C "$src" checkout --quiet main
+
+  home="$(mktemp -d "$SCRATCH/home.XXXXXX")"
+  if env -i HOME="$home" PATH="$PATH" TERM=dumb DOTFILES_REPO="file://$src" "$INSTALL_BASH" "$script" \
+    --variant coder --gitconfig </dev/null >"$LOG" 2>&1; then
+    pass "install.sh on its own with DOTFILES_REPO"
+    check "  ...checked out that repo's tip" \
+      test "$(git -C "$home/dotfiles" rev-parse HEAD)" = "$(git -C "$src" rev-parse HEAD)"
+  else
+    fail "install.sh on its own with DOTFILES_REPO"
+    sed 's/^/       | /' "$LOG" >&2
+  fi
+}
+
 # install.sh must run from ~/dotfiles (or a link to it), and the checkout must be named dotfiles.
 test_checkout_location() {
   local home other
   info "checkout location: install.sh refuses to run from anywhere but a checkout named dotfiles at ~/dotfiles"
   home="$(mktemp -d "$SCRATCH/home.XXXXXX")"
-  expect_refused "$REPO_ROOT/install.sh" "$home" "must be checked out at $home/dotfiles" "with no ~/dotfiles"
-  mkdir "$home/dotfiles"
-  expect_refused "$REPO_ROOT/install.sh" "$home" "is not $home/dotfiles" "from a checkout other than ~/dotfiles"
-  rmdir "$home/dotfiles"
-  # A copy named otherwise, linked as ~/dotfiles.
+  # A copy that isn't a git checkout, so it can't be cloned to ~/dotfiles.
   other="$SCRATCH/not-dotfiles"
   mkdir "$other"
   cp -R "$REPO_ROOT/install.sh" "$REPO_ROOT/install" "$other/"
+  expect_refused "$other/install.sh" "$home" "must be checked out at $home/dotfiles" \
+    "with no ~/dotfiles, from a copy that isn't a git checkout"
+  mkdir "$home/dotfiles"
+  expect_refused "$REPO_ROOT/install.sh" "$home" "is not $home/dotfiles" "from a checkout other than ~/dotfiles"
+  rmdir "$home/dotfiles"
+  # The copy, linked as ~/dotfiles.
   ln -s "$other" "$home/dotfiles"
   expect_refused "$home/dotfiles/install.sh" "$home" "must be a directory named dotfiles" \
     "with ~/dotfiles linked to a checkout named not-dotfiles"
@@ -332,7 +468,10 @@ main() {
   info "install.sh runs under $("$INSTALL_BASH" -c 'echo "bash $BASH_VERSION"')"
   variants="$(all_variants)"
   test_usage "$variants"
+  test_defaults
   test_checkout_location
+  test_clone_checkout
+  test_bootstrap_pin
   for variant in $variants; do
     test_dry_run "$variant"
     test_install "$variant"
