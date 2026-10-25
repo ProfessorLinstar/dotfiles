@@ -527,6 +527,42 @@ test_steam() {
   rmdir -p "$(dirname "$REPO_ROOT/.backup$SCRATCH")" 2>/dev/null || true
 }
 
+# Run download_verified with DOWNLOAD_CACHE $1 and the remaining args (url, sha256, out) in a fresh bash, its output
+# going to LOG. Returns its status.
+download_with_cache() {
+  local cache="$1"
+  shift
+  "$INSTALL_BASH" -c 'set -euo pipefail; DRY_RUN=false DOWNLOAD_CACHE="$1"; shift
+    source "$0/output.sh"; source "$0/fs.sh"; download_verified "$@" test' \
+    "$REPO_ROOT/install/lib" "$cache" "$@" >"$LOG" 2>&1
+}
+
+# With DOTFILES_DOWNLOAD_CACHE, download_verified stores downloads under their SHA-256 and uses a cached file instead of
+# downloading, but only one that matches.
+test_download_cache() {
+  local dir sha
+  info "download_verified: DOTFILES_DOWNLOAD_CACHE"
+  dir="$(mktemp -d "$SCRATCH/download.XXXXXX")"
+  printf 'payload\n' > "$dir/src"
+  sha="$(sha256_of "$dir/src")"
+  # download_verified checks files with GNU sha256sum's -c --status, which only the Linux features that call it need.
+  if ! echo "$sha  $dir/src" | sha256sum -c --status >/dev/null 2>&1; then
+    warn "sha256sum can't check files here (-c --status); skipping the download cache test"
+    return
+  fi
+  check "a download is stored in the cache" download_with_cache "$dir/cache" "file://$dir/src" "$sha" "$dir/out1"
+  check "  ...under its SHA-256" cmp -s "$dir/src" "$dir/cache/$sha"
+  mv "$dir/src" "$dir/moved"
+  check "a cached file is used instead of downloading" download_with_cache "$dir/cache" "file://$dir/src" "$sha" "$dir/out2"
+  check "  ...and copied out" cmp -s "$dir/moved" "$dir/out2"
+  printf 'tampered\n' > "$dir/cache/$sha"
+  if download_with_cache "$dir/cache" "file://$dir/src" "$sha" "$dir/out3"; then
+    fail "a cached file that doesn't match its SHA-256 is downloaded again"
+  else
+    pass "a cached file that doesn't match its SHA-256 is downloaded again"
+  fi
+}
+
 main() {
   local variants variant
   info "install.sh runs under $("$INSTALL_BASH" -c 'echo "bash $BASH_VERSION"')"
@@ -542,6 +578,7 @@ main() {
     test_install "$variant"
   done
   test_steam
+  test_download_cache
   test_env_sh
 
   [[ "$FAILURES" == 0 ]] || error "$FAILURES check(s) failed"
