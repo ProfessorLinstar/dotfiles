@@ -1,4 +1,4 @@
-# Feature: keep the Framework 16's Radeon 780M SoC clock up, which fixes choppy HDMI audio.
+# Feature: pin the Framework 16's Radeon 780M at the high performance level, which fixes choppy HDMI audio.
 
 HDMI_AUDIO_FIX_SRC="root/etc/systemd/system"
 HDMI_AUDIO_FIX_UNIT="hdmi-audio-fix.service"
@@ -14,8 +14,8 @@ pci_devices_with_id() {
   return 0
 }
 
-# Install hdmi-audio-fix.service into /etc (needs sudo), which sets a 720 MHz socclk floor on the 780M (at the
-# manual level, with the other clocks left free) at boot and after each resume.
+# Install hdmi-audio-fix.service into /etc (needs sudo), which sets the 780M to the high performance level at boot
+# and after each resume.
 #
 # @machine framework16
 # @os linux
@@ -25,18 +25,16 @@ feature_hdmi_audio_fix() {
     $(unit_keep_paths "$SYSTEM_UNITS_DIR" "$DOTFILES_ROOT/$HDMI_AUDIO_FIX_SRC" "$HDMI_AUDIO_FIX_UNIT")
   f_write_args install_system_units _changed -- "$DOTFILES_ROOT/$HDMI_AUDIO_FIX_SRC" "$HDMI_AUDIO_FIX_UNIT"
   [[ -n "$_changed" ]] || return 0
-  info "Check with: cat /sys/bus/pci/devices/*/pp_dpm_socclk (no level below 720 MHz should be active)"
+  info "Check with: cat /sys/bus/pci/devices/*/power_dpm_force_performance_level (the 780M should show high)"
 }
 
-# Remove hdmi-audio-fix.service, then reset the 780M's clock range and set it back to the auto performance level,
-# which also lifts the socclk floor.
+# Remove hdmi-audio-fix.service, then set the 780M back to the auto performance level.
 uninstall_feature_hdmi_audio_fix() {
   f_write_args uninstall_system_units _removed -- "$HDMI_AUDIO_FIX_UNIT"
   forget_across_steamos_updates hdmi_audio_fix
   [[ -n "$_removed" ]] || return 0
   local dev
   for dev in $(pci_devices_with_id "$HDMI_AUDIO_FIX_ID"); do
-    run sudo sh -c "echo r > $dev/pp_od_clk_voltage; echo c > $dev/pp_od_clk_voltage
-      echo auto > $dev/power_dpm_force_performance_level"
+    run sudo sh -c "echo auto > $dev/power_dpm_force_performance_level"
   done
 }
