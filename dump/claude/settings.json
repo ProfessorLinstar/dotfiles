@@ -22,6 +22,15 @@
             "command": "bash ~/.claude/scripts/post-push-ci.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash|mcp__github__create_pull_request|mcp__github__update_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/pr-body-snapshot.sh"
+          }
+        ]
       }
     ],
     "Stop": [
