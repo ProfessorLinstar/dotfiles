@@ -103,18 +103,120 @@ elif [ "$tool_name" = "Bash" ]; then
 import re, shlex, os, sys
 
 cmd = os.environ.get('CMD', '')
-# shlex doesn't isolate single-char operators ';' '|' from neighbouring
-# tokens — `a; b` tokenizes as `['a;', 'b']`. Pre-space them so they
-# come out as their own tokens. Also strip stray `( ... )` subshell
-# wrappers, which would attach to `cd` / `feat` and break detection.
-cmd = re.sub(r'(?<![&|])([;|&])(?![|&])', r' \1 ', cmd)  # avoid breaking `&&`/`||`
-cmd = re.sub(r'[()]', ' ', cmd)
+
+# TODO(andywang): add comment
+SUBST = '__SUBST__'
+REDIR_RE = re.compile(r'(\d*|&)(>>|>\||>&|<<<|<<-|<<|<>|<&|>|<)')
+FD_DUP_RE = re.compile(r'\d+-?|-')
+
+def read_word(s, i):
+    n = len(s)
+    while i < n and s[i] in ' \t':
+        i += 1
+    buf = []
+    while i < n and s[i] not in ' \t\n;|&()<>':
+        c = s[i]
+        if c == "'":
+            j = s.find("'", i + 1)
+            j = n if j < 0 else j
+            buf.append(s[i+1:j]); i = j + 1
+        elif c == '"':
+            j = i + 1
+            while j < n and s[j] != '"':
+                j += 2 if s[j] == '\\' else 1
+            buf.append(s[i+1:j]); i = j + 1
+        elif c == '\\' and i + 1 < n:
+            buf.append(s[i+1]); i += 2
+        elif c == '$' and s[i+1:i+2] == '(':
+            _, i = scan(s, i + 2, ')'); buf.append(SUBST)
+        elif c == '`':
+            _, i = scan(s, i + 1, '`'); buf.append(SUBST)
+        else:
+            buf.append(c); i += 1
+    return ''.join(buf), i
+
+def scan(s, i=0, stop=None):
+    # TODO(andywang): add comment
+    out, pending_heredocs, depth, n = [], [], 0, len(s)
+    while i < n:
+        c = s[i]
+        if c == stop and (stop == '`' or depth == 0):
+            return ''.join(out), i + 1
+        if c == "'":
+            j = s.find("'", i + 1)
+            j = n - 1 if j < 0 else j
+            out.append(s[i:j+1]); i = j + 1
+            continue
+        if c == '"':
+            buf = ['"']; i += 1
+            while i < n and s[i] != '"':
+                if s[i] == '\\' and i + 1 < n:
+                    buf.append(s[i:i+2]); i += 2
+                elif s[i] == '$' and s[i+1:i+2] == '(':
+                    _, i = scan(s, i + 2, ')'); buf.append(SUBST)
+                elif s[i] == '`':
+                    _, i = scan(s, i + 1, '`'); buf.append(SUBST)
+                else:
+                    buf.append(s[i]); i += 1
+            buf.append('"'); out.append(''.join(buf)); i += 1
+            continue
+        if c == '\\' and i + 1 < n:
+            if s[i+1] != '\n':
+                out.append(s[i:i+2])
+            i += 2
+            continue
+        if c == '$' and s[i+1:i+2] == '(':
+            _, i = scan(s, i + 2, ')'); out.append(SUBST)
+            continue
+        if c == '`':
+            _, i = scan(s, i + 1, '`'); out.append(SUBST)
+            continue
+        if c == '\n':
+            out.append(' ; '); i += 1
+            for delim, strip_tabs in pending_heredocs:
+                while i < n:
+                    e = s.find('\n', i)
+                    e = n if e < 0 else e
+                    line = s[i:e]; i = e + 1
+                    if (line.lstrip('\t') if strip_tabs else line) == delim:
+                        break
+            pending_heredocs = []
+            continue
+        if not out or out[-1][-1] in ' \t;|&':
+            m = REDIR_RE.match(s, i)
+            if m:
+                op = m.group(2); i = m.end()
+                fd = FD_DUP_RE.match(s, i) if op in ('>&', '<&') else None
+                if fd:
+                    i = fd.end()
+                elif op in ('<<', '<<-'):
+                    delim, i = read_word(s, i)
+                    pending_heredocs.append((delim, op == '<<-'))
+                else:
+                    _, i = read_word(s, i)
+                out.append(' ')
+                continue
+        if c in ';|&':
+            j = i + 1
+            if j < n and s[j] in '|&' and s[i] in '|&':
+                j += 1
+            op = s[i:j]
+            out.append(' ' + ('|' if op == '|&' else op) + ' '); i = j
+            continue
+        if c in '()':
+            depth += 1 if c == '(' else -1
+            out.append(' '); i += 1
+            continue
+        out.append(c); i += 1
+    return ''.join(out), i
+
+cmd, _ = scan(cmd)
 try:
     tokens = shlex.split(cmd, posix=True, comments=False)
 except ValueError:
     sys.exit(0)
 
-SEPS = {'&&', '||', ';', '|'}
+SEPS = {'&&', '||', ';', '|', '&'}
 subs, cur = [], []
 for t in tokens:
     if t in SEPS:
@@ -124,6 +226,19 @@ for t in tokens:
         cur.append(t)
 if cur:
     subs.append(cur)
+
+VAR_RE = re.compile(r'\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))')
+shell_vars = {}
+
+def expand(token):
+    return VAR_RE.sub(lambda m: shell_vars.get(m.group(1) or m.group(2), m.group(0)), token)
+
+def is_resolved(token):
+    return '$' not in token and SUBST not in token
+
+def resolved_or_current(head):
+    # Empty head → the bash side falls back to the current branch.
+    return head if is_resolved(head) else ''
 
 def extract_gh_create(args):
     # Returns (heads, base, draft). base/draft are needed to reconstruct the
@@ -135,15 +250,15 @@ def extract_gh_create(args):
     while i < len(args):
         a = args[i]
         if a in ('-H', '--head') and i + 1 < len(args):
-            heads.append(args[i+1]); i += 2; continue
+            heads.append(resolved_or_current(args[i+1])); i += 2; continue
         if a in ('-B', '--base') and i + 1 < len(args):
             base = args[i+1]; i += 2; continue
         if a.startswith('--head='):
-            heads.append(a[len('--head='):])
+            heads.append(resolved_or_current(a[len('--head='):]))
         elif a.startswith('-H=') and len(a) > 3:
-            heads.append(a[3:])
+            heads.append(resolved_or_current(a[3:]))
         elif a.startswith('-H') and len(a) > 2 and a != '--head':
-            heads.append(a[2:])
+            heads.append(resolved_or_current(a[2:]))
         elif a.startswith('--base='):
             base = a[len('--base='):]
         elif a.startswith('-B=') and len(a) > 3:
@@ -183,8 +298,11 @@ def extract_git_push(args):
         dst = rs.split(':')[-1]          # `src:dst` → dst; bare `branch` → branch
         if dst.startswith('refs/heads/'):
             dst = dst[len('refs/heads/'):]
-        if not dst or dst == 'HEAD' or dst.startswith('refs/'):
-            continue                     # tags / non-branch refs / HEAD → fallback
+        if dst == 'HEAD' or not is_resolved(dst):
+            heads.append('')             # current branch
+            continue
+        if not dst or dst.startswith('refs/'):
+            continue                     # tags / non-branch refs
         heads.append(dst)
     # n_refspecs lets the caller tell `git push` (no refspec → current-branch
     # fallback) apart from `git push origin :gone` / tag pushes (refspecs
@@ -236,9 +354,15 @@ out = []
 for sub in subs:
     if not sub:
         continue
-    sub = strip_env_prefix(sub)
-    if not sub:
+    stripped = strip_env_prefix(sub)
+    if not stripped:
+        # TODO(andywang): add comment
+        for t in sub:
+            if ENV_ASSIGN_RE.match(t):
+                k, v = t.split('=', 1)
+                shell_vars[k] = expand(v)
         continue
+    sub = [expand(t) for t in stripped]
     if sub[0] == 'cd' and len(sub) >= 2:
         cd_override = sub[1]
         continue
