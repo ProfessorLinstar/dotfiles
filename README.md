@@ -33,7 +33,7 @@ This repository contains configuration files for my linux workspace. The followi
 │   ├── migrations.md                --- manual steps after pulling changes that leave stale files behind
 │   ├── orei-switch.md               --- OREI HDMI switch sleep/wake handoff: findings and the orei_switch feature
 │   ├── steamos-setup.md             --- SteamOS install, Steam settings, encryption and Windows VMs
-│   ├── upstream-sync.md             --- plan for rewriting and merging with the upstream repo this was forked from
+│   ├── upstream-sync.md             --- how this repo and its fork sync both ways
 │   ├── windows-setup.md             ---
 │   └── wsl-setup.md                 ---
 ├── dump                             --- exported application settings; only dconf/ is loaded by --dconf, the rest are imported by hand (see the --info output)
