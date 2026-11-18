@@ -1,0 +1,84 @@
+# Feature: symlink dotfiles into place.
+
+# Paths linked by every OS and profile. Directories link every file under them.
+LINK_COMMON_PATHS=(
+  home/.tmux.conf
+  home/.tmux/resurrect/claude_save.sh
+  home/.tmux/resurrect/saferestore.sh
+  home/.config/nvim
+  home/.config/starship.toml
+  home/.local/bin/vis
+  home/.local/bin/clip
+)
+
+# Shell startup files, for OSes and profiles that link them instead of writing managed blocks with the shell feature.
+LINK_SHELL_PATHS=(
+  home/.bash_profile
+  home/.bashrc
+  home/.profile
+  home/.zprofile
+  home/.zshrc
+)
+
+# Extra paths linked on steamos.
+LINK_STEAMOS_PATHS=(
+  home/.local/bin/gamescope-screenshot
+  home/.local/bin/steamos-vm
+  home/.local/bin/vm-usb
+)
+
+# Scripts and settings for the webterm feature, linked by the OSes and profiles that run it.
+LINK_WEBTERM_PATHS=(
+  home/.config/webterm
+  home/.local/bin/webterm-index
+  home/.local/bin/webterm-shell
+  home/.local/bin/webterm-ttyd
+  home/.local/share/webterm
+)
+
+# Extra paths linked by the arch desktop. Paths under root/ name single files, never directories: features copy some
+# files there (udev rules, tmpfiles configs, system units, boot-time files) and they must not be linked as well.
+LINK_ARCH_DESKTOP_PATHS=(
+  home/.vimrc
+  home/.ideavimrc
+  home/.ocamlformat
+  home/.pylintrc
+  home/.config/alacritty
+  home/.config/yapf
+  home/.local/bin/squidpdf
+  home/.local/bin/vm-usb
+  home/.local/share/applications
+  home/.local/share/backgrounds
+  root/usr/local/bin/cmus-reload
+  root/usr/local/bin/colortest
+)
+
+# Link one repo-relative file: root/* goes to / and home/* to $HOME.
+# Usage: link_dotfile <rel>
+link_dotfile() {
+  local rel="$1"
+  case "$rel" in
+    root/*) make_symlink "$DOTFILES_ROOT/$rel" "/${rel#root/}" sudo ;;
+    home/*) make_symlink "$DOTFILES_ROOT/$rel" "$HOME/${rel#home/}" ;;
+    *) warn "Not under root/ or home/, skipping: $rel" ;;
+  esac
+}
+
+# Symlink the OS and profile's link_paths: home/ into $HOME and root/ into / (with sudo).
+#
+# @machine any
+# @os any
+# @gui any
+feature_link() {
+  local os="$1" profile="$2" link_paths entry file
+  f_call os_profile_config link_paths -- "$os" "$profile"
+  for entry in $link_paths; do
+    if [[ ! -e "$DOTFILES_ROOT/$entry" ]]; then
+      warn "Source does not exist, skipping: $DOTFILES_ROOT/$entry"
+      continue
+    fi
+    while IFS= read -r -d '' file; do
+      link_dotfile "${file#./}"
+    done < <(cd "$DOTFILES_ROOT" && find "./$entry" -type f -print0)
+  done
+}

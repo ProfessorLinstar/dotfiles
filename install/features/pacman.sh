@@ -1,0 +1,163 @@
+# Features: pacman/yay package installs and printer setup (arch).
+
+# Pacman package list
+TERMINAL_PACMAN=(
+  "wmctrl"                                                      # CLI interface for X window manager
+  "zsh"                                                         # zshell essentials
+  "zsh-autosuggestions"                                         # .
+  "zsh-syntax-highlighting"                                     # .
+  "zsh-history-substring-search"                                # .
+  "zsh-completions"                                             # .
+  "tmux"                                                        # terminal multiplexer
+  "starship"                                                    # shell prompt
+  "git"                                                         # install.sh
+  "git-lfs"                                                     # handling large files in git
+  "gradle"                                                      # Gradle build tool
+  "make"                                                        # standard build tool
+  "python"                                                      # Python
+  "npm"                                                         # Javascript package manager
+  "cargo"                                                       # Rust package manager
+  "neovim"                                                      # text editor
+  "yarn"                                                        # markdown-preview dependency
+  "noto-fonts"                                                  # special fonts
+  "noto-fonts-cjk"                                              # .
+  "noto-fonts-emoji"                                            # .
+  "noto-fonts-extra"                                            # .
+  "tree"                                                        # show directory contents in tree form
+  "cmus"                                                        # Music player
+  "locate"                                                      # locate files
+  "xclip"                                                       # system clipboard tool
+  "man"                                                         # manual
+  "man-pages"                                                   # manual database
+  "acpi"                                                        # battery status and acpi information
+)
+
+GNOME_PACMAN=(
+  "gnome-shell"                                                 # gnome desktop environment
+  "gnome-terminal"                                              # gnome default terminal
+  "gdm"                                                         # gnome display manager
+  "gnome-tweaks"                                                # more settings
+  "gnome-control-center"                                        # settings
+  "gparted"                                                     # disk partition editor
+  "baobab"                                                      # disk usage analyzer
+  "gnome-disk-utility"                                          # disk manager
+  "dconf-editor"                                                # gnome settings editor
+  "seahorse"                                                    # keyring manager
+  "papirus-icon-theme"                                          # nice app icon theme
+  "nautilus"                                                    # gui file explorer
+  "xdg-user-dirs-gtk"                                           # Manages "well-known" user directories (e.g. Documents, Videos, etc.)
+  "okular"                                                      # PDF viewer
+  "gnome-system-monitor"                                        # system monitor
+  "fragments"                                                   # torrent downloader
+  "gthumb"                                                      # image viewer
+  "gnome-screenshot"                                            # screenshot tool
+  "gst-plugin-pipewire"                                         # gnome screencast dependency
+  "obs-studio"                                                  # Sophisticated recorder/streamer
+  "xdg-desktop-portal"                                          # Enables pipewire to provide video capture (for obs)
+  "xdg-desktop-portal-gnome"                                    # xdg-desktop-portal backend for gnome
+  "totem"                                                       # video player (installs gst-plugins-good)
+  "gst-libav"                                                   # required multimedia framework for totem
+  "kid3"                                                        # audio metadata editor
+  "bluez-utils"                                                 # bluetooth support
+  "discord"                                                     # social media
+  "solaar"                                                      # logitech pairing software
+  "obsidian"                                                    # markdown note taker
+)
+
+LATEX_PACMAN=(
+  "texlive-binextra"                                            # get latexmk
+  "biber"                                                       # enable biber for latexmk
+  "perl-clone"                                                  # fix missing dependency for biber (08-05-2022)
+  "cpanminus"                                                   # install cpan modules more easily
+)
+
+# (hp) printer package list
+PRINTER_PACMAN=(
+  "cups"                                                        # standard printing system
+  "system-config-printer"                                       # GUI printer configuration
+  "hplip"                                                       # hp printer driver installer
+)
+
+GNOME_YAY=(
+  "adw-gtk-theme"                                               # dark gtk theme
+  "xcursor-breeze"                                              # cursor theme
+  "insync"                                                      # drive sync
+  "google-chrome"                                               # web browser
+  "zoom"                                                        # video conferencing platform
+)
+
+# Install yay if it's not already on the system.
+# Usage: ensure_yay
+ensure_yay() {
+  if command -v yay &>/dev/null; then
+    return
+  fi
+  info "Installing yay..."
+  run sudo pacman --needed -S git base-devel
+  if $DRY_RUN; then
+    info "[dry-run] would clone and build yay from AUR"
+    return
+  fi
+  with_tmpdir _build_yay_in
+}
+
+# Clone yay from the AUR into the temp dir $1 and build and install it.
+# Usage: _build_yay_in <tmp>
+_build_yay_in() {
+  local tmp="$1"
+  git clone https://aur.archlinux.org/yay.git "$tmp/yay"
+  (
+    cd "$tmp/yay" || exit
+    makepkg -si
+  )
+}
+
+# Install the terminal, GNOME and LaTeX pacman packages.
+#
+# @machine any
+# @os arch
+# @gui gnome
+feature_pacman() {
+  info "Installing pacman packages for terminal..."
+  run_tty sudo pacman --needed -Sq "${TERMINAL_PACMAN[@]}"
+  info "Installing pacman packages for gnome..."
+  run_tty sudo pacman --needed -Sq "${GNOME_PACMAN[@]}"
+  info "Installing pacman packages for latex..."
+  run_tty sudo pacman --needed -Sq "${LATEX_PACMAN[@]}"
+}
+
+# Install yay if missing, then the AUR packages (themes, Insync, Chrome, Zoom).
+#
+# @machine any
+# @os arch
+# @gui gnome
+feature_yay() {
+  ensure_yay
+  info "Installing yay packages for gnome..."
+  run_tty yay --answerclean None --answerdiff None --needed -Sq "${GNOME_YAY[@]}"
+}
+
+# Install only the terminal packages, unless --pacman already covers them.
+#
+# @machine any
+# @os arch
+# @gui any
+feature_terminal() {
+  local enabled="$3"
+  if ! list_contains "$enabled" pacman; then
+    info "Installing pacman packages for terminal..."
+    run_tty sudo pacman --needed -Sq "${TERMINAL_PACMAN[@]}"
+  fi
+}
+
+# Install CUPS and the HP printer drivers and enable the cups service.
+#
+# @machine any
+# @os arch
+# @gui any
+feature_printer() {
+  info "Installing pacman packages for printer..."
+  run_tty sudo pacman --needed -Sq "${PRINTER_PACMAN[@]}"
+  run sudo systemctl enable --now cups
+  info "Note: to install HP printer drivers, use 'hp-setup -i'."
+}

@@ -1,536 +1,553 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ################################################################################
 # Program: install.sh
 # Description: Installs essential packages for configuration and creates
-#              symlinks in the proper locations.
+#              symlinks in the proper locations. Installs for an OS, profile
+#              and machine (see install/os/, install/profiles/ and the
+#              variants naming an OS and profile in install/variants/) and
+#              toggles features with flags.
 # Location: ~/dotfiles/install.sh
 ################################################################################
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)"
+INSTALL_DIR="$SCRIPT_DIR/install"
 DOTFILES_ROOT="$HOME/dotfiles"
 BACKUPS_ROOT="$DOTFILES_ROOT/.backup"
+LOCAL_PREFIX="$HOME/.local"
+LOCAL_BIN="$LOCAL_PREFIX/bin"
+INSTALL_CONFIG="${DOTFILES_INSTALL_CONFIG:-$HOME/.config/dotfiles/install.conf}"
+# A directory of downloads named by SHA-256, read and filled by download_verified (see Download Cache in README.md).
+DOWNLOAD_CACHE="${DOTFILES_DOWNLOAD_CACHE:-}"
 
-# --- Output helpers ---
-info()  { printf '\033[32m[info]\033[0m %s\n' "$*"; }
-warn()  { printf '\033[33m[warn]\033[0m %s\n' "$*" >&2; }
-error() { printf '\033[31m[error]\033[0m %s\n' "$*" >&2; exit 1; }
+# install.sh only runs from a dotfiles checkout, beside its install/ directory; to install from scratch, use the
+# bootstrap on the repo's install branch (see README.md). From a git checkout elsewhere, clone_checkout_to_root moves
+# the install to $DOTFILES_ROOT. Runs before install/lib is loaded, so it prints its own messages.
+# Usage: bootstrap [<arg>...]
+bootstrap() {
+  if [[ ! -f "$INSTALL_DIR/lib/fn.sh" ]]; then
+    printf '[error] install.sh must run from a dotfiles checkout. To install from scratch, use the install.sh on\n' >&2
+    printf '        the install branch instead (see Installation in README.md).\n' >&2
+    exit 1
+  fi
+  clone_checkout_to_root "$@"
+}
 
+# When run from a git checkout elsewhere (e.g. Coder's ~/.config/coderv2/dotfiles) and $DOTFILES_ROOT doesn't exist,
+# clone that checkout's current commit to $DOTFILES_ROOT, point its origin at the checkout's origin, then re-run its
+# install.sh with the same arguments. Uncommitted changes aren't copied. Anything else is left to enter_dotfiles_root.
+# Usage: clone_checkout_to_root [<arg>...]
+clone_checkout_to_root() {
+  local top head branch origin
+  [[ ! -e "$DOTFILES_ROOT" && ! -L "$DOTFILES_ROOT" ]] || return 0
+  command -v git >/dev/null || return 0
+  top="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)" || return 0
+  [[ "$(cd "$top" && pwd -P)" == "$(cd "$SCRIPT_DIR" && pwd -P)" ]] || return 0
+
+  head="$(git -C "$SCRIPT_DIR" rev-parse HEAD)"
+  branch="$(git -C "$SCRIPT_DIR" symbolic-ref --short -q HEAD || true)"
+  origin="$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || true)"
+  [[ -z "$(git -C "$SCRIPT_DIR" status --porcelain)" ]] \
+    || printf '[warn] %s has uncommitted changes, which are not copied to %s\n' "$SCRIPT_DIR" "$DOTFILES_ROOT" >&2
+  printf '[info] Cloning %s (%s) into %s\n' "$SCRIPT_DIR" "${branch:-${head:0:12}}" "$DOTFILES_ROOT"
+  git -c advice.detachedHead=false clone --quiet --no-checkout "$SCRIPT_DIR" "$DOTFILES_ROOT"
+  if [[ -n "$branch" ]]; then
+    git -C "$DOTFILES_ROOT" checkout --quiet -B "$branch" "$head"
+  else
+    git -C "$DOTFILES_ROOT" checkout --quiet --detach "$head"
+  fi
+  [[ -z "$origin" ]] || git -C "$DOTFILES_ROOT" remote set-url origin "$origin"
+  exec "${BASH:-bash}" "$DOTFILES_ROOT/install.sh" "$@"
+}
+
+# Source install/lib, features, OSes, profiles and variants. They only define functions and constants, so their
+# globals stay global.
+# Usage: load_install_deps
+load_install_deps() {
+  local f
+  for f in "$INSTALL_DIR"/lib/*.sh "$INSTALL_DIR"/features/*.sh "$INSTALL_DIR"/features/*/*.sh \
+    "$INSTALL_DIR"/os/*.sh "$INSTALL_DIR"/profiles/*.sh "$INSTALL_DIR"/variants/*.sh \
+    "$INSTALL_DIR"/oti/*.sh; do
+    # shellcheck source=/dev/null
+    source "$f"
+  done
+}
+
+# Print feature $1's --help line, with the machines it is for and the features it requires.
+# Usage: usage_feature <feature>
+usage_feature() {
+  local machine requires
+  f_call feature_requirements machine requires -- "$1"
+  [[ "$machine" != any ]] || machine=""
+  printf '  --%-14s %s%s%s\n' "$1" "$(feature_description "$1")" "${machine:+ (machine: $machine)}" \
+    "${requires:+ (requires: --${requires// / --})}"
+}
+
+# Print the variants, OSes and profiles, then the options of OS $1 with profile $2 on machine $3 if they can run.
+# Usage: usage <os> <profile> [<machine>]
 usage() {
+  local os="$1" profile="$2" machine="${3:-generic}" v features optional other="" uninstallable="" capturable=""
+  local variant_os variant_profile description os_machines feature_machine
   cat <<EOF
-Usage: $(basename "$0") [OPTIONS]
+Usage: $(basename "$0") [--variant NAME | --os NAME --profile NAME] [--machine NAME] [--infer] [OPTIONS]
+       $(basename "$0") --oti NAME [--dry-run]
 
-dotfiles installation and configuration script for Arch Linux.
-With no options, runs ./light-install.sh -a (lightweight install).
+dotfiles installation and configuration script. All operations are idempotent.
+An install is for an OS, a profile (how the machine is used) and a machine
+(the hardware, default generic). --variant names an OS and profile, which
+--os and --profile override; --infer guesses whichever isn't given from this
+system. Run with them and --help to list their options. Without them,
+DOTFILES_VARIANT, DOTFILES_OS, DOTFILES_PROFILE and DOTFILES_MACHINE name
+them; without options, DOTFILES_FEATURES lists them (feature names, or all
+for --all). Set them in the environment or in $INSTALL_CONFIG.
+--oti runs a one-time install instead, which sets up a machine once (e.g.
+installing Arch from its live ISO): it asks its questions up front, prints
+each command it runs, resumes where an earlier run stopped, and can't be undone.
 See README.md for more information.
 
-  --all          install all options
-  --terminal     install terminal packages
-  --pacman       install pacman packages
-  --font         install jetbrains mono font
-  --logiops      install and configure logitech software
-  --yay          install yay packages
-  --link         create dotfile links
-  --services     enable and start custom services
-  --manual       make manual substitutions to files in-place
-  --tmux         install tmux plugins
-  --dconf        load dconf configuration
-  --gitconfig    set up default global git config
-  --info         provide info on manual configuration tasks
-  --xdg          load default xdg configuration
-  --printer      install and set up HP printer drivers
-  --dry-run      print what would happen without making changes
-  --help         show this help page
+Variants:
 EOF
-}
-
-# Default to lightweight install when no options are provided. Done before
-# any bash-4-only syntax (e.g. `declare -A`) so the common path works under
-# /bin/bash 3.x and when this file is sourced from zsh.
-if [[ $# -eq 0 ]]; then
-  exec "$SCRIPT_DIR/light-install.sh" -a
-fi
-
-# --- Flag parsing ---
-# Order here determines run order below.
-FEATURES=(pacman yay terminal font printer logiops link services manual tmux gitconfig dconf xdg info)
-declare -A SKIP
-for k in "${FEATURES[@]}"; do SKIP[$k]=true; done
-DRY_RUN=false
-
-LONG="all,dry-run,help,$(IFS=,; printf '%s' "${FEATURES[*]}")"
-OPTS="$(getopt -o '' --long "$LONG" --name "$(basename "$0")" -- "$@")" || { usage; exit 1; }
-eval set -- "$OPTS"
-
-while true; do
-  case "$1" in
-    --all)
-      # 'terminal' is intentionally left skipped: pacman + yay together cover
-      # all packages the --terminal flag would install.
-      for k in "${FEATURES[@]}"; do
-        if [[ "$k" != "terminal" ]]; then
-          SKIP[$k]=false
-        fi
-      done
-      shift
-      ;;
-    --dry-run) DRY_RUN=true; shift ;;
-    --help)    usage; exit 0 ;;
-    --)        shift; break ;;
-    --*)
-      key="${1#--}"
-      if [[ -z "${SKIP[$key]+x}" ]]; then
-        warn "Unknown option: $1"
-        usage
-        exit 1
-      fi
-      SKIP[$key]=false
-      shift
-      ;;
-    *) usage; exit 1 ;;
-  esac
-done
-
-# Ensure dotfiles dir exists and switch to it (no subshell, so cwd persists).
-[[ -d "$DOTFILES_ROOT" ]] || error "dotfiles must be at $DOTFILES_ROOT."
-cd "$DOTFILES_ROOT"
-
-# --- Helpers ---
-
-# Detect whether a controlling terminal is actually usable (open succeeds).
-# `[[ -r /dev/tty ]]` is unreliable: the file exists in non-interactive
-# environments but fails to open with ENXIO.
-if (: < /dev/tty) 2>/dev/null; then
-  HAS_TTY=true
-else
-  HAS_TTY=false
-fi
-
-# Execute a command, or just announce it under --dry-run.
-run() {
-  if $DRY_RUN; then
-    printf '\033[36m[dry-run]\033[0m %s\n' "$*"
-  else
-    "$@"
-  fi
-}
-
-# Like run, but routes stdin from the controlling terminal when one exists.
-# Used for commands like `pacman` that may prompt for confirmation; falls
-# back to inherited stdin in non-interactive contexts (CI, nested scripts).
-run_tty() {
-  if $HAS_TTY; then
-    run "$@" < /dev/tty
-  else
-    run "$@"
-  fi
-}
-
-# Prompt the user for a yes/no answer (reads from the controlling terminal so
-# it works even when stdin is redirected).
-confirm() {
-  local reply
-  read -p "$1 [Y/n] " -r reply < /dev/tty
-  [[ "$reply" =~ ^[Yy]$ ]]
-}
-
-# Replace ^pattern$ with replace in file (with backup) after user confirmation.
-# Fourth arg is an optional sudo-style prefix for the sed call.
-confirmsed() {
-  local file="$1" pattern="$2" replace="$3" user="${4:-}"
-
-  if [[ ! -f "$file" ]]; then
-    warn "$file does not exist."
-    return
-  fi
-
-  if grep -Eq "^${pattern}\$" "$file"; then
-    if $DRY_RUN; then
-      info "[dry-run] would replace '$pattern' with '$replace' in $file"
-      return
-    fi
-    if confirm "Edit $file to replace '$pattern' with '$replace'?"; then
-      mkdir -pv "$(dirname "$BACKUPS_ROOT$file")"
-      cp -nvi "$file" "$BACKUPS_ROOT$file" < /dev/tty
-      $user sed -Ei "s@^${pattern}\$@${replace}@" "$file"
-    fi
-  elif ! grep -Eq "^${replace}\$" "$file"; then
-    warn "Neither '$pattern' nor '$replace' were found in $file."
-  fi
-}
-
-# Create a symlink at $target pointing to $src, backing up any existing file
-# or stale symlink. Third arg is an optional sudo-style prefix.
-make_symlink() {
-  local src="$1" target="$2" sudo_cmd="${3:-}"
-
-  if [[ ! -e "$src" ]]; then
-    warn "Source does not exist, skipping: $src"
-    return
-  fi
-
-  # Already pointing where we want — nothing to do.
-  if [[ -L "$target" ]] && [[ "$(readlink "$target")" == "$src" ]]; then
-    return
-  fi
-
-  run $sudo_cmd mkdir -pv "$(dirname "$target")"
-
-  # Back up anything in the way (regular file OR symlink pointing elsewhere).
-  if [[ -e "$target" || -L "$target" ]]; then
-    run mkdir -pv "$(dirname "$BACKUPS_ROOT$target")"
-    run_tty $sudo_cmd mv -vi "$target" "$BACKUPS_ROOT$target"
-  fi
-
-  run $sudo_cmd ln -snfv "$src" "$target"
-}
-
-# Return 0 if the given find path matches any entry in EXCLUDE_PATHS, either
-# exactly or as a directory prefix.
-should_exclude() {
-  local path="$1" ex
-  for ex in "${EXCLUDE_PATHS[@]}"; do
-    [[ "$path" == "$ex" || "$path" == "$ex"/* ]] && return 0
+  for v in $(available_names variants); do
+    f_call variant_config variant_os=os variant_profile=profile -- "$v"
+    printf '  %-10s --os %s --profile %s\n' "$v" "$variant_os" "$variant_profile"
   done
-  return 1
-}
+  printf '\nOSes (profiles; machines):\n'
+  for v in $(available_names os); do
+    f_call os_config description os_machines=machines -- "$v"
+    printf '  %-10s %s (%s; %s)\n' "$v" "$description" "$(os_profiles "$v")" "$os_machines"
+  done
+  printf '\nProfiles:\n'
+  for v in $(available_names profiles); do
+    f_call profile_config description -- "$v"
+    printf '  %-10s %s\n' "$v" "$description"
+  done
+  printf '\nOne-time installs (--oti NAME):\n'
+  for v in $(available_names oti); do
+    f_call oti_config description -- "$v"
+    printf '  %-12s %s\n' "$v" "$description"
+  done
+  os_supports_profile "$os" "$profile" || return 0
 
-# --- Package lists ---
-
-# Pacman package list
-TERMINAL_PACMAN=(
-  "wmctrl"                                                      # CLI interface for X window manager
-  "zsh"                                                         # zshell essentials
-  "zsh-autosuggestions"                                         # .
-  "zsh-syntax-highlighting"                                     # .
-  "zsh-history-substring-search"                                # .
-  "zsh-completions"                                             # .
-  "tmux"                                                        # terminal multiplexer
-  "git"                                                         # install.sh
-  "git-lfs"                                                     # handling large files in git
-  "gradle"                                                      # Gradle build tool
-  "make"                                                        # standard build tool
-  "python"                                                      # Python
-  "npm"                                                         # Javascript package manager
-  "cargo"                                                       # Rust package manager
-  "neovim"                                                      # text editor
-  "yarn"                                                        # markdown-preview dependency
-  "noto-fonts"                                                  # special fonts
-  "noto-fonts-cjk"                                              # .
-  "noto-fonts-emoji"                                            # .
-  "noto-fonts-extra"                                            # .
-  "tree"                                                        # show directory contents in tree form
-  "cmus"                                                        # Music player
-  "locate"                                                      # locate files
-  "xclip"                                                       # system clipboard tool
-  "man"                                                         # manual
-  "man-pages"                                                   # manual database
-  "acpi"                                                        # battery status and acpi information
-)
-
-GNOME_PACMAN=(
-  "gnome-shell"                                                 # gnome desktop environment
-  "gnome-terminal"                                              # gnome default terminal
-  "gdm"                                                         # gnome display manager
-  "gnome-tweaks"                                                # more settings
-  "gnome-control-center"                                        # settings
-  "gparted"                                                     # disk partition editor
-  "baobab"                                                      # disk usage analyzer
-  "gnome-disk-utility"                                          # disk manager
-  "dconf-editor"                                                # gnome settings editor
-  "seahorse"                                                    # keyring manager
-  "papirus-icon-theme"                                          # nice app icon theme
-  "nautilus"                                                    # gui file explorer
-  "xdg-user-dirs-gtk"                                           # Manages "well-known" user directories (e.g. Documents, Videos, etc.)
-  "okular"                                                      # PDF viewer
-  "gnome-system-monitor"                                        # system monitor
-  "fragments"                                                   # torrent downloader
-  "gthumb"                                                      # image viewer
-  "gnome-screenshot"                                            # screenshot tool
-  "gst-plugin-pipewire"                                         # gnome screencast dependency
-  "obs-studio"                                                  # Sophisticated recorder/streamer
-  "xdg-desktop-portal"                                          # Enables pipewire to provide video capture (for obs)
-  "xdg-desktop-portal-gnome"                                    # xdg-desktop-portal backend for gnome
-  "totem"                                                       # video player (installs gst-plugins-good)
-  "gst-libav"                                                   # required multimedia framework for totem
-  "kid3"                                                        # audio metadata editor
-  "bluez-utils"                                                 # bluetooth support
-  "discord"                                                     # social media
-  "solaar"                                                      # logitech pairing software
-  "obsidian"                                                    # markdown note taker
-)
-
-LATEX_PACMAN=(
-  "texlive-binextra"                                            # get latexmk
-  "biber"                                                       # enable biber for latexmk
-  "perl-clone"                                                  # fix missing dependency for biber (08-05-2022)
-  "cpanminus"                                                   # install cpan modules more easily
-)
-
-# (hp) printer package list
-PRINTER_PACMAN=(
-  "cups"                                                        # standard printing system
-  "system-config-printer"                                       # GUI printer configuration
-  "hplip"                                                       # hp printer driver installer
-)
-
-GNOME_YAY=(
-  "adw-gtk-theme"                                               # dark gtk theme
-  "xcursor-breeze"                                              # cursor theme
-  "insync"                                                      # drive sync
-  "google-chrome"                                               # web browser
-  "zoom"                                                        # video conferencing platform
-)
-
-# Exclude paths beginning with these prefixes when linking.
-# Each entry is matched against `find` output exactly, or as a directory prefix.
-EXCLUDE_PATHS=(
-  "./.git"                          # dotfiles git repository information
-  "./dump"                          # manually loaded configuration files
-  "./.gitignore"
-  "./install.sh"                    # this script!
-  "./light-install.sh"              # a lighter version of this script!
-  "./README.md"                     # dotfiles readme
-  "./.backup"                       # temporary backup file of modified files
-  "./Sessionx.vim"                  # vim Obsession session file
-  "./.claude/settings.local.json"   # needs to be merged with user settings, rather than replacing it
-  "./.claude/CLAUDE.md"             # needs to be merged with user CLAUDE.md, rather than replacing it
-  "./tests"                         # dotfiles tests
-  "./docs"                          # dotfile docs
-)
-
-# --- Section functions ---
-
-# Install yay if it's not already on the system.
-ensure_yay() {
-  if command -v yay &>/dev/null; then
-    return
-  fi
-  info "Installing yay..."
-  run sudo pacman --needed -S git base-devel
-  if $DRY_RUN; then
-    info "[dry-run] would clone and build yay from AUR"
-    return
-  fi
-  (
-    cd /tmp
-    rm -rf yay
-    git clone https://aur.archlinux.org/yay.git
-    cd yay
-    makepkg -si
-  )
-  rm -rf /tmp/yay
-}
-
-install_pacman() {
-  info "Installing pacman packages for terminal..."
-  run_tty sudo pacman --needed -Sq "${TERMINAL_PACMAN[@]}"
-  info "Installing pacman packages for gnome..."
-  run_tty sudo pacman --needed -Sq "${GNOME_PACMAN[@]}"
-  info "Installing pacman packages for latex..."
-  run_tty sudo pacman --needed -Sq "${LATEX_PACMAN[@]}"
-}
-
-install_yay() {
-  ensure_yay
-  info "Installing yay packages for terminal..."
-  run_tty yay --answerclean None --answerdiff None --needed -Sq "${TERMINAL_YAY[@]}"
-  info "Installing yay packages for gnome..."
-  run_tty yay --answerclean None --answerdiff None --needed -Sq "${GNOME_YAY[@]}"
-}
-
-# Install only the terminal subset of packages. Skips work already covered by
-# install_pacman / install_yay when those flags were also given.
-install_terminal() {
-  if ${SKIP[pacman]}; then
-    info "Installing pacman packages for terminal..."
-    run_tty sudo pacman --needed -Sq "${TERMINAL_PACMAN[@]}"
-  fi
-  if ${SKIP[yay]}; then
-    ensure_yay
-    info "Installing yay packages for terminal..."
-    run_tty yay --answerclean None --answerdiff None --needed -Sq "${TERMINAL_YAY[@]}"
-  fi
-
-  if command -v starship &>/dev/null; then
-    info "starship already available: $(command -v starship)"
-    return
-  else
-    curl -sS https://starship.rs/install.sh | sh -s -- -y
-  fi
-}
-
-install_font() {
-  if $DRY_RUN; then
-    info "[dry-run] would install JetBrainsMono"
-    return
-  fi
-  mkdir -p "$HOME/.local/share/fonts"
-  (
-    cd /tmp && rm -rf fonts && mkdir fonts && cd fonts
-    curl -L -o "fonts.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/JetBrainsMono.zip" 
-    unzip "fonts.zip"
-    mv *.ttf "$HOME/.local/share/fonts"
-  )
-  rm -rf /tmp/fonts
-}
-
-install_printer() {
-  info "Installing pacman packages for printer..."
-  run_tty sudo pacman --needed -Sq "${PRINTER_PACMAN[@]}"
-  run sudo systemctl enable --now cups
-  info "Note: to install HP printer drivers, use 'hp-setup -i'."
-}
-
-install_logiops() {
-  if ! systemctl list-unit-files | grep -q "logid.service"; then
-    info "Installing PixlOne/logiops..."
-    run sudo pacman --needed -S cmake libevdev libconfig pkgconf
-    if $DRY_RUN; then
-      info "[dry-run] would build and install PixlOne/logiops from source"
-    else
-      (
-        cd /tmp && rm -rf logiops && git clone https://github.com/PixlOne/logiops && cd logiops
-        mkdir -p build
-        cd build
-        cmake ..
-        make
-        sudo make install
-      )
-      rm -rf /tmp/logiops
-    fi
-  fi
-
-  if [[ "$(systemctl is-active logid.service 2>/dev/null || true)" != "active" ]]; then
-    info "Enabling logid.service..."
-    run sudo systemctl enable --now logid.service
-  fi
-}
-
-link_dotfiles() {
-  local dotfile rel target user src
-  while IFS= read -r -d '' dotfile; do
-    if should_exclude "$dotfile"; then
-      continue
-    fi
-
-    rel="${dotfile#./}"
-    if [[ "$rel" == root/* ]]; then
-      target="/${rel#root/}"
-      user="sudo"
-    else
-      target="$HOME/$rel"
-      user=""
-    fi
-    src="$DOTFILES_ROOT/$rel"
-    make_symlink "$src" "$target" "$user"
-  done < <(find . -type f -print0)
-}
-
-enable_services() {
-  run systemctl enable --now auto-suspend.timer
-  run systemctl enable --now bluetooth.service
-}
-
-apply_manual_patches() {
-  confirmsed /etc/bluetooth/main.conf "#AutoEnable=false" "AutoEnable=true" sudo
-}
-
-install_tmux_plugins() {
-  local tpm_dir="$HOME/.tmux/plugins/tpm"
-  if [[ ! -d "$tpm_dir" ]]; then
-    info "Installing tpm..."
-    run git clone https://github.com/tmux-plugins/tpm "$tpm_dir"
-    info "tpm installation complete."
-  fi
-}
-
-configure_git() {
-  if ! command -v git &>/dev/null; then
-    warn "git command not found, skipping git config setup."
-    return
-  fi
-  run git config --global core.excludesFile "$DOTFILES_ROOT/.config/git/ignore"
-  run git config --global core.fsmonitor true
-  run git config --global core.untrackedCache true
-  run git config --global credential.helper store
-  run git config --global feature.manyFiles true
-  run git config --global fetch.prune true
-  run git config --global pull.rebase false
-  run git config --global push.autoSetupRemote true
-}
-
-load_dconf() {
-  local dump_file="$DOTFILES_ROOT/dump/dconf/arch.dconf"
-
-  info "Backing up current dconf configuration..."
-  run mkdir -pv "$(dirname "$BACKUPS_ROOT$dump_file")"
-  if $DRY_RUN; then
-    info "[dry-run] would dump dconf to $BACKUPS_ROOT$dump_file"
-    info "[dry-run] would load dconf from $dump_file"
-    return
-  fi
-
-  local tmp
-  tmp="$(mktemp)"
-  trap 'rm -f "$tmp"' RETURN
-  dconf dump / > "$tmp"
-  cp -vi "$tmp" "$BACKUPS_ROOT$dump_file"
-
-  dconf load / < "$dump_file"
-  info "dconf configuration loaded."
-}
-
-configure_xdg() {
-  info "Running xdg-user-dirs-update..."
-  run xdg-user-dirs-update
-
-  info "Setting default applications with xdg-mime..."
-  run xdg-mime default okularApplication_pdf.desktop application/pdf
-  run xdg-mime default org.gnome.gThumb.desktop      image/gif
-  run xdg-mime default org.gnome.gThumb.desktop      image/jpeg
-  run xdg-mime default org.gnome.gThumb.desktop      image/png
-  run xdg-mime default org.gnome.gThumb.desktop      image/webp
-  run xdg-mime default org.gnome.Totem.desktop       audio/mpeg
-  run xdg-mime default org.gnome.Totem.desktop       audio/mp4
-  run xdg-mime default nvim.desktop                  text/plain
-
-  info "xdg update complete."
-}
-
-print_info() {
+  f_call os_profile_config features optional -- "$os" "$profile"
   cat <<EOF
 
-Providing dump info...
-'$DOTFILES_ROOT/dump' contains exported configuration files of various applications, typically those with guis.
-dconf settings can be loaded automatically by using this installer with '--dconf'. Most settings need to be imported manually.
-
-Configurations that must be loaded manually include:
- - Insync ignorerules: Account Settings > Ignore Rules (paste ignorerules text)
- - Okular shortcuts: Settings > Configure Keyboard Shortcuts > Manage Schemes > More Actions > Import Scheme (select default.shortcuts)
-Files are available in $DOTFILES_ROOT/dump/<application>
-
+Options for OS '$os' with profile '$profile' on machine '$machine':
+  --variant NAME   select an OS and profile
+  --os NAME        select the OS
+  --profile NAME   select the profile
+  --machine NAME   select the machine (the hardware)
+  --infer          infer the OS, profile or machine not given from this system
+  --all            install all default options
+EOF
+  for v in $features; do
+    feature_uninstallable "$v" && uninstallable+="${uninstallable:+ }$v"
+    feature_capturable "$v" && capturable+="${capturable:+ }$v"
+    f_call feature_requirements feature_machine=machine -- "$v"
+    if list_contains "$optional" "$v"; then
+      continue
+    elif machine_supported "$feature_machine" "$machine"; then
+      usage_feature "$v"
+    else
+      other+="${other:+ }$v"
+    fi
+  done
+  if [[ -n "$optional" ]]; then
+    printf '\nOptional (not included in --all):\n'
+    for v in $optional; do
+      usage_feature "$v"
+    done
+  fi
+  if [[ -n "$other" ]]; then
+    printf "\nFor other machines (not included in --all on '%s'):\n" "$machine"
+    for v in $other; do
+      usage_feature "$v"
+    done
+  fi
+  [[ -z "$optional$other" ]] || echo
+  if [[ -n "$uninstallable" ]]; then
+    printf '  --%-14s %s (%s)\n' reinstall "uninstall the selected options, then install them" "$uninstallable"
+    printf '  --%-14s %s (%s)\n' uninstall "uninstall the selected options" "$uninstallable"
+  fi
+  if [[ -n "$capturable" ]]; then
+    printf '  --%-14s %s (%s)\n' capture "capture the selected options' settings from this system into the repo" "$capturable"
+  fi
+  cat <<EOF
+  --dry-run        print what would happen without making changes
+  --help, -h       show this help page
 EOF
 }
 
-# --- Main ---
-info "Beginning dotfiles installation..."
+# Warn with message $1, print usage (of OS $2 with profile $3 on machine $4, if given) and exit.
+# Usage: usage_error <message> [<os>] [<profile>] [<machine>]
+usage_error() {
+  local message="$1" os="${2:-}" profile="${3:-}" machine="${4:-}"
+  warn "$message"
+  usage "$os" "$profile" "$machine" >&2
+  exit 1
+}
 
-${SKIP[pacman]}    || install_pacman
-${SKIP[yay]}       || install_yay
-${SKIP[terminal]}  || install_terminal
-${SKIP[font]}      || install_font
-${SKIP[printer]}   || install_printer
-${SKIP[logiops]}   || install_logiops
-${SKIP[link]}      || link_dotfiles
-${SKIP[services]}  || enable_services
-${SKIP[manual]}    || apply_manual_patches
-${SKIP[tmux]}      || install_tmux_plugins
-${SKIP[gitconfig]} || configure_git
-${SKIP[dconf]}     || load_dconf
-${SKIP[xdg]}       || configure_xdg
-${SKIP[info]}      || print_info
+# Parse install.sh's command line, exiting with usage on a bad one.
+# Usage: f_call parse_args variant os profile machine infer flags mode all dry_run help oti -- [<arg>...]
+# Returns: variant os profile machine infer flags mode all dry_run help oti
+#   infer: true with --infer; all, dry_run and help likewise for --all, --dry-run and --help
+#   flags: the feature options given, without their --, as a space-separated list starting and ending with a space
+#   mode: install, reinstall or uninstall
+parse_args() {
+  local variant="" os="" profile="" machine="" infer=false flags=" " mode=install all=false dry_run=false help=false
+  local oti="" opt value
 
-info "dotfiles installation complete."
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --variant|--os|--profile|--machine|--oti|--variant=*|--os=*|--profile=*|--machine=*|--oti=*)
+        opt="${1%%=*}"
+        if [[ "$1" == *=* ]]; then
+          value="${1#*=}"
+          shift
+        else
+          [[ $# -ge 2 ]] || usage_error "$opt requires a value"
+          value="$2"
+          shift 2
+        fi
+        [[ -n "$value" ]] || usage_error "$opt requires a non-empty value"
+        [[ "$value" != --* ]] || usage_error "$opt requires a value, but got the option $value"
+        case "$opt" in
+          --oti)     [[ -z "$oti" ]] || usage_error "$opt was given twice"; oti="$value" ;;
+          --variant) [[ -z "$variant" ]] || usage_error "$opt was given twice"; variant="$value" ;;
+          --os)      [[ -z "$os" ]] || usage_error "$opt was given twice"; os="$value" ;;
+          --profile) [[ -z "$profile" ]] || usage_error "$opt was given twice"; profile="$value" ;;
+          --machine) [[ -z "$machine" ]] || usage_error "$opt was given twice"; machine="$value" ;;
+        esac
+        ;;
+      --infer)     infer=true; shift ;;
+      --all)       all=true; shift ;;
+      --dry-run)   dry_run=true; shift ;;
+      --reinstall|--uninstall|--capture)
+        [[ "$mode" == install || "$mode" == "${1#--}" ]] \
+          || usage_error "--reinstall, --uninstall and --capture are mutually exclusive"
+        mode="${1#--}"
+        shift
+        ;;
+      --help|-h)   help=true; shift ;;
+      *)
+        # Feature names only, so later word splitting of the flags can't glob.
+        [[ "$1" =~ ^--[a-z0-9_-]+$ ]] || usage_error "Unexpected argument: $1"
+        flags+="${1#--} "
+        shift
+        ;;
+    esac
+  done
+
+  f_return variant os profile machine infer flags mode all dry_run help oti
+}
+
+# Read the install defaults from DOTFILES_VARIANT, DOTFILES_OS, DOTFILES_PROFILE, DOTFILES_MACHINE and
+# DOTFILES_FEATURES in the environment or, for each one unset there, in config file <conf>. The file is sourced in a
+# subshell so it can't change this shell's state.
+# Usage: f_call load_install_defaults default_variant default_os default_profile default_machine default_features -- \
+#   <conf>
+# Returns: default_variant default_os default_profile default_machine default_features
+load_install_defaults() {
+  local conf="$1" file_variant="" file_os="" file_profile="" file_machine="" file_features=""
+  if [[ -f "$conf" ]]; then
+    { IFS= read -r -d '' file_variant && IFS= read -r -d '' file_os && IFS= read -r -d '' file_profile \
+      && IFS= read -r -d '' file_machine && IFS= read -r -d '' file_features; } < <(
+      unset DOTFILES_VARIANT DOTFILES_OS DOTFILES_PROFILE DOTFILES_MACHINE DOTFILES_FEATURES
+      # shellcheck source=/dev/null
+      source "$conf" >&2 || exit 1
+      printf '%s\0%s\0%s\0%s\0%s\0' "${DOTFILES_VARIANT:-}" "${DOTFILES_OS:-}" "${DOTFILES_PROFILE:-}" \
+        "${DOTFILES_MACHINE:-}" "${DOTFILES_FEATURES:-}"
+    ) || error "Could not read $conf"
+  fi
+  f_return \
+    default_variant="${DOTFILES_VARIANT:-$file_variant}" \
+    default_os="${DOTFILES_OS:-$file_os}" \
+    default_profile="${DOTFILES_PROFILE:-$file_profile}" \
+    default_machine="${DOTFILES_MACHINE:-$file_machine}" \
+    default_features="${DOTFILES_FEATURES:-$file_features}"
+}
+
+# Fill in OS <os> and profile <profile>, each one left empty, from variant <variant> (if given).
+# Usage: f_call variant_dimensions os profile -- <variant> <os> <profile> [<origin>]
+#   <origin>: where the variant came from, for the error if it doesn't exist
+# Returns: os profile
+variant_dimensions() {
+  local variant="$1" os="$2" profile="$3" origin="${4:-}" variant_os variant_profile
+  if [[ -n "$variant" ]]; then
+    variant_exists "$variant" \
+      || usage_error "Unknown variant '$variant'${origin:+ (from $origin)}. Available variants: $(available_names variants)"
+    f_call variant_config variant_os=os variant_profile=profile -- "$variant"
+    [[ -n "$os" ]] || os="$variant_os"
+    [[ -n "$profile" ]] || profile="$variant_profile"
+  fi
+  f_return os profile
+}
+
+# Add default features <default_features> (feature names, and all for --all) to <flags> and <all> when the command
+# line selects none, unless <mode> is uninstall or the OS and profile to install for (<os>, <profile>) aren't the
+# ones the defaults name (<default_os>, <default_profile>; both empty when the defaults name none).
+# Usage: f_call apply_default_features flags all -- <flags> <all> <mode> <default_features> <os> <profile> \
+#   <default_os> <default_profile>
+# Returns: flags all
+apply_default_features() {
+  local flags="$1" all="$2" mode="$3" default_features="$4" os="$5" profile="$6" default_os="$7"
+  local default_profile="$8" word
+  if [[ "$flags" == " " ]] && ! $all && [[ "$mode" != uninstall ]] \
+    && [[ -z "$default_os$default_profile" || "$os $profile" == "$default_os $default_profile" ]]; then
+    for word in $default_features; do
+      word="${word#--}"
+      [[ "$word" =~ ^[a-z0-9_-]+$ ]] || usage_error "Invalid feature '$word' in DOTFILES_FEATURES"
+      if [[ "$word" == all ]]; then all=true; else flags+="$word "; fi
+    done
+  fi
+  f_return flags all
+}
+
+# Resolve the OS, profile and machine to install for: <os>, <profile> and <machine> as given (by options or
+# defaults), with each one left empty inferred from this system when <infer> (--infer) is true, to suit the given
+# ones: an OS that lacks the given profile becomes portable if that has it (portable runs anywhere), and a machine
+# the OS doesn't support becomes generic. Without --infer, an empty machine is generic and an empty OS or profile
+# stays empty, for exit_with_usage_unless_runnable to report.
+# Usage: f_call resolve_dimensions os profile machine -- <os> <profile> <machine> <infer>
+# Returns: os profile machine
+resolve_dimensions() {
+  local os="$1" profile="$2" machine="$3" infer="$4" inferred="" system_os system_machine coder reason os_machines
+  if $infer && [[ -z "$os" || -z "$profile" || -z "$machine" ]]; then
+    f_call infer_system system_os=os system_machine=machine coder reason
+    if [[ -z "$os" ]]; then
+      [[ -n "$system_os" ]] || error "Could not infer an OS for this system ($reason); pass --os or --variant"
+      os="$system_os"
+      if [[ -n "$profile" ]] && ! os_supports_profile "$os" "$profile" && os_supports_profile portable "$profile"; then
+        os=portable
+      fi
+      inferred+="OS '$os'"
+    fi
+    if [[ -z "$profile" ]]; then
+      profile="$(profile_for_system "$os" "$coder")"
+      inferred+="${inferred:+, }profile '$profile'"
+    fi
+    if [[ -z "$machine" ]]; then
+      machine="$system_machine"
+      if os_exists "$os"; then
+        f_call os_config os_machines=machines -- "$os"
+        list_contains "$os_machines" "$machine" || machine=generic
+      fi
+      inferred+="${inferred:+, }machine '$machine'"
+    fi
+    info "Inferred $inferred from: $reason"
+  fi
+  f_return os profile machine="${machine:-generic}"
+}
+
+# Print usage and exit unless OS $5 with profile $6 can run on machine $7: with no OS and profile, or with no
+# features selected ($1 flags, $2 --all) or --help ($3). Without an OS and profile this is an error unless --help was
+# given or there were no arguments ($4), as is an OS, profile or machine that doesn't exist or doesn't go together.
+# Usage: exit_with_usage_unless_runnable <flags> <all> <help> <no_args> <os> <profile> <machine>
+exit_with_usage_unless_runnable() {
+  local flags="$1" all="$2" help="$3" no_args="$4" os="$5" profile="$6" machine="$7" os_machines
+  list_contains "$MACHINES" "$machine" || usage_error "Unknown machine '$machine'. Available machines: $MACHINES"
+  if [[ -z "$os" && -z "$profile" ]]; then
+    $help || $no_args || usage_error "--variant, or --os and --profile, is required (or --infer)"
+    usage "" "" "$machine"
+    exit 0
+  fi
+  [[ -z "$os" ]] || os_exists "$os" || usage_error "Unknown OS '$os'. Available OSes: $(available_names os)"
+  [[ -z "$profile" ]] || profile_exists "$profile" \
+    || usage_error "Unknown profile '$profile'. Available profiles: $(available_names profiles)"
+  if $help && [[ -z "$os" || -z "$profile" ]]; then
+    usage "" "" "$machine"
+    exit 0
+  fi
+  [[ -n "$os" ]] || usage_error "--profile $profile needs --os (or --infer)"
+  [[ -n "$profile" ]] || usage_error "--os $os needs --profile, one of: $(os_profiles "$os") (or --infer)"
+  os_supports_profile "$os" "$profile" \
+    || usage_error "OS '$os' has no profile '$profile'; it has: $(os_profiles "$os")"
+  f_call os_config os_machines=machines -- "$os"
+  list_contains "$os_machines" "$machine" \
+    || usage_error "OS '$os' doesn't support machine '$machine'; it supports: $os_machines"
+  if $help || { [[ "$flags" == " " ]] && ! $all; }; then
+    usage "$os" "$profile" "$machine"
+    exit 0
+  fi
+}
+
+# Select the features of OS <os> with profile <profile> on machine <machine> to run, from feature options <flags>
+# and --all <all>. --all leaves out optional features and those whose @machine doesn't suit <machine>; named
+# features run either way (with a warning for the latter). Under --uninstall (<mode>), features without an uninstall
+# function are dropped (with a warning if named), and under --capture those without a capture function.
+# Usage: f_call resolve_features enabled -- <os> <profile> <flags> <all> <mode> <machine>
+# Returns: enabled
+#   enabled: the selected features, in the order they run
+resolve_features() {
+  local os="$1" profile="$2" flags="$3" all="$4" mode="$5" machine="$6" features optional enabled=" " k default
+  local feature_machine
+
+  f_call os_profile_config features optional -- "$os" "$profile"
+
+  for k in $flags; do
+    list_contains "$features" "$k" \
+      || usage_error "Unknown option for OS '$os' with profile '$profile': --$k" "$os" "$profile" "$machine"
+  done
+  for k in $features; do
+    f_call feature_requirements feature_machine=machine -- "$k"
+    default=false
+    if ! list_contains "$optional" "$k" && machine_supported "$feature_machine" "$machine"; then
+      default=true
+    elif list_contains "$flags" "$k" && ! list_contains "$optional" "$k"; then
+      warn "--$k is for machine $feature_machine, not $machine; running it since it was named"
+    fi
+    if list_contains "$flags" "$k" || { $all && $default; }; then
+      if [[ "$mode" == capture ]]; then
+        if ! feature_capturable "$k"; then
+          list_contains "$flags" "$k" && warn "--$k has no capture step; skipping it"
+          continue
+        fi
+      elif [[ "$mode" != install ]] && ! feature_uninstallable "$k"; then
+        if list_contains "$flags" "$k"; then
+          if [[ "$mode" == uninstall ]]; then
+            warn "--$k has no uninstall step; skipping it"
+          else
+            warn "--$k has no uninstall step; installing it without uninstalling first"
+          fi
+        fi
+        [[ "$mode" == uninstall ]] && continue
+      fi
+      enabled+="$k "
+    fi
+  done
+
+  f_return enabled
+}
+
+# Run one-time install $1 and exit, after checking that nothing else was asked for: --oti can't be combined with a
+# variant, OS, profile, machine, --infer ($2, a list of those given), features or --all ($3, $4), or --reinstall or
+# --uninstall ($5). --help ($6) prints the usage instead. Defaults from the environment and install.conf don't apply.
+# Usage: run_oti_and_exit <oti> <dimensions> <flags> <all> <mode> <help>
+run_oti_and_exit() {
+  local oti="$1" dimensions="$2" flags="$3" all="$4" mode="$5" help="$6"
+  ! $help || { usage "" ""; exit 0; }
+  oti_exists "$oti" || usage_error "Unknown one-time install '$oti'. Available: $(available_names oti)"
+  [[ -z "$dimensions" ]] || usage_error "--oti can't be combined with$dimensions"
+  [[ "$flags" == " " && "$all" == false ]] || usage_error "--oti can't be combined with features or --all"
+  [[ "$mode" == install ]] || usage_error "--oti can't be undone, so it takes no --$mode"
+  enter_dotfiles_root
+  run_oti "$oti"
+  exit 0
+}
+
+# Print why install.sh in $1 can't install from $2, or nothing if it can. Everything it links points into $2, so it
+# must run from that checkout ($2 may be a symlink to it), and the checkout must be named dotfiles, which the startup
+# files and lint (.shellcheckrc) rely on.
+# Usage: explain_checkout_problem <script_dir> <root>
+explain_checkout_problem() {
+  local script_dir="$1" root="$2" script_real root_real
+  script_real="$(cd "$script_dir" && pwd -P)"
+  if [[ ! -d "$root" ]]; then
+    printf 'dotfiles must be checked out at %s' "$root"
+    return
+  fi
+  root_real="$(cd "$root" && pwd -P)"
+  if [[ "$script_real" != "$root_real" ]]; then
+    printf 'this checkout (%s) is not %s (%s); run %s/install.sh instead' "$script_real" "$root" "$root_real" "$root"
+  elif [[ "${root_real##*/}" != dotfiles ]]; then
+    printf "the checkout must be a directory named dotfiles, not '%s' (%s links to %s)" \
+      "${root_real##*/}" "$root" "$root_real"
+  fi
+}
+
+# cd into $DOTFILES_ROOT, or exit with why install.sh can't install from it.
+# Usage: enter_dotfiles_root
+enter_dotfiles_root() {
+  local problem
+  problem="$(explain_checkout_problem "$SCRIPT_DIR" "$DOTFILES_ROOT")"
+  [[ -z "$problem" ]] || error "$problem"
+  # No subshell, so the cwd persists.
+  cd "$DOTFILES_ROOT"
+}
+
+# Print the words of $1 in reverse order.
+# Usage: reverse_words <words>
+reverse_words() {
+  local word reversed=""
+  for word in $1; do
+    reversed="$word${reversed:+ $reversed}"
+  done
+  printf '%s' "$reversed"
+}
+
+# Run the enabled features ($3, already in the order of OS $1 with profile $2): install runs feature_<name> in order,
+# uninstall runs uninstall_feature_<name> (where defined) in reverse order, and reinstall does the uninstalls then
+# the installs. capture runs capture_feature_<name> instead. Each gets the OS, the profile and the enabled features.
+# Usage: run_features <os> <profile> <enabled> <mode> <machine>
+run_features() {
+  local os="$1" profile="$2" enabled="$3" mode="$4" machine="$5" feature
+
+  info "Beginning dotfiles $mode (os: $os, profile: $profile, machine: $machine)..."
+  if [[ "$mode" == capture ]]; then
+    for feature in $enabled; do
+      info "Capturing feature: $feature"
+      "$(capture_function "$feature")" "$os" "$profile" "$enabled"
+    done
+  fi
+  if [[ "$mode" == uninstall || "$mode" == reinstall ]]; then
+    for feature in $(reverse_words "$enabled"); do
+      feature_uninstallable "$feature" || continue
+      info "Uninstalling feature: $feature"
+      "$(uninstall_function "$feature")" "$os" "$profile" "$enabled"
+    done
+  fi
+  if [[ "$mode" == install || "$mode" == reinstall ]]; then
+    for feature in $enabled; do
+      if $DRY_RUN && ! list_contains "$DRY_RUN_FEATURES" "$feature"; then
+        info "[dry-run] would run feature: $feature"
+        continue
+      fi
+      "$(feature_function "$feature")" "$os" "$profile" "$enabled"
+    done
+  fi
+  info "dotfiles $mode complete."
+}
+
+# Install, reinstall or uninstall what the command line asks for (see usage), or run a one-time install.
+# Usage: main [<arg>...]
+main() {
+  bootstrap "$@"
+  load_install_deps
+
+  local variant os profile machine infer flags mode all dry_run help oti enabled
+  local default_variant default_os default_profile default_machine default_features
+  f_call parse_args variant os profile machine infer flags mode all dry_run help oti -- "$@"
+  readonly DRY_RUN="$dry_run"
+  if [[ -n "$oti" ]]; then
+    run_oti_and_exit "$oti" "${variant:+ --variant}${os:+ --os}${profile:+ --profile}${machine:+ --machine}$(
+      $infer && echo ' --infer')" "$flags" "$all" "$mode" "$help"
+  fi
+  f_call variant_dimensions os profile -- "$variant" "$os" "$profile"
+
+  # Each dimension the command line leaves out comes from the defaults, where DOTFILES_OS and DOTFILES_PROFILE override
+  # DOTFILES_VARIANT's.
+  f_call load_install_defaults default_variant default_os default_profile default_machine default_features \
+    -- "$INSTALL_CONFIG"
+  # An unknown default variant is only an error when it would have filled in an OS or profile that neither the command
+  # line nor the other defaults give.
+  if variant_exists "$default_variant" || [[ -z "${os:-$default_os}" || -z "${profile:-$default_profile}" ]]; then
+    f_call variant_dimensions default_os=os default_profile=profile -- \
+      "$default_variant" "$default_os" "$default_profile" "DOTFILES_VARIANT in the environment or $INSTALL_CONFIG"
+  fi
+  os="${os:-$default_os}"
+  profile="${profile:-$default_profile}"
+  machine="${machine:-$default_machine}"
+  f_call apply_default_features flags all -- \
+    "$flags" "$all" "$mode" "$default_features" "$os" "$profile" "$default_os" "$default_profile"
+
+  f_call resolve_dimensions os profile machine -- "$os" "$profile" "$machine" "$infer"
+  exit_with_usage_unless_runnable "$flags" "$all" "$help" "$([[ $# -eq 0 ]] && echo true || echo false)" \
+    "$os" "$profile" "$machine"
+
+  f_call resolve_features enabled -- "$os" "$profile" "$flags" "$all" "$mode" "$machine"
+  enter_dotfiles_root
+  run_features "$os" "$profile" "$enabled" "$mode" "$machine"
+}
+
+main "$@"

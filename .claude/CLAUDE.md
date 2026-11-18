@@ -1,84 +1,60 @@
-# Added by dotfiles
-## Git
-- For draft PRs or branches without a PR, always use `git -c commit.gpgsign=false ...` when making commits. For PRs that are ready for review, always sign commits.
-  - This holds even when a CI check (e.g. in-toto attestation) needs a signed HEAD: report that failure as expected on drafts instead of signing.
-- When making branches, name then "andywang/..." where ... is the intended change
-- Always make sure that you're working with the right branch locally. If the user asks for changes to a particular PR, then you should check out that PR first locally before making your changes.
-  - If there are untracked/unstaged changes, prompt the user for further instruction.
-- You can and should make commits to the local branch without explicit permission.
-- Only push changes to remote if there is not a PR open for the current branch or if the PR is a draft. In those cases push without asking.
-- Once I've agreed to a plan, carry out every step (checking out the PR, follow-up draft PRs, pushes) without stopping to ask "should I …?". If a message has an obvious typo, act on the obvious intent instead of asking.
+# dotfiles
+Personal Linux/macOS dotfiles plus `install.sh`, which links them into place and installs tools. `README.md` has the annotated file tree, the variants and the install flow; read it before changing structure, and keep its tree in sync when adding, moving or removing files. The tree puts U+00A0 (non-breaking space) after `│`; copy those characters exactly when editing it, or Edit and sed won't match.
 
-### Github PRs
-- When iterating on an open or draft PR, add new commits instead of amending existing ones and force pushing
-- Prefix the first commit message with \[PR-start <branch-name>\]
-- Never add comments in github unless I say exactly to "reply" to a comment.
-- Double check for permission before adding comments.
-- Always create PRs in draft mode, never ready for review
-- When marking a PR as ready for review, sign and rebase the PR if any commits are unsigned
-- When writing a PR description:
-  - For new PRs, respect the repository's PR description template (usually at `.github/PULL_REQUEST_TEMPLATE.md`).
-  - For existing PRs, always check the previous state to make sure that you're not dropping important context.
-  - Header lines at the top (only what applies; always include newlines after a list):
-    ```
-    Main issue: <url> / Fixes <url> / Part N/? of <url> / FLUP to <url> / Short term fix for: <url> / Preflight for: <pr> / <X> mirror of <pr> <!-- only pick one of these -->
-    Context: <slack-thread-or-review-comment-url>
+`.claude/` holds Claude Code config for working on this repo only (this file, plus any repo-specific skills or settings). Machine-wide config (the global CLAUDE.md, skills, hook scripts, settings) lives in separate tools repos (by default ProfessorLinstar/tools; see `DOTFILES_TOOLS` in `README.md`), which the `claude` feature installs into `~/.claude`.
 
-    Replaces #xxxxx (collapsed commit history; description preserved).
+## No company-specific information
+This repo is public and edited from work machines. Never commit company, team or product names, internal hostnames, URLs, repo or org names, or ticket IDs, including in commit messages, branch names and PR text.
 
-    Related PRs:
-    - #xxxxx
+## install.sh layout
+- `install/lib/`: shared helpers (`fn.sh` `f_call` and `f_return`, `infer.sh` the OS, profile and machine `--infer` picks, `exec.sh` dry-run aware execution, `fs.sh` symlinks and managed blocks, `capture.sh` filtering settings files for `--capture`, `systemd.sh` system units copied into `/etc` with `install_system_units` and `uninstall_system_units`, `steam.sh` editing Steam's `.vdf` settings files with `steam_set_vdf`).
+- `install/features/<name>.sh`: one `feature_<name> <os> <profile> <enabled>` function per feature. Features for specific hardware (an `@machine` other than `any`) go in `install/features/<os>_<machine>/<name>.sh` instead, named after their single `@os` and `@machine` (e.g. `steamos_framework16/orei_switch.sh`); `--all` includes them only on that `--machine` (`MACHINES` in `install/lib/infer.sh`, which also infers the OS, profile and machine for `--infer`). Register its `--help` text in `feature_description` (`install/lib/features.sh`), document the function in the comment directly above it with a brief description, a bare `#` line, then `# @machine`, `# @os`, `# @gui` and optionally `# @requires` tags (values in `install/lib/features.sh`, checked by `make validate`; keep the README table in sync), and add it to `DRY_RUN_FEATURES` if it honors `--dry-run`.
+- A feature that can be undone also defines `uninstall_feature_<name> <os> <profile> <enabled>`, which `--uninstall` runs (in reverse feature order) and `--reinstall` runs before `feature_<name>`. It must be idempotent, always honor `--dry-run`, and confirm before destroying user data. Defining it is all it takes; `--help` lists it automatically.
+- A feature that loads settings a GUI also edits (dconf, KDE config files) can define `capture_feature_<name> <os> <profile> <enabled>`, which `--capture` runs instead of installing, to copy this system's settings back into the repo's files. It must honor `--dry-run` and only write the settings the feature selects (`DCONF_CAPTURE`, `KDE_CAPTURE`), with `capture_filter` and `write_captured` (`install/lib/capture.sh`).
+- An install is for an OS, a profile and a machine; only the combinations in README.md's OS, Profile and Machine table exist. `install/os/<os>.sh`: `os_<os>` returns `description`, `platforms` (the `@os` values its features must suit) and `machines`, and one `os_<os>_<profile>` per profile it supports returns `features`, `optional`, `gui` and `link_paths` (defining it is what makes the combination valid). Features run in `features` order, so list each after the features it requires; `optional` lists the ones `--all` skips, which run only when their flag is given (`--help` shows them separately). Read these with `os_profile_config <os> <profile>` (`install/lib/features.sh`).
+- `install/profiles/<name>.sh`: `profile_<name>` returns `description` and what holds for the profile on every OS (`git_fsmonitor`).
+- `install/variants/<name>.sh`: `variant_<name>` returns only `os` and `profile`, the combination `--variant <name>` stands for.
+- `install/oti/<name>.sh`: a one-time install, run with `--oti <name>` to set up a machine once (e.g. installing Arch from its live ISO) instead of configuring the one `install.sh` runs on. It defines `oti_<name>` (with `-` as `_`) and `oti_config_<name>` (returns `description`), asks all its questions up front and confirms once before changing anything, then runs steps that each check what is done first, so a rerun resumes. It runs every command through the shown-command helpers in `install/lib/exec.sh` (`run_shown`, `write_shown`, `probe`, ...) so each is printed, honors `--dry-run`, and defines no `uninstall_` functions, since it can't be undone (`make validate` checks this).
+- Files installed onto the machine live under `home/` (maps to `$HOME`) or `root/` (maps to `/`) at their install path, whether linked or copied by a feature (e.g. systemd units, udev rules); everything else at the top level is repo-only. Paths to symlink go in `LINK_COMMON_PATHS`, `LINK_SHELL_PATHS`, `LINK_STEAMOS_PATHS`, `LINK_ARCH_DESKTOP_PATHS` or `LINK_WEBTERM_PATHS` (`install/features/link.sh`), prefixed with `home/` or `root/`. Under `root/`, list single files, never directories, so files a feature copies aren't linked too (`make validate` checks this). Copy systemd units with `install_system_units` or `install_user_units`. Scripts that system units or the login screen run go in `root/etc/dotfiles/bin`. Files read at boot or run by them are copied with `install_system_dir` (or `copy_system_files`) or `copy_system_file` (`install/lib/fs.sh`), never symlinked: the home directory may be encrypted, so `/etc` can't point into it at boot.
 
-    Depends on:
-    - https://github.example.com/org/repo/pull/xxxxx (short title)
+## Shell conventions
+Write functions in a functional style:
+- Pass inputs as arguments. Return values by name, not by setting globals or parsing stdout: the function ends with `f_return out1 out2="$b"` (a bare name returns the variable of that name, so `out1` is `out1="$out1"`), and callers read them like `read` with `f_call fn out1 [name=out2] -- args...`, which sets their `local out1` (and `name`) and errors if `fn` didn't return one. Values travel in `_`-prefixed variables local to each `f_call` (`install/lib/fn.sh`), so never read or assign `_`-prefixed variables directly. A function with a single result may print it instead, for the caller to capture with `$(...)` (e.g. `feature_function`, `explain_checkout_problem`).
+- Every top-level function has a doc comment: a description, then a `Usage:` line showing how to call it (`<arg>`, `[<optional>]`, `<repeated>...`, `--flag|--other`), optionally followed by `  <key>: text` entries for some of its arguments (continuations indented two more spaces; a long Usage line continues after a trailing `\`). A function that calls `f_return` writes its Usage line as the `f_call` and follows it with a `Returns:` line naming the same values, optionally followed by entries for them. Refer to arguments by their `<name>` in the description. `make lint` (`tests/lint/function_docs.py`) checks this, and that an `f_call` Usage line and its Returns line list exactly the names the function's `f_return` calls return. `feature_<name>`, `uninstall_feature_<name>` and `capture_feature_<name>` are left out: install.sh calls them all as `<os> <profile> <enabled>`, and a feature's doc ends with tags (see install.sh layout).
+  ```bash
+  # Print the paths that copy_system_files would copy each file in <src_dir> matching <glob> to in <dst_dir>.
+  # Usage: system_file_targets <src_dir> <glob> <dst_dir>
+  #   <glob>: a shell pattern, matched against file names only
 
-    PR stack:
-    - #xxxxx
-    - #xxxxx 👈
-    - #xxxxx
-    ```
-    - `Fixes`/`Context` targets may be issues, issue comments, or Slack threads. Prefer the most specific issue over umbrella issues.
-    - If I haven't given you a Slack thread, search for one first (e.g. the `search-slack` skill, with the PR/branch link or key terms). Only if nothing matches, ask me in your reply rather than omitting or guessing. Never publish `Context: TODO`/`Fixes: TODO` placeholders; a placeholder in the description doesn't count as asking.
-    - If the PR fixes a regression introduced by other PRs, find them and list them under `Fixes:`.
-    - Only list PRs a reviewer needs; don't add superseded attempts or loosely related PRs found by searching.
-    - Use 👈 to mark the current PR in a stack, with its real number (not `this PR` or a placeholder). Use #xxxxx for PRs in the same repo and full URLs otherwise.
-  - Body: lead with `Previously, <problem>.` then `This PR …` / `Now, …`. Explain behavior and motivation, not a file-by-file changelog. Keep length proportional; bumps and one-liners get 1–2 sentences.
-    - Say what the PR does in 1–2 sentences. Don't enumerate removed/renamed internals, implementation mechanics, or justify why the approach is correct; the diff covers that.
-    - One idea per paragraph; split dense paragraphs.
-    - Reverts/re-applies: one sentence on why it's safe now. One-liner config changes: `Adds X.` plus what it enables, no `Previously` paragraph.
-    - Version bumps: just `This picks up the following:` plus a list of the upstream PRs (and `Context:` if any). No problem statement, logs, or caveats; add a `Verify that …` item only when there is a test PR to link.
-    - Call out caveats (`Note that …`), alternatives considered (`We could …, but … Instead, …`), and follow-ups (`We should revert this once …`) only when a reviewer would otherwise ask. One sentence each, no justification clause. Perf impact: one qualitative sentence, not a benchmark table.
-    - Link code with SHA permalinks; paste error logs that show the problem in code blocks.
-    - Never invent rationale or verification. If the "why" is unknown, ask me or write `TODO(andywang): why`.
-  - Testing: `Verify that …` checklist items; unit tests in one line (`Add unit tests to verify that …`).
-    - Nest evidence (test PRs, CircleCI/Gradle scan links, gists, screenshots) under each item. Use tables for scenario matrices. Evidence is links and media; don't add prose about how you ran the check, raw CLI output, or environment/build versions.
-    - Don't add items for things CI already enforces (compile, lint, existing tests passing, "CI passes"). Config-only changes that can't be verified before merge get `N/A`.
-    - Cover edge cases and the unchanged path (e.g. `Confirm X behaves as before`).
-    - For anything a user can see (including which items are selected/enabled), add a screenshot placeholder under each manual item, or `Before:`/`After:` placeholders. Use `N/A` when trivial.
-    - For user-visible bugs, also put a screenshot placeholder in the problem section.
-    - Placeholders stay nested under their checklist item (`- Before:` / `- After:`). When filling in a video or a `<details>` block, put it on its own unindented line with a blank line before and after, or GitHub won't render it. For videos, leave a placeholder for me to upload as a GitHub attachment instead of linking GIFs or files from other repos.
-    - Check `[x]` every item you actually verified (and its parent item), even if there's no link to nest; leave `[ ]` only for what you haven't verified.
-  - Templates: keep `==COMMIT_MSG==` to a single line and keep required boilerplate (e.g. Environment Compatibility) verbatim. Drop sections and checkboxes that don't apply. No template → plain prose. Bot-generated backports: keep the bot body; only append.
-- When retargeting a stacked PR (e.g. after a parent PR merges), update the stack list in the description accordingly.
+  # Copy each file in <src_dir> matching <glob> into <dst_dir> with sudo, replacing any old symlink.
+  # Usage: f_call copy_system_files changed -- <src_dir> <glob> <dst_dir>
+  # Returns: changed
+  #   changed: the space-separated targets that were copied (empty if all were up to date)
+  ```
+- Globals are UPPER_CASE constants set at file load time; never mutate them from functions. Declare everything else `local`.
+- Keep pure logic (parsing, resolving config) separate from side effects, and route side effects through `run`/`run_tty` so `--dry-run` works.
+- A feature that writes into `/etc` must keep working on SteamOS, whose updates drop every `/etc` change no keep list names: name its files with `keep_across_steamos_updates` (`install/lib/fs.sh`). The default list keeps only users, network and system units (`.service`, `.socket`, `.mount`, their drop-ins and links; not timers); see `tests/images/steamos/atomic-update-keep.conf`. The `steamos-update` fixture checks this.
+- Every feature must be idempotent: check current state first, and use `make_symlink` and `upsert_block` rather than raw `ln` or appends.
+- Don't encode migrations: features install the current layout and never clean up after an older one. When a change leaves stale files on machines that installed an earlier version (moved or renamed installed files, changed link paths), add an entry to `docs/migrations.md` instead, with the `update-migrations` skill, which also fills in an entry's commit after it merges.
+- Shell startup files (`.profile`, `.bashrc`, `.zshrc`, ...) only source files under `home/.config/sh` and `home/.config/zsh`, so linked and managed installs share the same logic. Features write managed ones with `upsert_sources`. `env.sh` (environment, sourced from profiles and rc files) must stay POSIX sh and safe to source repeatedly.
+- Stay portable across Linux and macOS (bash 3.2: no `mapfile`, associative arrays or namerefs; no GNU-only flags).
+- Don't call `_`-prefixed helpers from another file; they are private to it. Add a public helper to `install/lib/` instead.
 
+## Pinned downloads
+Never install anything unpinned or run a downloaded script (no `releases/latest`, no `curl | sh`, no unpinned `git clone`). Every download is pinned to a version and checked before it is used: release files with `download_verified <url> <sha256> <out> <name>`, git repositories with `clone_pinned <url> <full-commit-hash> <dest>` (a tag is not a pin, since it can move), and any temp dir with `with_tmpdir` (`install/lib/fs.sh`). Pins live in the feature that uses them (`NEOVIM_VERSION`, `TMUX_VERSION`/`TMUX_SHA256` and `GNG_`/`TRE_VERSION`/`COMMIT` in `binaries.sh`; `STARSHIP_VERSION` in `shell.sh`; `LOGIOPS_` and the font in `desktop.sh`; `TTYD_VERSION` in `webterm.sh`; `FRAMEWORK_TOOL_` in `steamos_framework16/orei_switch.sh`), except the lint tools in `tests/versions.env`. Dependabot only bumps the workflows' actions; everything else is bumped by hand.
 
-## Code changes
-- Make the smallest change that solves the problem. No incidental refactors, renames or cleanups of existing code; if one seems worthwhile, ask first or put it in a separate preflight PR.
-- When the change itself would copy the same logic into several places, factor it into a shared helper in the same PR instead.
-- Don't add defensive code (try/catch, env scrubbing, cleanup hooks, workarounds applied "everywhere just in case") unless you've confirmed it's needed. Prefer the simplest approach and measure before optimizing.
+To update a pin:
+1. Pick the new release from the project's releases page and read its notes. Take checksums from the project's own published `.sha256` files or `checksums.txt` when it has them; otherwise download the file and run `sha256sum`. Never take a checksum from the same download you are verifying without comparing it to a second source.
+2. Per-platform tools (neovim, starship, ttyd, shellcheck, actionlint) pin one asset and checksum for each of `linux-x86_64`, `linux-arm64`, `macos-x86_64` and `macos-arm64` (the `*_asset` functions; `<TOOL>_SHA256_<os>_<arch>` keys in `tests/versions.env`, which `make validate` checks are complete). Update all of them, even ones you can't run. Tools built from source (tmux, gng, tre, logiops) pin one checksum or commit: resolve the new tag with `git ls-remote <url> 'refs/tags/<tag>^{}' <tag>` (the peeled `^{}` line is the commit for an annotated tag) and paste the full 40-character hash.
+3. Change the version variable and its checksums or commit together in one commit, and keep any comment naming the version in sync (the README names the ttyd version).
+4. Run `make check`, then `make fixtures`: the fixture images ship some of these tools, and `DOTFILES_DOWNLOAD_CACHE` is keyed by checksum, so a stale cache can't hide a wrong one. Run the feature itself in a scratch home without `--dry-run` (`HOME=<dir> ./install.sh --variant <name> --<feature>`) so the new download is actually fetched and verified; a dry run checks nothing.
+5. Where the version is also stamped on disk (the font writes `<version> <sha256>` to a stamp file), an update reinstalls on the next run; a tool that is only checked for being present (neovim, starship) is not replaced on machines that already have it, so say so in the PR rather than adding a migration.
 
-## Verification
-- Before giving me a link you constructed, open it (e.g. with the browser tools) to check it works.
-- Before claiming something is absent, impossible or untestable, exhaust the options (complete search, config overrides, custom permissions/policies) and say what you checked.
-
-## Commenting
-- You may author trivial comments yourself, as well as new comments that are straightforward and have strong precedent in the surrounding code for what they should look like.
-- Otherwise, whenever something needs to be documented in code (e.g. javadocs), add a `TODO(andywang): add comment` instead.
-- If an existing comment should be changed, add `TODO(andywang): update comment` instead, unless the change is trivial.
-- You may copy comments verbatim, but if the comment needs to be adapted non-trivially, then add `TODO(andywang): update comment` instead.
-- If some behavior deserves explanation, you may add a github comment IF the PR is in draft mode. Otherwise flag this to the user directly.
-
-## Formatting
-- Don't manually wrap markdown unless existing code already does it
-- Wrap comments with a text width of 120 characters
-# /Added by dotfiles
+## Verifying changes
+- Run `make check` before pushing; CI runs the same targets. It runs `make validate` (structure that must hold: checkout name, README tree, pinned checksums, feature docs and requirements), `make lint` (syntax, the pinned shellcheck with `.shellcheckrc`, actionlint) and `make test` (behavior: install.sh in scratch homes). Put structural checks in `tests/validation/`, code-quality checks in `tests/lint/`, and behavior tests at the top of `tests/`. See Testing in `README.md`.
+- `make fixtures` (needs a container runtime; CI runs it) runs each `tests/fixtures/<name>/` case in a container and compares the files `install.sh` leaves with its `after/`. When a change alters what an install writes to those files, run `tests/fixtures.sh --update` and commit the new `after/` files with it. Never copy a file into `after/` by hand: its `manifest` also holds hashes of every installed file, which only `--update` rewrites (e.g. changing `orei-switch` changes its manifest line). If no container runtime is available, say so in the PR instead, since CI fails on a stale `after/`. Add a case when adding a situation worth pinning, e.g. a variant over existing files.
+- Fix shellcheck findings rather than disabling them; when one is intentional, disable it on that line with a `# shellcheck disable=SCxxxx # reason` comment. `.shellcheckrc` turns off a few checks repo-wide because they mostly misfire here: SC2034 (globals set in one file and read in another; `make lint` still reports unused lowercase variables in a second pass, counting a bare name in `f_return` as a use), SC2016 (`$` in single quotes meant for another shell, as with `sh -c '...'`), SC2064 (trap strings expanded when set, on purpose), SC1003 (printf `\\` escapes before a closing quote) and SC2086 and SC2046 (unquoted `$var` and `$(...)`, since word lists are split on purpose: quote every expansion that isn't meant to split). Don't add to that list without a reason as broad.
+- shellcheck follows sourced files (`.shellcheckrc`). In startup files write `source "$HOME/dotfiles/..."`, not `~/dotfiles/...`: shellcheck resolves it through the checkout's parent (so the checkout must be named `dotfiles`, which `install.sh` enforces). Scripts outside `install.sh` load the shared library from `$HOME/dotfiles/install/lib`, not a path worked out from the script's own location. Give such runtime paths (`$LIB_DIR/...`) a `# shellcheck source=<path relative to the script>` directive; use `source=/dev/null` only for sources that can't be followed, like a glob loop or user config.
+- Changes to SteamOS-specific features (`/etc` files, systemd units, the login screen, Game Mode) can be checked on SteamOS itself in the `steamos_vm` VM: see the `test-in-steamos-vm` skill, and `debug-steamos-vm` when the VM misbehaves.
+- `install.sh` requires the repo at `~/dotfiles`. To exercise a feature without touching the real home, point `HOME` at a scratch directory containing a `dotfiles` symlink to this checkout, then run `HOME=<dir> ./install.sh --variant <name> --<feature>`; use `--dry-run` for features that need root or a package manager.
+- `install.sh` and the checks reject a checkout whose directory isn't named `dotfiles`, so they fail in a default worktree at `.claude/worktrees/<name>`. Create worktrees at a path ending in `dotfiles` instead: `git worktree add -b <branch> .claude/worktrees/<name>/dotfiles origin/main`. Don't copy a checkout to rename it: the copy keeps the `.git` file and so shares the original's index, and with `core.fsmonitor` on, git then misses edits made in the original.

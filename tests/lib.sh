@@ -1,0 +1,94 @@
+# Shared helpers for tests/install.sh, tests/lint and tests/validation.
+
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(dirname "$TEST_DIR")"
+TOOLS_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles-test"
+
+# shellcheck source=../install/lib/output.sh
+source "$REPO_ROOT/install/lib/output.sh"
+# shellcheck source=../install/lib/fn.sh
+source "$REPO_ROOT/install/lib/fn.sh"
+# shellcheck source=../install/lib/platform.sh
+source "$REPO_ROOT/install/lib/platform.sh"
+# shellcheck source=versions.env
+source "$TEST_DIR/versions.env"
+
+# Print the SHA-256 of <file> (sha256sum on Linux, shasum on macOS).
+# Usage: sha256_of <file>
+sha256_of() {
+  if command -v sha256sum >/dev/null; then
+    sha256sum "$1" | cut -d' ' -f1
+  else
+    shasum -a 256 "$1" | cut -d' ' -f1
+  fi
+}
+
+# Look up the release archive of pinned tool <tool> (shellcheck or actionlint) for <os> and <arch>.
+# Usage: f_call tool_release url sha256 -- <tool> <os> <arch>
+# Returns: url sha256
+tool_release() {
+  local tool="$1" os="$2" arch="$3" version sha_var sc_os sc_arch al_arch url sha256
+  case "$os" in linux) sc_os=linux ;; macos) sc_os=darwin ;; esac
+  case "$arch" in x86_64) sc_arch=x86_64 al_arch=amd64 ;; arm64) sc_arch=aarch64 al_arch=arm64 ;; esac
+  case "$tool" in
+    shellcheck)
+      version="$SHELLCHECK_VERSION"
+      sha_var="SHELLCHECK_SHA256_${os}_${arch}"
+      url="https://github.com/koalaman/shellcheck/releases/download/v$version/shellcheck-v$version.$sc_os.$sc_arch.tar.xz"
+      ;;
+    actionlint)
+      version="$ACTIONLINT_VERSION"
+      sha_var="ACTIONLINT_SHA256_${os}_${arch}"
+      url="https://github.com/rhysd/actionlint/releases/download/v$version/actionlint_${version}_${sc_os}_$al_arch.tar.gz"
+      ;;
+    *) error "tool_release: unknown tool '$tool'" ;;
+  esac
+  sha256="${!sha_var:-}"
+  [[ -n "$sha256" ]] || error "tool_release: no checksum for $tool on $os-$arch in tests/versions.env"
+  f_return url sha256
+}
+
+# Get pinned tool <tool>, downloaded and checksummed into TOOLS_CACHE on first use.
+# Usage: f_call pinned_tool path -- <tool>
+# Returns: path
+pinned_tool() {
+  local tool="$1" version_var dir bin tmp os arch url sha256
+  version_var="$(printf '%s' "$tool" | tr '[:lower:]' '[:upper:]')_VERSION"
+  dir="$TOOLS_CACHE/$tool-${!version_var}"
+  bin="$dir/$tool"
+  if [[ ! -x "$bin" ]]; then
+    f_call detect_os_arch os arch
+    f_call tool_release url sha256 -- "$tool" "$os" "$arch"
+    info "Downloading $tool ${!version_var}..."
+    tmp="$(mktemp -d)"
+    curl -fsSL -o "$tmp/archive" "$url" || error "could not download $url"
+    [[ "$(sha256_of "$tmp/archive")" == "$sha256" ]] || error "$tool checksum mismatch for $url"
+    tar -xf "$tmp/archive" -C "$tmp"
+    mkdir -p "$dir"
+    mv "$(find "$tmp" -type f -name "$tool" | head -1)" "$bin"
+    rm -rf "$tmp"
+  fi
+  f_return path="$bin"
+}
+
+# Return 0 if <command> exists. Otherwise warn that <check> is skipped and return 1, or fail under CI, where every
+# check must run.
+# Usage: have_or_skip <command> <check>
+have_or_skip() {
+  command -v "$1" >/dev/null && return 0
+  [[ -z "${CI:-}" ]] || error "$1 is required for $2"
+  warn "$1 not found; skipping $2"
+  return 1
+}
+
+# Load install/ the way install.sh does, so tests can call its functions. The caller sets the globals the files read at
+# load time (INSTALL_DIR, DOTFILES_ROOT, ...) first.
+# Usage: load_install_tree
+load_install_tree() {
+  local install_dir="$REPO_ROOT/install" file
+  for file in "$install_dir"/lib/*.sh "$install_dir"/features/*.sh "$install_dir"/features/*/*.sh \
+    "$install_dir"/os/*.sh "$install_dir"/profiles/*.sh "$install_dir"/variants/*.sh "$install_dir"/oti/*.sh; do
+    # shellcheck source=/dev/null
+    source "$file"
+  done
+}
