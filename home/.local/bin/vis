@@ -1,0 +1,25 @@
+#!/bin/sh
+
+################################################################################
+# Program: vis
+# Description: Resumes the vim-obsession session in the current directory, or
+#              starts one if none exists. Passes the absolute Session.vim path
+#              so tmux-resurrect can restore the session even if nvim changes
+#              cwd (see nvim_obsession.sh). Call as "source vis" so the vi
+#              alias applies.
+# Location: ~/.local/bin/vis
+################################################################################
+
+# Open vi on the Session.vim in the current directory, creating it and starting Obsession when there is none.
+# Usage: _vis
+_vis() {
+  if [ -s "$PWD/Session.vim" ]; then
+    vi -S "$PWD/Session.vim"
+  else
+    # -S needs an existing file; Obsession then starts tracking it
+    : > "$PWD/Session.vim"
+    vi -S "$PWD/Session.vim" -c Obsession
+  fi
+}
+_vis
+unset -f _vis
